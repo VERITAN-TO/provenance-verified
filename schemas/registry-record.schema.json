@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/registry-record.schema.json",
+  "title": "PROVENANCE VERIFIED™ Registry Projection",
+  "type": "object",
+  "required": [
+    "publicId",
+    "url",
+    "issuer",
+    "program",
+    "subject",
+    "published",
+    "credentialStatus",
+    "eligibility",
+    "certification",
+    "authorization",
+    "sealAuthorization",
+    "claimScope",
+    "evidenceSummary",
+    "lifecycle",
+    "version",
+    "issuedAt",
+    "signature",
+    "integrityHash",
+    "warnings",
+    "testMode"
+  ],
+  "properties": {
+    "publicId": {
+      "type": "string",
+      "pattern": "^PV-[A-Z0-9]{4}-[A-Z0-9]{6}$"
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^/registry/"
+    },
+    "issuer": {
+      "const": "VERITAN, INC."
+    },
+    "program": {
+      "const": "Provenance Verified™"
+    },
+    "subject": {
+      "type": "object"
+    },
+    "published": {
+      "type": "boolean"
+    },
+    "credentialStatus": {
+      "enum": [
+        "not-issued",
+        "issued"
+      ]
+    },
+    "eligibility": {
+      "type": "object",
+      "required": [
+        "tier",
+        "name"
+      ],
+      "properties": {
+        "tier": {
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "name": {
+          "enum": [
+            "Self-Reported",
+            "Bronze",
+            "Silver",
+            "Gold"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "certification": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "authorization": {
+      "type": "object",
+      "required": [
+        "eligibleTier",
+        "status",
+        "credentialAuthorized",
+        "sealAuthorized",
+        "requiredApprovalCount",
+        "acceptedApprovalCount",
+        "blockers",
+        "reasonCodes"
+      ],
+      "properties": {
+        "eligibleTier": {
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "status": {
+          "enum": [
+            "not-eligible",
+            "review-required",
+            "review-rejected",
+            "independent-review-required",
+            "second-approval-required",
+            "reviewer-conflict",
+            "conflict-clearance-required",
+            "custos-required",
+            "signing-key-required",
+            "registry-required",
+            "revocation-control-required",
+            "authorized"
+          ]
+        },
+        "credentialAuthorized": {
+          "type": "boolean"
+        },
+        "sealAuthorized": {
+          "type": "boolean"
+        },
+        "requiredApprovalCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "acceptedApprovalCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sealAuthorization": {
+      "type": "object",
+      "required": [
+        "status",
+        "tier",
+        "reasonCodes"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not-authorized",
+            "authorized"
+          ]
+        },
+        "tier": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 4
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "claimScope": {
+      "type": "array"
+    },
+    "evidenceSummary": {
+      "type": "object",
+      "required": [
+        "count",
+        "qualifiedSources",
+        "independentSources"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "qualifiedSources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "independentSources": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "enum": [
+        "draft",
+        "active",
+        "suspended",
+        "superseded",
+        "revoked",
+        "expired",
+        "not-found"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "issuedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "signature": {
+      "type": "object",
+      "required": [
+        "status",
+        "algorithm",
+        "keyId",
+        "value",
+        "valid"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not-issued",
+            "valid",
+            "invalid",
+            "key-unavailable",
+            "revoked-key"
+          ]
+        },
+        "algorithm": {
+          "const": "Ed25519"
+        },
+        "keyId": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "valid": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "integrityHash": {
+      "type": "string",
+      "pattern": "^sha256:"
+    },
+    "successorId": {
+      "type": "string"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "testMode": {
+      "const": true
+    }
+  },
+  "additionalProperties": false
+}

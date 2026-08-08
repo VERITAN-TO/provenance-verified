@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/signed-event.schema.json",
+  "title": "Signed Event",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "at",
+    "recordId",
+    "sequence",
+    "payload",
+    "signature",
+    "previousEventHash",
+    "eventHash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "verification.started",
+        "evidence.bound",
+        "claims.resolved",
+        "review.completed",
+        "approval.completed",
+        "custos.completed",
+        "credential.authorization.blocked",
+        "credential.issued",
+        "registry.published",
+        "seal.authorized",
+        "webhook.attempted",
+        "webhook.delivered",
+        "webhook.failed",
+        "webhook.replayed",
+        "credential.lifecycle.changed"
+      ]
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recordId": {
+      "type": "string"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "payload": {
+      "type": "object"
+    },
+    "signature": {
+      "type": "string"
+    },
+    "previousEventHash": {
+      "type": "string"
+    },
+    "eventHash": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,49 @@
+asyncapi: 3.0.0
+info:
+  title: PROVENANCE VERIFIED™ Authority Events
+  version: 8.1.3-r3
+  description: Schema-versioned, tenant-bound events emitted from the transactional outbox.
+defaultContentType: application/json
+channels:
+  authorityEvents:
+    address: provenance.authority.events.v1
+    messages:
+      credentialIssued: { $ref: '#/components/messages/CredentialIssued' }
+      credentialLifecycle: { $ref: '#/components/messages/CredentialLifecycle' }
+      evidenceCustody: { $ref: '#/components/messages/EvidenceCustody' }
+      markAuthority: { $ref: '#/components/messages/MarkAuthority' }
+operations:
+  publishAuthorityEvent:
+    action: send
+    channel: { $ref: '#/channels/authorityEvents' }
+components:
+  schemas:
+    Envelope:
+      type: object
+      required: [eventId, schemaVersion, tenantId, subject, eventType, occurredAt, idempotencyKey, payloadDigest, signature, keyId]
+      properties:
+        eventId: { type: string }
+        schemaVersion: { const: '1.0' }
+        tenantId: { type: string }
+        subject: { type: string }
+        eventType: { type: string }
+        occurredAt: { type: string, format: date-time }
+        idempotencyKey: { type: string }
+        previousEventDigest: { type: string }
+        payloadDigest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        signature: { type: string }
+        keyId: { type: string }
+        payload: { type: object, additionalProperties: true }
+  messages:
+    CredentialIssued:
+      name: credential.issued
+      payload: { $ref: '#/components/schemas/Envelope' }
+    CredentialLifecycle:
+      name: credential.lifecycle
+      payload: { $ref: '#/components/schemas/Envelope' }
+    EvidenceCustody:
+      name: evidence.custody
+      payload: { $ref: '#/components/schemas/Envelope' }
+    MarkAuthority:
+      name: mark.authority
+      payload: { $ref: '#/components/schemas/Envelope' }

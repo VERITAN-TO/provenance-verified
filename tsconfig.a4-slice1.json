@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.audit.json","compilerOptions":{"incremental":false},"include":["next-env.d.ts","src/app/app/layout.tsx","src/app/sign-in/page.tsx","src/ui/AuthoritySignInAccess.tsx","src/ui/authenticated/**/*.ts","src/ui/authenticated/**/*.tsx","src/ui/authenticated/**/*.d.ts","src/ui/operations/OperationsShell.tsx"]}

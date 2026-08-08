@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/canonical-state.schema.json",
+  "title": "PROVENANCE VERIFIED™ Authority Case Snapshot",
+  "type": "object",
+  "required": [
+    "fixtureKey",
+    "name",
+    "description",
+    "publicId",
+    "policyVersion",
+    "eligibility",
+    "authorityInput",
+    "credential",
+    "registry",
+    "events",
+    "webhooks",
+    "mode"
+  ],
+  "properties": {
+    "fixtureKey": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "publicId": {
+      "type": "string"
+    },
+    "policyVersion": {
+      "type": "string"
+    },
+    "eligibility": {
+      "type": "object",
+      "required": [
+        "tier",
+        "tierName",
+        "eligible",
+        "basis",
+        "failedRequirements",
+        "upgradePath",
+        "disclosure",
+        "reasonCodes"
+      ],
+      "properties": {
+        "tier": {
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "tierName": {
+          "enum": [
+            "Self-Reported",
+            "Bronze",
+            "Silver",
+            "Gold"
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "basis": {
+          "type": "array"
+        },
+        "failedRequirements": {
+          "type": "array"
+        },
+        "upgradePath": {
+          "type": "array"
+        },
+        "disclosure": {
+          "type": "string"
+        },
+        "reasonCodes": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "authorityInput": {
+      "type": "object"
+    },
+    "credential": {
+      "$ref": "credential.schema.json"
+    },
+    "registry": {
+      "anyOf": [
+        {
+          "$ref": "registry-record.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "signed-event.schema.json"
+      }
+    },
+    "webhooks": {
+      "type": "array",
+      "items": {
+        "$ref": "webhook-attempt.schema.json"
+      }
+    },
+    "mode": {
+      "const": "TEST MODE / NON-AUTHORITATIVE / NOT A PRODUCTION CREDENTIAL"
+    }
+  },
+  "additionalProperties": false
+}

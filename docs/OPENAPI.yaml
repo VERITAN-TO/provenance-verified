@@ -1,0 +1,424 @@
+openapi: 3.1.0
+info:
+  title: PROVENANCE VERIFIED™ Deterministic Test API
+  version: 1.4.0
+  description: >-
+    Fixture-driven, non-authoritative API demonstrating the separation between
+    evidence eligibility, credential issuance, registry publication, and mark authorization,
+    plus tenant-scoped jeweler intake and review operations.
+servers:
+  - url: /
+paths:
+  /api/v1/verify:
+    post:
+      summary: Evaluate a deterministic test record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publicId]
+              properties:
+                publicId:
+                  type: string
+                  pattern: '^PV-[A-Z0-9]{4}-[A-Z0-9]{6}$'
+                fixtureKey:
+                  type: string
+      responses:
+        '200':
+          description: Credential issued and eligible for registry projection
+        '400':
+          description: Invalid request
+        '404':
+          description: Record not found
+        '409':
+          description: Evidence is eligible, but credential issuance is blocked or incomplete
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, eligibility, authorization, meta]
+                properties:
+                  error:
+                    type: object
+                    required: [code, message, blockers]
+                    properties:
+                      code: { const: credential_not_issued }
+                      message: { type: string }
+                      blockers: { type: array, items: { type: string } }
+                  eligibility:
+                    type: object
+                    required: [tier, name]
+                    properties:
+                      tier: { type: integer, minimum: 1, maximum: 4 }
+                      name: { enum: [Self-Reported, Bronze, Silver, Gold] }
+                  authorization: { type: object }
+                  meta: { type: object }
+  /api/v1/registry/{publicId}:
+    get:
+      summary: Resolve an issued public-registry projection
+      parameters:
+        - in: path
+          name: publicId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Issued registry record }
+        '404': { description: Record unknown or not issued }
+  /api/v1/events:
+    get:
+      summary: Read deterministic event history for a test record
+      parameters:
+        - in: query
+          name: publicId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Event collection }
+  /api/v1/webhooks/replay:
+    post:
+      summary: Create a deterministic manual replay attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attemptId, reason]
+              properties:
+                attemptId: { type: string }
+                reason: { type: string, minLength: 3, maxLength: 240 }
+      responses:
+        '202': { description: Replay attempt created }
+        '400': { description: Invalid replay request }
+
+  /api/v1/operations/batches:
+    get:
+      summary: List tenant-scoped intake batches
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Tenant-scoped batch collection }
+        '401': { description: Session invalid or expired }
+    post:
+      summary: Create an intake batch
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, reference, locationId]
+              properties:
+                name: { type: string, minLength: 3, maxLength: 120 }
+                reference: { type: string, minLength: 2, maxLength: 80 }
+                locationId: { type: string }
+                lotIds: { type: array, items: { type: string }, maxItems: 1000 }
+      responses:
+        '201': { description: Batch created }
+        '403': { description: Role or location scope denied }
+  /api/v1/operations/batches/{batchId}:
+    get:
+      summary: Resolve a tenant-scoped batch and its unit records
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Batch and explicit unit records }
+        '403': { description: Cross-tenant access denied }
+        '404': { description: Batch not found }
+  /api/v1/operations/batches/{batchId}/assets:
+    post:
+      summary: Import explicit unit records into a batch
+      description: This endpoint never expands a quantity value into artificial asset identities.
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assets]
+              properties:
+                assets:
+                  type: array
+                  minItems: 1
+                  maxItems: 5000
+                  items:
+                    type: object
+                    required: [serial, material, shape, measurements]
+      responses:
+        '201': { description: Explicit unit records created }
+        '403': { description: Tenant or role denied }
+        '400': { description: Invalid or duplicate unit input }
+  /api/v1/operations/batches/{batchId}/submit:
+    post:
+      summary: Validate, attest, and submit a batch
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Immutable attestation and submitted batch }
+        '409': { description: Batch validation failed }
+        '403': { description: Attestation or submission permission denied }
+  /api/v1/operations/assets/{assetId}:
+    patch:
+      summary: Update an individually identified gemstone unit
+      description: Partial updates preserve unit identity and never alter lot quantity. Nested measurement fields may be updated independently.
+      parameters:
+        - in: path
+          name: assetId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                material: { type: string }
+                shape: { type: string }
+                cut: { type: string }
+                colorDescription: { type: string }
+                clarityDescription: { type: string }
+                treatmentDisclosure: { type: string }
+                originClaim: { type: string }
+                identifyingFeatures: { type: array, items: { type: string } }
+                measurements:
+                  type: object
+                  properties:
+                    weightCarats: { type: [number, 'null'] }
+                    lengthMm: { type: [number, 'null'] }
+                    widthMm: { type: [number, 'null'] }
+                    depthMm: { type: [number, 'null'] }
+      responses:
+        '200': { description: Tenant-scoped unit updated with an incremented optimistic version }
+        '403': { description: Tenant or role denied }
+        '404': { description: Unit not found }
+  /api/v1/operations/assets/{assetId}/evidence:
+    post:
+      summary: Attach a controlled evidence object to a gemstone unit
+      description: Camera imagery is supporting fingerprint evidence and is never represented as laboratory authentication.
+      parameters:
+        - in: path
+          name: assetId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, label, sourceOrganization, sourceType, acquisitionMethod, claimIds, independent, qualified, integrityHash, storageKey, visibility]
+      responses:
+        '201': { description: Evidence persisted and linked to the unit }
+        '403': { description: Tenant or evidence-management permission denied }
+        '404': { description: Unit not found }
+  /api/v1/operations/sync:
+    post:
+      summary: Apply device-scoped offline operations with optimistic concurrency
+      description: Version conflicts fail closed and are returned without overwriting the canonical unit.
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operations]
+              properties:
+                operations:
+                  type: array
+                  minItems: 1
+                  maxItems: 1000
+                  items:
+                    type: object
+                    required: [id, tenantId, deviceId, entityType, entityId, operation, expectedVersion, payload, status, attempts, createdAt]
+      responses:
+        '200': { description: All operations applied or failed without conflicts }
+        '409': { description: One or more optimistic-version conflicts require resolution }
+        '403': { description: Tenant scope denied }
+  /api/v1/operations/review:
+    get:
+      summary: List tenant-scoped review cases
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Review queue }
+        '403': { description: Reviewer or audit permission denied }
+  /api/v1/operations/review/{caseId}/decision:
+    post:
+      summary: Apply a review or authority decision
+      description: Uses the Phase 1 authority kernel; the client cannot issue a credential directly.
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Updated review and authority projection }
+        '403': { description: Authority permission denied }
+        '404': { description: Review case not found }
+  /api/v1/operations/audit:
+    get:
+      summary: List tenant-scoped operational audit events
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Operational audit history }
+        '403': { description: Audit permission denied }
+  /api/v1/operations/lots:
+    get:
+      summary: List tenant-scoped aggregate inventory lots
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Aggregate lots; no quantity-to-asset expansion }
+        '403': { description: Search permission denied }
+    post:
+      summary: Receive an aggregate inventory lot or parcel
+      description: Declared quantity remains aggregate inventory until individual units receive real identifiers.
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locationId, supplierReference, description, declaredQuantity]
+              properties:
+                locationId: { type: string }
+                supplierReference: { type: string, minLength: 2, maxLength: 120 }
+                description: { type: string, minLength: 2, maxLength: 240 }
+                declaredQuantity: { type: integer, minimum: 1, maximum: 10000000 }
+                notes: { type: string, maxLength: 2000 }
+      responses:
+        '201': { description: Aggregate lot received with zero identified units }
+        '403': { description: Inventory role or location scope denied }
+  /api/v1/operations/batches/{batchId}/csv:
+    post:
+      summary: Import explicit gemstone units from CSV
+      description: Supports up to 5,000 rows and never expands a lot quantity into artificial assets.
+      parameters:
+        - in: path
+          name: batchId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string, maxLength: 5242880 }
+      responses:
+        '201': { description: CSV rows persisted as explicit unit identities }
+        '409': { description: One or more serials already exist in the tenant }
+        '413': { description: CSV exceeds 5 MB }
+        '422': { description: Header or row validation failed }
+  /api/v1/operations/search:
+    get:
+      summary: Search the active tenant operational estate
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string, maxLength: 160 }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 250 }
+      responses:
+        '200': { description: Tenant-scoped assets, batches, evidence, reviews, and credentials }
+        '403': { description: Search permission denied }
+  /api/v1/operations/labels:
+    post:
+      summary: Generate controlled QR and certification-mark projections
+      description: Physical carriers are generated only for issued credentials with active mark authorization and are never the authority.
+      parameters:
+        - in: header
+          name: x-pv-session-id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assetIds]
+              properties:
+                assetIds: { type: array, minItems: 1, maxItems: 500, items: { type: string } }
+                format: { const: svg }
+      responses:
+        '200': { description: QR SVG and controlled seal projections generated }
+        '409': { description: One or more credentials or mark authorizations are incomplete }
+        '403': { description: Label-generation permission denied }

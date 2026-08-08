@@ -1,0 +1,1 @@
+{"version":"r3.knowledge.v1","requiredFields":["canonicalKey","locale","region","sourceIds","ownerIdentity","reviewAt","expiresAt","state","body"],"publishedStates":["published"],"staleBehavior":"remove-from-public-index-and-open-readiness-blocker","maxCacheSeconds":300,"sandboxAuthoritative":false,"failClosed":true}

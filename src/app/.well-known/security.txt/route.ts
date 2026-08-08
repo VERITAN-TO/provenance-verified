@@ -1,0 +1,2 @@
+export async function GET(){const body=`Contact: https://provenanceverified.org/contact\nPolicy: https://provenanceverified.org/security\nAcknowledgments: https://provenanceverified.org/security\nCanonical: https://provenanceverified.org/.well-known/security.txt\nPreferred-Languages: en\nExpires: 2027-01-01T00:00:00.000Z\n`;
+return new Response(body,{headers:{'content-type':'text/plain; charset=utf-8','cache-control':'public, max-age=86400'}});}

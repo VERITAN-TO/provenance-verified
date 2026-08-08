@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { chromium } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+const root=path.resolve(path.dirname(new URL(import.meta.url).pathname),'..');
+const htmlPath=path.join(root,'review','PROVENANCE_CX_UNIFIED_FOUR_LAYER_R8_FINAL_VISUAL_STANDALONE.html');
+const html=fs.readFileSync(htmlPath,'utf8').replace('<script>','<script>window.__PV_FORCE_NO_WEBGL__=true;</script><script>');
+const out=path.join(root,'evidence','r8'); fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
+const context=await browser.newContext({viewport:{width:1440,height:940},reducedMotion:'reduce'});
+const page=await context.newPage();
+const errors=[]; const pageErrors=[];
+page.on('console',m=>{if(m.type()==='error')errors.push(m.text())}); page.on('pageerror',e=>pageErrors.push(String(e)));
+await page.setContent(html,{waitUntil:'load',timeout:30000}); await page.waitForTimeout(900);
+const tier=page.locator('.r5-tier-deck').first(); await tier.scrollIntoViewIfNeeded(); await page.waitForTimeout(250);
+for(let i=0;i<4;i++){await tier.locator('[role="tab"]').nth(i).click(); await page.waitForTimeout(80);}
+await tier.screenshot({path:path.join(out,'PROVENANCE_CX_R8_TIER_SYSTEM_FALLBACK.png')});
+const footer=page.locator('.p3-footer-r8'); await footer.scrollIntoViewIfNeeded(); await page.waitForTimeout(250); await footer.screenshot({path:path.join(out,'PROVENANCE_CX_R8_FOOTER.png')});
+const axe=await new AxeBuilder({page}).analyze();
+const routes=['/','/provenance-verified','/verify','/registry','/developers','/docs/quickstart','/trust','/security','/app'];
+const routeResults=[];
+for(const route of routes){await page.evaluate(r=>{window.location.hash=r;window.dispatchEvent(new Event('pv:navigate'));},route);await page.waitForTimeout(100);routeResults.push(await page.evaluate(r=>({route:r,h1:document.querySelector('h1')?.textContent?.replace(/\s+/g,' ').trim()||'',notFound:(document.querySelector('h1')?.textContent||'').includes('not found')}),route));}
+await page.evaluate(()=>{window.location.hash='/';window.dispatchEvent(new Event('pv:navigate'));}); await page.waitForTimeout(350);
+const desktop=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,placeholderLinks:[...document.querySelectorAll('a[href]')].map(a=>a.getAttribute('href')).filter(h=>!h||h==='#'||h.startsWith('javascript:')),footerGroups:document.querySelectorAll('.p3-footer-navigation>div').length,footerTierTabs:document.querySelectorAll('.p3-footer-tier-selector [role="tab"]').length,tierTabs:document.querySelectorAll('.r5-tier-deck [role="tab"]').length,externalResources:performance.getEntriesByType('resource').filter(e=>/^https?:/.test(e.name)).map(e=>e.name)}));
+await page.screenshot({path:path.join(out,'PROVENANCE_CX_R8_DESKTOP_FULL.png'),fullPage:true});
+await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(350);
+const mobile=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,footerColumns:getComputedStyle(document.querySelector('.p3-footer-navigation')).gridTemplateColumns,bodyHeight:document.body.scrollHeight}));
+await page.screenshot({path:path.join(out,'PROVENANCE_CX_R8_MOBILE_FULL.png'),fullPage:true});
+const report={generatedAt:new Date().toISOString(),routes:routeResults,axe:{count:axe.violations.length,violations:axe.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length}))},desktop,mobile,errors,pageErrors,pass:axe.violations.length===0&&desktop.overflow===0&&mobile.overflow===0&&desktop.placeholderLinks.length===0&&desktop.footerGroups===4&&desktop.footerTierTabs===4&&desktop.tierTabs===4&&routeResults.every(x=>!x.notFound&&x.h1)&&errors.length===0&&pageErrors.length===0};
+fs.writeFileSync(path.join(out,'R8_STATIC_VISUAL_AUDIT.json'),JSON.stringify(report,null,2)+'\n'); console.log(JSON.stringify(report,null,2));
+await browser.close(); if(!report.pass)process.exitCode=1;

@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import path from 'node:path';
+const root=process.cwd();
+const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+const migration=read('database/004_r3_operational_completion.sql');
+const mirror=read('supabase/migrations/20260722040000_r3_operational_completion.sql');
+const runtime=read('src/authority/r3/operationalControls.ts');
+const api=read('supabase/functions/authority-api/index.ts');
+const ui=read('src/ui/operations/OperationalGovernancePanel.tsx');
+const checks=[]; const add=(id,pass,detail='')=>checks.push({id,pass:Boolean(pass),detail});
+add('migration-mirror',migration===mirror);
+for(const table of ['pv_source_authorities','pv_runtime_claims','pv_runtime_claim_evidence','pv_readiness_waivers','pv_audit_runs','pv_devices','pv_dual_control_approvals','pv_access_reviews','pv_break_glass_leases','pv_authority_key_lifecycle','pv_evidence_retention','pv_evidence_derivatives','pv_evidence_access_grants','pv_ingestion_quotas','pv_appeals','pv_reviewer_calibrations','pv_denial_taxonomy','pv_portable_verification_bundles','pv_status_lists','pv_batch_commands','pv_api_quotas','pv_api_usage_events','pv_sandbox_tenants','pv_task_execution_events','pv_notifications','pv_audit_exports','pv_public_claims','pv_consent_records','pv_accessibility_cases','pv_knowledge_blocks','pv_commercial_accounts','pv_contracts','pv_support_cases','pv_status_incidents','pv_commercial_remedies','pv_launch_communications','pv_service_catalog','pv_slos','pv_slo_measurements','pv_incidents','pv_synthetic_runs','pv_integrity_findings','pv_capacity_tests']) add(`table-${table}`,migration.includes(`public.${table}`));
+add('service-only-trust-writes',/revoke insert, update, delete[\s\S]*from anon, authenticated/i.test(migration));
+add('force-rls',/force row level security/i.test(migration));
+add('immutable-evidence-history',/pv_audit_runs[\s\S]*pv_status_lists[\s\S]*deny_mutation/i.test(migration));
+add('quota-locking',/pv_r3_consume_quota[\s\S]*for update[\s\S]*PV_QUOTA_EXCEEDED/i.test(migration));
+add('batch-scope-locking',/pv_r3_claim_batch_command[\s\S]*PV_BATCH_SCOPE_CHANGED[\s\S]*PV_BATCH_DUAL_CONTROL_REQUIRED/i.test(migration));
+for(const fn of ['evaluateRuntimeClaim','evaluateWaiver','supersedeAuditRun','authorizeDevice','evaluateDualControl','evaluateAccessReview','evaluateBreakGlass','rotateKey','mayDisposeEvidence','validateDerivative','evaluateAppeal','evaluateCalibration','verifyBundleShape','consumeQuota','authorizeBulkAction','evaluatePublicClaim','evaluateSlo','evaluateIntegrity']) add(`runtime-${fn}`,runtime.includes(`function ${fn}`));
+for(const kind of ['source-authorities','runtime-claims','audit-runs','waivers','devices','dual-control','access-reviews','break-glass','keys','retention','derivatives','appeals','calibrations','status-lists','batch-commands','api-quotas','notifications','support-cases','knowledge-blocks','accessibility-cases','public-claims','incidents','slo-measurements','synthetic-runs','capacity-tests','integrity-findings']) add(`api-${kind}`,api.includes(kind));
+for(const label of ['Source authority and runtime claims','Waivers, devices and access authority','Public claims, incidents and integrity']) add(`ui-${label}`,ui.includes(label));
+for(const file of ['ORIGINAL_159_GAP_COMPLETION_REGISTER.csv','ORIGINAL_32_WORK_ORDER_COMPLETION_REGISTER.json','R3_SURGICAL_DEFECT_CLOSURE_REGISTER.csv','FIFTEEN_GATE_ACTIVATION_REGISTER.json']) add(`ledger-${file}`,fs.existsSync(path.join(root,'ledgers',file)));
+const failed=checks.filter((c)=>!c.pass);
+const report={generatedAt:new Date().toISOString(),summary:{checks:checks.length,passed:checks.length-failed.length,failed:failed.length,verdict:failed.length?'FAIL':'PASS'},checks};
+fs.mkdirSync(path.join(root,'evidence','r3'),{recursive:true});
+fs.writeFileSync(path.join(root,'evidence','r3','operational-control-audit.json'),JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify(report.summary,null,2)); if(failed.length){console.error(JSON.stringify(failed,null,2));process.exit(1);}

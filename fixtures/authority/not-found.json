@@ -1,0 +1,226 @@
+{
+  "fixtureKey": "notFound",
+  "name": "Not found",
+  "description": "Stable negative response for an unknown public identifier.",
+  "publicId": "PV-TEST-NF1007",
+  "policyVersion": "PV-POLICY-2026.07-R2",
+  "eligibility": {
+    "policyVersion": "PV-POLICY-2026.07-R2",
+    "tier": 1,
+    "tierName": "Self-Reported",
+    "ringCount": 1,
+    "disclosure": "SELF-REPORTED RECORD — Origin information has not been independently corroborated.",
+    "basis": [
+      "Self-declared origin",
+      "Photographs",
+      "Weight and dimensions",
+      "Timestamp",
+      "Registry ID"
+    ],
+    "failedRequirements": [
+      "Submitter identity"
+    ],
+    "upgradePath": [
+      "Submitter identity",
+      "Structured signed attestation",
+      "Identified attesting party",
+      "Legal declaration",
+      "Valid attestation signature",
+      "Signature timestamp",
+      "Attestation version",
+      "Append-only registry event",
+      "Integrity hash"
+    ],
+    "claimScope": {
+      "verified": 0,
+      "corroborated": 0,
+      "self-attested": 0,
+      "unknown": 0,
+      "not-claimed": 0,
+      "conflicting": 0
+    },
+    "eligible": false,
+    "reasonCodes": [
+      "PV_ELIGIBLE_TIER_1",
+      "PV_MINIMUM_EVIDENCE_MISSING"
+    ]
+  },
+  "authorityInput": {
+    "reviewerApprovals": [],
+    "conflictClearance": "clear",
+    "custosVerdict": {
+      "status": "pass",
+      "verdictId": "custos-test-001",
+      "evaluatedAt": "2026-07-16T09:48:00Z",
+      "reasonCodes": [
+        "CUSTOS_TEST_PASS"
+      ]
+    },
+    "signingKeyStatus": "active",
+    "registryStatus": "ready",
+    "revocationCapability": true,
+    "markAuthorization": "authorized"
+  },
+  "credential": {
+    "id": "cred_pv_test_nf1007_v1",
+    "publicId": "PV-TEST-NF1007",
+    "issuer": "VERITAN, INC.",
+    "platform": "PROVENANCE VERIFIED",
+    "program": "Provenance Verified™",
+    "subject": {
+      "assetType": "gemstone",
+      "assetId": "asset_notFound",
+      "description": "Deterministic demonstration asset record"
+    },
+    "status": "not-issued",
+    "eligibleTier": 1,
+    "eligibleTierName": "Self-Reported",
+    "tier": null,
+    "tierName": null,
+    "disclosure": "SELF-REPORTED RECORD — Origin information has not been independently corroborated.",
+    "authorization": {
+      "eligibleTier": 1,
+      "status": "not-eligible",
+      "credentialAuthorized": false,
+      "sealAuthorized": false,
+      "requiredApprovalCount": 1,
+      "acceptedApprovalCount": 0,
+      "blockers": [
+        "Minimum Tier 1 evidence requirements are not satisfied."
+      ],
+      "reasonCodes": [
+        "PV_NOT_ELIGIBLE"
+      ]
+    },
+    "sealAuthorization": {
+      "status": "not-authorized",
+      "tier": null,
+      "reasonCodes": [
+        "PV_MARK_PENDING"
+      ]
+    },
+    "claims": [],
+    "evidence": [],
+    "sources": [],
+    "custody": [],
+    "lifecycle": "draft",
+    "version": 1,
+    "signature": {
+      "algorithm": "Ed25519",
+      "keyId": "not-issued",
+      "value": "",
+      "valid": false,
+      "status": "not-issued"
+    },
+    "integrityHash": "sha256:add513fb347f2e5f1a57527e676fbb27",
+    "warnings": [
+      "Minimum Tier 1 evidence requirements are not satisfied."
+    ],
+    "testMode": true
+  },
+  "registry": null,
+  "events": [
+    {
+      "id": "evt_1_f4c30587488e374c",
+      "type": "verification.started",
+      "at": "2026-07-16T10:00:00Z",
+      "recordId": "PV-TEST-NF1007",
+      "sequence": 1,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": null,
+        "credentialStatus": "not-issued",
+        "issuanceStatus": "not-eligible",
+        "lifecycle": "draft",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 0,
+        "claimCount": 0
+      },
+      "signature": "ed25519:test:537c80f54d388f6e",
+      "previousEventHash": "genesis:test-mode",
+      "eventHash": "sha256:dce6515820337562"
+    },
+    {
+      "id": "evt_2_7c5dfe7a9a4f29d5",
+      "type": "evidence.bound",
+      "at": "2026-07-16T10:01:00Z",
+      "recordId": "PV-TEST-NF1007",
+      "sequence": 2,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": null,
+        "credentialStatus": "not-issued",
+        "issuanceStatus": "not-eligible",
+        "lifecycle": "draft",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 0,
+        "claimCount": 0
+      },
+      "signature": "ed25519:test:97c0a556542fca9a",
+      "previousEventHash": "sha256:dce6515820337562",
+      "eventHash": "sha256:b586c0a268648f49"
+    },
+    {
+      "id": "evt_3_629274ce7b50acca",
+      "type": "claims.resolved",
+      "at": "2026-07-16T10:02:00Z",
+      "recordId": "PV-TEST-NF1007",
+      "sequence": 3,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": null,
+        "credentialStatus": "not-issued",
+        "issuanceStatus": "not-eligible",
+        "lifecycle": "draft",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 0,
+        "claimCount": 0
+      },
+      "signature": "ed25519:test:a591353aaad44b1b",
+      "previousEventHash": "sha256:b586c0a268648f49",
+      "eventHash": "sha256:eb9e2048a52f0740"
+    },
+    {
+      "id": "evt_4_dfaf9c6c597358e4",
+      "type": "review.completed",
+      "at": "2026-07-16T10:03:00Z",
+      "recordId": "PV-TEST-NF1007",
+      "sequence": 4,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": null,
+        "credentialStatus": "not-issued",
+        "issuanceStatus": "not-eligible",
+        "lifecycle": "draft",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 0,
+        "claimCount": 0
+      },
+      "signature": "ed25519:test:54128bdd64a8c53b",
+      "previousEventHash": "sha256:eb9e2048a52f0740",
+      "eventHash": "sha256:160a5bf0e724da00"
+    },
+    {
+      "id": "evt_5_7ab7ad678af7c4fd",
+      "type": "credential.authorization.blocked",
+      "at": "2026-07-16T10:04:00Z",
+      "recordId": "PV-TEST-NF1007",
+      "sequence": 5,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": null,
+        "credentialStatus": "not-issued",
+        "issuanceStatus": "not-eligible",
+        "lifecycle": "draft",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 0,
+        "claimCount": 0
+      },
+      "signature": "ed25519:test:7603f4d52ab248f8",
+      "previousEventHash": "sha256:160a5bf0e724da00",
+      "eventHash": "sha256:3ea84f24cdba13b8"
+    }
+  ],
+  "webhooks": [],
+  "mode": "TEST MODE / NON-AUTHORITATIVE / NOT A PRODUCTION CREDENTIAL"
+}

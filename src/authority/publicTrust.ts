@@ -1,0 +1,9 @@
+import { getAuthorityRuntimeConfig } from '@/authority/config';
+import { getPublicAuthorityKeys } from '@/authority/publicKeys';
+
+export interface TrustAssertion { assertionKey:string; environment:string; statement:string; evidenceIds:string[]; ownerIdentity:string; observedAt:string; expiresAt:string; state:string }
+const sandboxAssertions:TrustAssertion[]=[
+ {assertionKey:'sandbox.non-authoritative',environment:'sandbox',statement:'This environment is deterministic Test Mode and cannot issue authoritative credentials or certification marks.',evidenceIds:['R8.1-reference','R3-mandate'],ownerIdentity:'PROVENANCE VERIFIED™',observedAt:'2026-07-22T00:00:00.000Z',expiresAt:'2027-01-01T00:00:00.000Z',state:'verified'},
+ {assertionKey:'shell.preserved',environment:'sandbox',statement:'The accepted R8.1 public shell, registry presentation, verification experience, operator workspace, identity assets and deterministic Test Mode remain preserved.',evidenceIds:['r8.1-reference','r3-standalone-visual-a11y'],ownerIdentity:'Shell Preservation Authority',observedAt:'2026-07-22T00:00:00.000Z',expiresAt:'2027-01-01T00:00:00.000Z',state:'verified'},
+];
+export async function getPublicTrustState(){const config=getAuthorityRuntimeConfig();const keys=await getPublicAuthorityKeys(true);if(config.environment==='sandbox')return{assertions:sandboxAssertions,keys:keys.keys,meta:{environment:'sandbox',authoritative:false,freshnessBound:true}};if(!config.authorityApiUrl)throw new Error('TRUST_AUTHORITY_UNAVAILABLE');const response=await fetch(`${config.authorityApiUrl}/api/v1/trust/assertions`,{cache:'no-store'});if(!response.ok)throw new Error(`TRUST_AUTHORITY_UNAVAILABLE:${response.status}`);const body=await response.json() as {data:TrustAssertion[];meta:Record<string,unknown>};return{assertions:body.data,keys:keys.keys,meta:body.meta};}

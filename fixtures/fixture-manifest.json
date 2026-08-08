@@ -1,0 +1,228 @@
+{
+  "schemaVersion": "2.0.0",
+  "policyVersion": "PV-POLICY-2026.07-R2",
+  "mode": "TEST MODE / NON-AUTHORITATIVE / NOT A PRODUCTION CREDENTIAL",
+  "generatedBy": "scripts/export-authority-fixtures.ts",
+  "fixtures": [
+    {
+      "key": "t1",
+      "file": "authority/tier-1-self-reported.json",
+      "publicId": "PV-TEST-T1A001",
+      "expectedEligibleTier": 1,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": true
+    },
+    {
+      "key": "t2",
+      "file": "authority/tier-2-bronze.json",
+      "publicId": "PV-TEST-T2B002",
+      "expectedEligibleTier": 2,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": true
+    },
+    {
+      "key": "t3",
+      "file": "authority/tier-3-silver.json",
+      "publicId": "PV-TEST-T3C003",
+      "expectedEligibleTier": 3,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": true
+    },
+    {
+      "key": "t4",
+      "file": "authority/tier-4-gold.json",
+      "publicId": "PV-TEST-T4D004",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": true
+    },
+    {
+      "key": "conflicting",
+      "file": "authority/blocked-conflicting-evidence.json",
+      "publicId": "PV-TEST-CF1001",
+      "expectedEligibleTier": 2,
+      "expectedIssuanceStatus": "review-rejected",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "invalidSignature",
+      "file": "authority/tier-1-invalid-attestation-fallback.json",
+      "publicId": "PV-TEST-SG1002",
+      "expectedEligibleTier": 1,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": true
+    },
+    {
+      "key": "t4MissingSecondApproval",
+      "file": "authority/blocked-t4-second-approval.json",
+      "publicId": "PV-TEST-A21008",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "second-approval-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4ReviewerConflict",
+      "file": "authority/blocked-t4-reviewer-conflict.json",
+      "publicId": "PV-TEST-C21009",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "reviewer-conflict",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4CustosPending",
+      "file": "authority/blocked-t4-custos-pending.json",
+      "publicId": "PV-TEST-U21010",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "custos-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4SigningUnavailable",
+      "file": "authority/blocked-t4-signing-unavailable.json",
+      "publicId": "PV-TEST-K21011",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "signing-key-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4RegistryUnavailable",
+      "file": "authority/blocked-t4-registry-unavailable.json",
+      "publicId": "PV-TEST-R21012",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "registry-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4MarkPending",
+      "file": "authority/issued-t4-mark-pending.json",
+      "publicId": "PV-TEST-M21013",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4ConflictClearancePending",
+      "file": "authority/blocked-t4-conflict-clearance-pending.json",
+      "publicId": "PV-TEST-L21014",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "conflict-clearance-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4CustosFailed",
+      "file": "authority/blocked-t4-custos-failed.json",
+      "publicId": "PV-TEST-F21015",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "custos-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4SigningRevoked",
+      "file": "authority/blocked-t4-signing-key-revoked.json",
+      "publicId": "PV-TEST-V21016",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "signing-key-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4RevocationUnavailable",
+      "file": "authority/blocked-t4-revocation-control.json",
+      "publicId": "PV-TEST-X21017",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "revocation-control-required",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "t4MarkDenied",
+      "file": "authority/issued-t4-mark-denied.json",
+      "publicId": "PV-TEST-D21018",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "suspended",
+      "file": "authority/lifecycle-suspended.json",
+      "publicId": "PV-TEST-SP1003",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "revoked",
+      "file": "authority/lifecycle-revoked.json",
+      "publicId": "PV-TEST-RV1004",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "superseded",
+      "file": "authority/lifecycle-superseded.json",
+      "publicId": "PV-TEST-SS1005",
+      "expectedEligibleTier": 4,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "expired",
+      "file": "authority/lifecycle-expired.json",
+      "publicId": "PV-TEST-EX1006",
+      "expectedEligibleTier": 3,
+      "expectedIssuanceStatus": "authorized",
+      "expectedCredentialStatus": "issued",
+      "expectedRegistryPublished": true,
+      "expectedSealAuthorized": false
+    },
+    {
+      "key": "notFound",
+      "file": "authority/not-found.json",
+      "publicId": "PV-TEST-NF1007",
+      "expectedEligibleTier": 1,
+      "expectedIssuanceStatus": "not-eligible",
+      "expectedCredentialStatus": "not-issued",
+      "expectedRegistryPublished": false,
+      "expectedSealAuthorized": false
+    }
+  ]
+}

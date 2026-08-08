@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/observability-event-r3.json",
+  "type": "object",
+  "required": ["timestamp","environment","service","severity","eventName","traceId","receiptId"],
+  "properties": {
+    "timestamp": {"type":"string","format":"date-time"},
+    "environment": {"enum":["sandbox","pilot","production"]},
+    "service": {"type":"string","minLength":2},
+    "severity": {"enum":["debug","info","warning","error","critical"]},
+    "eventName": {"type":"string","minLength":3},
+    "traceId": {"type":"string","pattern":"^[0-9a-f]{32}$"},
+    "receiptId": {"type":"string","minLength":8},
+    "tenantHash": {"type":"string","pattern":"^sha256:[0-9a-f]{64}$"},
+    "operation": {"type":"string"},
+    "latencyMs": {"type":"integer","minimum":0},
+    "statusCode": {"type":"integer","minimum":100,"maximum":599},
+    "reasonCodes": {"type":"array","items":{"type":"string"}}
+  },
+  "additionalProperties": false
+}

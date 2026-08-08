@@ -1,0 +1,572 @@
+{
+  "fixtureKey": "invalidSignature",
+  "name": "Invalid attestation signature",
+  "description": "Attestation signature validation failed; evidence eligibility falls back to Tier 1.",
+  "publicId": "PV-TEST-SG1002",
+  "policyVersion": "PV-POLICY-2026.07-R2",
+  "eligibility": {
+    "policyVersion": "PV-POLICY-2026.07-R2",
+    "tier": 1,
+    "tierName": "Self-Reported",
+    "ringCount": 1,
+    "disclosure": "SELF-REPORTED RECORD — Origin information has not been independently corroborated.",
+    "basis": [
+      "Submitter identity",
+      "Self-declared origin",
+      "Photographs",
+      "Weight and dimensions",
+      "Timestamp",
+      "Registry ID"
+    ],
+    "failedRequirements": [],
+    "upgradePath": [
+      "Valid attestation signature"
+    ],
+    "claimScope": {
+      "verified": 0,
+      "corroborated": 0,
+      "self-attested": 1,
+      "unknown": 3,
+      "not-claimed": 1,
+      "conflicting": 0
+    },
+    "eligible": true,
+    "reasonCodes": [
+      "PV_ELIGIBLE_TIER_1"
+    ]
+  },
+  "authorityInput": {
+    "reviewerApprovals": [
+      {
+        "id": "approval-primary",
+        "reviewerId": "reviewer-alpha",
+        "role": "primary",
+        "independent": true,
+        "conflictFree": true,
+        "decision": "approve",
+        "decidedAt": "2026-07-16T09:40:00Z",
+        "reasonCodes": [
+          "PV_REVIEW_EVIDENCE_SUFFICIENT"
+        ]
+      }
+    ],
+    "conflictClearance": "clear",
+    "custosVerdict": {
+      "status": "pass",
+      "verdictId": "custos-test-001",
+      "evaluatedAt": "2026-07-16T09:48:00Z",
+      "reasonCodes": [
+        "CUSTOS_TEST_PASS"
+      ]
+    },
+    "signingKeyStatus": "active",
+    "registryStatus": "ready",
+    "revocationCapability": true,
+    "markAuthorization": "authorized"
+  },
+  "credential": {
+    "id": "cred_pv_test_sg1002_v1",
+    "publicId": "PV-TEST-SG1002",
+    "issuer": "VERITAN, INC.",
+    "platform": "PROVENANCE VERIFIED",
+    "program": "Provenance Verified™",
+    "subject": {
+      "assetType": "gemstone",
+      "assetId": "asset_invalidSignature",
+      "description": "Deterministic demonstration asset record"
+    },
+    "status": "issued",
+    "eligibleTier": 1,
+    "eligibleTierName": "Self-Reported",
+    "tier": 1,
+    "tierName": "Self-Reported",
+    "disclosure": "SELF-REPORTED RECORD — Origin information has not been independently corroborated.",
+    "authorization": {
+      "eligibleTier": 1,
+      "status": "authorized",
+      "credentialAuthorized": true,
+      "sealAuthorized": true,
+      "requiredApprovalCount": 1,
+      "acceptedApprovalCount": 1,
+      "blockers": [],
+      "reasonCodes": [
+        "PV_CREDENTIAL_AUTHORIZED",
+        "PV_MARK_AUTHORIZED"
+      ]
+    },
+    "sealAuthorization": {
+      "status": "authorized",
+      "tier": 1,
+      "reasonCodes": [
+        "PV_MARK_AUTHORIZED"
+      ]
+    },
+    "claims": [
+      {
+        "id": "claim-origin",
+        "label": "Origin",
+        "value": "Recorded mine lot MX-204",
+        "status": "self-attested",
+        "evidenceIds": [
+          "ev-attest"
+        ],
+        "material": true,
+        "scopeNote": "Origin is bound to attestation and independent laboratory correspondence."
+      },
+      {
+        "id": "claim-identity",
+        "label": "Physical identity",
+        "value": "Fingerprint PF-61A9",
+        "status": "unknown",
+        "evidenceIds": [
+          "ev-photo"
+        ],
+        "material": true,
+        "scopeNote": "Physical fingerprint and measurements correspond."
+      },
+      {
+        "id": "claim-treatment",
+        "label": "Treatment status",
+        "value": "No treatment detected",
+        "status": "unknown",
+        "evidenceIds": [
+          "ev-lab-a"
+        ],
+        "material": true,
+        "scopeNote": "Two independent reports correspond at claim level."
+      },
+      {
+        "id": "claim-custody",
+        "label": "Custody chain",
+        "value": "Four documented custody events",
+        "status": "unknown",
+        "evidenceIds": [
+          "ev-custody"
+        ],
+        "material": true,
+        "scopeNote": "All applicable custody transitions are hashed."
+      },
+      {
+        "id": "claim-value",
+        "label": "Market value",
+        "value": "Not claimed",
+        "status": "not-claimed",
+        "evidenceIds": [],
+        "material": false,
+        "scopeNote": "The credential makes no market-value claim."
+      }
+    ],
+    "evidence": [
+      {
+        "id": "ev-photo",
+        "type": "photo",
+        "label": "Macro identity image set",
+        "sourceId": "src-owner",
+        "hash": "sha256:1a4d9f7b0cf1",
+        "capturedAt": "2026-07-16T09:00:00Z",
+        "qualified": true,
+        "independent": false,
+        "claimIds": [
+          "claim-identity"
+        ]
+      },
+      {
+        "id": "ev-measure",
+        "type": "measurement",
+        "label": "Weight and dimension capture",
+        "sourceId": "src-owner",
+        "hash": "sha256:2bf6a80c1ee4",
+        "capturedAt": "2026-07-16T09:04:00Z",
+        "qualified": true,
+        "independent": false,
+        "claimIds": [
+          "claim-identity"
+        ]
+      },
+      {
+        "id": "ev-attest",
+        "type": "attestation",
+        "label": "Signed origin attestation",
+        "sourceId": "src-attestor",
+        "hash": "sha256:35f8b2c4d712",
+        "capturedAt": "2026-07-16T09:08:00Z",
+        "qualified": true,
+        "independent": false,
+        "claimIds": [
+          "claim-origin"
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "src-owner",
+        "name": "Declared asset owner",
+        "category": "submitter",
+        "independent": false,
+        "qualified": true,
+        "jurisdiction": "US-AZ"
+      },
+      {
+        "id": "src-attestor",
+        "name": "Licensed trade attestor",
+        "category": "attestor",
+        "independent": false,
+        "qualified": true,
+        "jurisdiction": "US-CA"
+      }
+    ],
+    "custody": [
+      {
+        "id": "cust-1",
+        "actor": "Origin facility",
+        "action": "Released",
+        "at": "2026-06-02T08:00:00Z",
+        "location": "MX",
+        "hash": "sha256:c1"
+      },
+      {
+        "id": "cust-2",
+        "actor": "Secure carrier",
+        "action": "Accepted",
+        "at": "2026-06-02T14:20:00Z",
+        "location": "MX",
+        "hash": "sha256:c2"
+      }
+    ],
+    "lifecycle": "active",
+    "issuedAt": "2026-07-16T10:00:00Z",
+    "version": 1,
+    "signature": {
+      "algorithm": "Ed25519",
+      "keyId": "veritan-test-key-2026-01",
+      "value": "ed25519:test:6675a1b2346f0843",
+      "valid": true,
+      "status": "valid"
+    },
+    "integrityHash": "sha256:14eff2949336fa6015037328618e9531",
+    "warnings": [],
+    "testMode": true
+  },
+  "registry": {
+    "publicId": "PV-TEST-SG1002",
+    "url": "/registry/PV-TEST-SG1002",
+    "issuer": "VERITAN, INC.",
+    "program": "Provenance Verified™",
+    "subject": {
+      "assetType": "gemstone",
+      "assetId": "asset_invalidSignature",
+      "description": "Deterministic demonstration asset record"
+    },
+    "published": true,
+    "credentialStatus": "issued",
+    "eligibility": {
+      "tier": 1,
+      "name": "Self-Reported"
+    },
+    "certification": {
+      "tier": 1,
+      "name": "Self-Reported",
+      "disclosure": "SELF-REPORTED RECORD — Origin information has not been independently corroborated."
+    },
+    "authorization": {
+      "eligibleTier": 1,
+      "status": "authorized",
+      "credentialAuthorized": true,
+      "sealAuthorized": true,
+      "requiredApprovalCount": 1,
+      "acceptedApprovalCount": 1,
+      "blockers": [],
+      "reasonCodes": [
+        "PV_CREDENTIAL_AUTHORIZED",
+        "PV_MARK_AUTHORIZED"
+      ]
+    },
+    "sealAuthorization": {
+      "status": "authorized",
+      "tier": 1,
+      "reasonCodes": [
+        "PV_MARK_AUTHORIZED"
+      ]
+    },
+    "claimScope": [
+      {
+        "id": "claim-origin",
+        "label": "Origin",
+        "value": "Recorded mine lot MX-204",
+        "status": "self-attested",
+        "scopeNote": "Origin is bound to attestation and independent laboratory correspondence."
+      },
+      {
+        "id": "claim-identity",
+        "label": "Physical identity",
+        "value": "Fingerprint PF-61A9",
+        "status": "unknown",
+        "scopeNote": "Physical fingerprint and measurements correspond."
+      },
+      {
+        "id": "claim-treatment",
+        "label": "Treatment status",
+        "value": "No treatment detected",
+        "status": "unknown",
+        "scopeNote": "Two independent reports correspond at claim level."
+      },
+      {
+        "id": "claim-custody",
+        "label": "Custody chain",
+        "value": "Four documented custody events",
+        "status": "unknown",
+        "scopeNote": "All applicable custody transitions are hashed."
+      },
+      {
+        "id": "claim-value",
+        "label": "Market value",
+        "value": "Not claimed",
+        "status": "not-claimed",
+        "scopeNote": "The credential makes no market-value claim."
+      }
+    ],
+    "evidenceSummary": {
+      "count": 3,
+      "qualifiedSources": 2,
+      "independentSources": 0
+    },
+    "lifecycle": "active",
+    "version": 1,
+    "issuedAt": "2026-07-16T10:00:00Z",
+    "signature": {
+      "algorithm": "Ed25519",
+      "keyId": "veritan-test-key-2026-01",
+      "value": "ed25519:test:6675a1b2346f0843",
+      "valid": true,
+      "status": "valid"
+    },
+    "integrityHash": "sha256:14eff2949336fa6015037328618e9531",
+    "warnings": [],
+    "testMode": true
+  },
+  "events": [
+    {
+      "id": "evt_1_f4c30587488e374c",
+      "type": "verification.started",
+      "at": "2026-07-16T10:00:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 1,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:d7c5192c2dcd8927",
+      "previousEventHash": "genesis:test-mode",
+      "eventHash": "sha256:0099325df66224e6"
+    },
+    {
+      "id": "evt_2_7c5dfe7a9a4f29d5",
+      "type": "evidence.bound",
+      "at": "2026-07-16T10:01:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 2,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:6c3a02de560e85cc",
+      "previousEventHash": "sha256:0099325df66224e6",
+      "eventHash": "sha256:34f9b0227d269ec9"
+    },
+    {
+      "id": "evt_3_629274ce7b50acca",
+      "type": "claims.resolved",
+      "at": "2026-07-16T10:02:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 3,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:50dabc86a012ecfd",
+      "previousEventHash": "sha256:34f9b0227d269ec9",
+      "eventHash": "sha256:94e7e1fe9562e7b9"
+    },
+    {
+      "id": "evt_4_dfaf9c6c597358e4",
+      "type": "review.completed",
+      "at": "2026-07-16T10:03:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 4,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:188a2c9461840c35",
+      "previousEventHash": "sha256:94e7e1fe9562e7b9",
+      "eventHash": "sha256:480499fc1da0bffd"
+    },
+    {
+      "id": "evt_5_699c9eef09e2d524",
+      "type": "approval.completed",
+      "at": "2026-07-16T10:04:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 5,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:db2ae1ed56647ed8",
+      "previousEventHash": "sha256:480499fc1da0bffd",
+      "eventHash": "sha256:9afb388f9aac6f22"
+    },
+    {
+      "id": "evt_6_dc45929f0b31fd65",
+      "type": "credential.issued",
+      "at": "2026-07-16T10:05:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 6,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:c9d44f9cc8c36c09",
+      "previousEventHash": "sha256:9afb388f9aac6f22",
+      "eventHash": "sha256:718a96816fe583e4"
+    },
+    {
+      "id": "evt_7_ac981b0201a147cd",
+      "type": "registry.published",
+      "at": "2026-07-16T10:06:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 7,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:c31a7d7a999d44af",
+      "previousEventHash": "sha256:718a96816fe583e4",
+      "eventHash": "sha256:3ea90d9e8f38fd15"
+    },
+    {
+      "id": "evt_8_36ecada0d9a5a942",
+      "type": "seal.authorized",
+      "at": "2026-07-16T10:07:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 8,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:311fdeae5e256dfe",
+      "previousEventHash": "sha256:3ea90d9e8f38fd15",
+      "eventHash": "sha256:afdbd66198916ef3"
+    },
+    {
+      "id": "evt_9_a707afe350e4666e",
+      "type": "webhook.attempted",
+      "at": "2026-07-16T10:08:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 9,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:71d79e8d77454548",
+      "previousEventHash": "sha256:afdbd66198916ef3",
+      "eventHash": "sha256:2decb0d8853e05a5"
+    },
+    {
+      "id": "evt_10_f1167091b97c354a",
+      "type": "webhook.failed",
+      "at": "2026-07-16T10:09:00Z",
+      "recordId": "PV-TEST-SG1002",
+      "sequence": 10,
+      "payload": {
+        "eligibleTier": 1,
+        "issuedTier": 1,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "active",
+        "sealAuthorization": "authorized",
+        "evidenceCount": 3,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:cacaa74fc9ab2d25",
+      "previousEventHash": "sha256:2decb0d8853e05a5",
+      "eventHash": "sha256:98f96d0e80401205"
+    }
+  ],
+  "webhooks": [
+    {
+      "id": "wh_01",
+      "eventId": "evt_9_a707afe350e4666e",
+      "endpoint": "https://example.test/hooks/provenance",
+      "attempt": 1,
+      "status": "failed",
+      "responseCode": 503,
+      "scheduledAt": "2026-07-16T10:05:00Z",
+      "completedAt": "2026-07-16T10:05:02Z",
+      "signature": "pvwh_test_71d79e8d77454548"
+    },
+    {
+      "id": "wh_02",
+      "eventId": "evt_9_a707afe350e4666e",
+      "endpoint": "https://example.test/hooks/provenance",
+      "attempt": 2,
+      "status": "waiting",
+      "scheduledAt": "2026-07-16T10:10:00Z",
+      "signature": "pvwh_test_dac1c8686225e479"
+    }
+  ],
+  "mode": "TEST MODE / NON-AUTHORITATIVE / NOT A PRODUCTION CREDENTIAL"
+}

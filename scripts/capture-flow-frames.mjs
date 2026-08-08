@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import { chromium } from 'playwright';
+const out='evidence/recordings/frames'; fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--disable-software-rasterizer','--disable-crash-reporter','--disable-breakpad','--no-first-run','--no-default-browser-check']});
+const page=await browser.newPage({viewport:{width:1280,height:720}});
+const shot=async(name)=>page.screenshot({path:`${out}/${name}.png`,fullPage:false});
+await page.goto('http://127.0.0.1:3100',{waitUntil:'networkidle'}); await shot('01-hero');
+await page.getByRole('button',{name:/Run verification/i}).click(); await page.locator('[data-testid="accessible-status"]').filter({hasText:/Verification completed/}).waitFor({timeout:10000}); await shot('02-verification-complete');
+await page.locator('.tier-chapter').scrollIntoViewIfNeeded(); await shot('03-tier-chamber');
+await page.locator('.events-chapter').scrollIntoViewIfNeeded(); await shot('04-events-webhooks');
+const card=page.locator('.webhook-inspector article').filter({hasText:'wh_01'}); await card.getByRole('button',{name:'Retry'}).click(); await card.getByRole('button',{name:'Manual replay'}).click(); await shot('05-retry-replay');
+await page.locator('.lifecycle-chapter').scrollIntoViewIfNeeded(); await page.locator('.lifecycle-orbit > button',{hasText:'suspended'}).click(); await shot('06-lifecycle');
+await page.goto('http://127.0.0.1:3100/registry/PV-TEST-T4D004',{waitUntil:'networkidle'}); await shot('07-registry');
+await browser.close();

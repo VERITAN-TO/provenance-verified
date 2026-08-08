@@ -1,0 +1,29 @@
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+  attributes/redact:
+    actions:
+      - { key: http.request.header.authorization, action: delete }
+      - { key: enduser.email, action: delete }
+      - { key: evidence.payload, action: delete }
+      - { key: db.statement, action: delete }
+  batch: { timeout: 5s, send_batch_size: 1024 }
+exporters:
+  otlphttp/primary:
+    endpoint: "${env:PV_OTEL_EXPORTER_ENDPOINT}"
+    headers:
+      authorization: "${env:PV_OTEL_EXPORTER_AUTHORIZATION}"
+  debug: { verbosity: basic }
+service:
+  telemetry:
+    logs: { level: info }
+  pipelines:
+    traces: { receivers: [otlp], processors: [memory_limiter, attributes/redact, batch], exporters: [otlphttp/primary] }
+    metrics: { receivers: [otlp], processors: [memory_limiter, attributes/redact, batch], exporters: [otlphttp/primary] }
+    logs: { receivers: [otlp], processors: [memory_limiter, attributes/redact, batch], exporters: [otlphttp/primary] }

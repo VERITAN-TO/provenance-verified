@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/identity-manifest.schema.json",
+  "title": "Identity Manifest",
+  "type": "object",
+  "required": [
+    "version",
+    "wordmarks",
+    "corporateMark",
+    "tierSeals",
+    "supergraphic",
+    "sha256"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "wordmarks": {
+      "type": "object"
+    },
+    "corporateMark": {
+      "type": "object"
+    },
+    "tierSeals": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": [
+          "tier",
+          "mode",
+          "path"
+        ],
+        "properties": {
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "mode": {
+            "enum": [
+              "display",
+              "compact",
+              "monochrome"
+            ]
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "supergraphic": {
+      "type": "object"
+    },
+    "sha256": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

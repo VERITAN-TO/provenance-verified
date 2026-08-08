@@ -1,0 +1,10 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ headless: true, executablePath: '/usr/bin/chromium', args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--disable-software-rasterizer','--disable-background-networking','--disable-breakpad','--disable-component-update','--disable-default-apps','--disable-domain-reliability','--disable-features=Translate,BackForwardCache,AcceptCHFrame,MediaRouter,OptimizationHints,UseDBus','--disable-sync','--metrics-recording-only','--no-first-run','--no-zygote','--single-process'] });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+page.on('console', m => console.log('console', m.type(), m.text()));
+page.on('pageerror', e => console.log('pageerror', e.message));
+await page.goto('http://172.26.36.5:3100/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+console.log('title', await page.title());
+console.log('h1', await page.locator('h1').first().innerText());
+await page.screenshot({ path: '/mnt/data/provenance_fix/evidence/browser/home-playwright.png', fullPage: true });
+await browser.close();

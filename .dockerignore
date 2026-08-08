@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+coverage
+test-results
+playwright-report
+*.zip
+*.log
+infra/terraform/provider-boundaries/.build/*
+services/provider-boundaries/**/__pycache__

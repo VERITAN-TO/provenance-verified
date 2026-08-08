@@ -1,0 +1,22 @@
+{
+  "version": "r3.crypto-policy.v1",
+  "effectiveAt": "2026-07-22T00:00:00.000Z",
+  "newSignatureAlgorithms": ["Ed25519", "ES256"],
+  "verificationAlgorithms": ["Ed25519", "ES256"],
+  "digestAlgorithms": ["SHA-256"],
+  "prohibited": ["stableHash", "MD5", "SHA-1", "RSA-PKCS1-v1_5-new-signatures"],
+  "keyStates": {
+    "active": ["new-signature", "historical-verification"],
+    "suspended": ["historical-verification"],
+    "retired": ["historical-verification"],
+    "revoked": ["historical-verification-with-revocation-warning"],
+    "destroyed": []
+  },
+  "rotation": {
+    "receiptKeysSeparatedByService": true,
+    "minimumVersionIncrement": 1,
+    "overlapRequired": true,
+    "publicRegistryCacheSeconds": 300
+  },
+  "failClosed": true
+}

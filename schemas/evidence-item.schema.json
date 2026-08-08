@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/evidence-item.schema.json",
+  "title": "Evidence Item",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "sourceId",
+    "hash",
+    "status",
+    "receivedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "string",
+      "minLength": 16
+    },
+    "status": {
+      "enum": [
+        "submitted",
+        "accepted",
+        "rejected",
+        "expired",
+        "superseded",
+        "unavailable",
+        "requires_review"
+      ]
+    },
+    "receivedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "independent": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

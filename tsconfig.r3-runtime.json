@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": ".r3-test-build",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "typeRoots": ["/opt/nvm/versions/node/v22.16.0/lib/node_modules/ts-node/node_modules/@types"],
+    "noEmitOnError": true
+  },
+  "include": ["src/authority/r3/**/*.ts", "tests/r3/**/*.ts"]
+}

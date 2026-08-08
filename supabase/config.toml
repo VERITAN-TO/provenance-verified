@@ -1,0 +1,4 @@
+project_id = "provenance-verified-public-dev"
+
+[functions.authority-api]
+verify_jwt = false

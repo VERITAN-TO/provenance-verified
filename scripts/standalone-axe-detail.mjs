@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import { chromium } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+const html=fs.readFileSync('/mnt/data/PROVENANCE_CX_NEWLY_REBUILT_STANDALONE_R3.html','utf8');
+const browser=await chromium.connectOverCDP('http://127.0.0.1:9222');
+const page=await browser.contexts()[0].newPage();
+await page.setViewportSize({width:1440,height:900}); await page.setContent(html,{waitUntil:'load'});
+const r=await new AxeBuilder({page}).analyze();
+const out=r.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,nodes:v.nodes.slice(0,100).map(n=>({target:n.target,html:n.html,failureSummary:n.failureSummary}))}));
+fs.writeFileSync('/tmp/pv2-axe-detail.json',JSON.stringify(out,null,2));
+console.log(JSON.stringify(out,null,2));
+await page.close(); await browser.close();

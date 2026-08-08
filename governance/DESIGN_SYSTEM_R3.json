@@ -1,0 +1,8 @@
+{
+  "version":"r8.1-r3",
+  "authority":"Accepted R8.1 shell and Shell Preservation Protocol V2",
+  "immutableAssets":["public/r5/lockups/provenance-wordmark-only.svg","public/r5/marks/provenance-master-mark.svg"],
+  "tokens":{"background":"#03080c","cyan":"#5deff7","mint":"#6bffd6","text":"#f4f8f9","muted":"#9fb0b6","radius":18,"headerHeight":78,"maxWidth":1440},
+  "controlledChangeRequirements":["visual-regression","structural-regression","responsive-regression","accessibility-regression","motion-regression","webgl-fallback-regression"],
+  "providerModelsMayChangeShell":false
+}

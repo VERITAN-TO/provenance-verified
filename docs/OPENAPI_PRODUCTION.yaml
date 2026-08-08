@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  title: PROVENANCE VERIFIED™ Production Authority API
+  version: 8.1.3-r3
+  description: >-
+    Fail-closed tenant-scoped trust authority. Sandbox is deterministic and isolated.
+    Pilot is real but non-authoritative. Production issuance requires a valid signed activation record.
+servers:
+  - url: https://api.provenanceverified.org
+    description: Production authority gateway
+  - url: https://pilot-api.provenanceverified.org
+    description: Pilot non-authoritative authority gateway
+security:
+  - bearerAuth: []
+    tenantHeader: []
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT-or-scoped-client-secret }
+    tenantHeader: { type: apiKey, in: header, name: x-provenance-tenant }
+  parameters:
+    IdempotencyKey: { in: header, name: idempotency-key, required: true, schema: { type: string, minLength: 16 } }
+    RequestId: { in: header, name: x-request-id, required: false, schema: { type: string } }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties: { code: { type: string }, message: { type: string }, receiptId: { type: string } }
+    Envelope:
+      type: object
+      properties: { data: {}, meta: { type: object, additionalProperties: true } }
+    AuthorityReceipt:
+      type: object
+      required: [receiptId, issuerService, tenantId, subject, operation, decision, timestamp, expiresAt, nonce, requestDigest, responseDigest, policyVersion, keyId, keyVersion, algorithm, signature]
+      properties:
+        receiptId: { type: string }
+        issuerService: { type: string }
+        tenantId: { type: string }
+        subject: { type: string }
+        operation: { type: string }
+        decision: { type: string }
+        timestamp: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        nonce: { type: string }
+        requestDigest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        responseDigest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        policyVersion: { type: string }
+        keyId: { type: string }
+        keyVersion: { type: integer }
+        algorithm: { type: string, enum: [Ed25519, ES256] }
+        signature: { type: string }
+    RuntimeClaim:
+      type: object
+      required: [sourceAuthorityId, claimKey, claimClass, ownerIdentity, observedAt, expiresAt, payload]
+      properties:
+        sourceAuthorityId: { type: string, format: uuid }
+        claimKey: { type: string }
+        claimClass: { type: string, enum: [GOVERNING, VERIFIED_RUNTIME, DESIGN, TARGET, ASSUMPTION, UNVERIFIED] }
+        ownerIdentity: { type: string }
+        state: { type: string, enum: [LIVE, VERIFIED, STALE, BLOCKED, SUPERSEDED] }
+        observedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        payload: { type: object, additionalProperties: true }
+    LifecycleCommand:
+      type: object
+      required: [action, reason]
+      properties:
+        action: { type: string, enum: [suspend, reactivate, revoke, supersede, expire, correct] }
+        reason: { type: string }
+        successorId: { type: string }
+paths:
+  /api/v1/trust/assertions:
+    get:
+      summary: Resolve public verified and unexpired trust assertions
+      responses: { '200': { description: Freshness-bound assertions }, '503': { description: Trust authority unavailable } }
+  /api/v1/legal/localizations:
+    get:
+      summary: Resolve legally approved localized policy content
+      responses: { '200': { description: Current approved localizations } }
+  /api/v1/security/disclosures:
+    post:
+      summary: Submit encrypted vulnerability disclosure
+      responses: { '202': { description: Encrypted report accepted }, '422': { description: Invalid report }, '503': { description: Encryption custody unavailable } }
+  /api/v1/knowledge:
+    get:
+      summary: Resolve freshness-bound machine-readable knowledge blocks
+      responses: { '200': { description: Current governed knowledge }, '503': { description: Knowledge authority unavailable } }
+  /api/v1/developer/sandboxes:
+    get:
+      summary: List isolated non-authoritative developer sandboxes
+      responses: { '200': { description: Sandbox list } }
+    post:
+      summary: Provision an isolated non-authoritative developer sandbox
+      responses: { '201': { description: Sandbox created } }
+  /api/v1/developer/sandboxes/{sandboxId}/reset:
+    post:
+      summary: Reset a sandbox to a governed seed profile
+      parameters: [ { in: path, name: sandboxId, required: true, schema: { type: string } } ]
+      responses: { '200': { description: Sandbox reset } }
+  /api/v1/developer/sandboxes/{sandboxId}:
+    delete:
+      summary: Delete and tombstone a sandbox
+      parameters: [ { in: path, name: sandboxId, required: true, schema: { type: string } } ]
+      responses: { '200': { description: Sandbox deleted } }
+  /api/v1/keys:
+    get:
+      summary: Retrieve active or historical authority verification keys
+      parameters:
+        - in: query
+          name: include
+          schema: { type: string, enum: [historical] }
+      responses:
+        '200': { description: Versioned public verification key set }
+        '503': { description: Verification keys unavailable; verification fails closed }
+  /api/v1/status:
+    get:
+      security: []
+      summary: Dependency-aware public readiness
+      responses: { '200': { description: Ready }, '503': { description: Critical dependency unavailable } }
+  /api/v1/verify:
+    post:
+      security: []
+      summary: Verify a public credential
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [publicId], properties: { publicId: { type: string } } } } } }
+      responses: { '200': { description: Verified registry projection }, '404': { description: Record not found } }
+  /api/v1/registry:
+    get:
+      security: []
+      summary: Search the append-only public registry projection
+      parameters: [{ in: query, name: q, schema: { type: string } }, { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 250 } }]
+      responses: { '200': { description: Registry records } }
+  /api/v1/registry/{publicId}:
+    get:
+      security: []
+      parameters: [{ in: path, name: publicId, required: true, schema: { type: string } }]
+      responses: { '200': { description: Current signed projection }, '404': { description: Not found } }
+  /api/v1/registry/{publicId}/history:
+    get:
+      security: []
+      parameters: [{ in: path, name: publicId, required: true, schema: { type: string } }]
+      responses: { '200': { description: Immutable versions and lifecycle events } }
+  /api/v1/organization:
+    get: { summary: Tenant administration snapshot, responses: { '200': { description: Organization state } } }
+  /api/v1/organization/api-clients:
+    post:
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      summary: Create scoped API client and default quota
+      responses: { '201': { description: One-time secret returned }, '403': { description: Denied } }
+  /api/v1/organization/webhooks:
+    post:
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      summary: Create encrypted webhook endpoint
+      responses: { '201': { description: Endpoint created }, '422': { description: SSRF or policy denial } }
+  /api/v1/authority/control-center:
+    get: { summary: Category L, media, governance, launch and mark authority state, responses: { '200': { description: State } } }
+  /api/v1/authority/operational-controls:
+    get: { summary: Original-campaign governance, identity, claims, incidents and integrity state, responses: { '200': { description: State } } }
+  /api/v1/authority/operational-controls/runtime-claims:
+    post:
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: { required: true, content: { application/json: { schema: {$ref: '#/components/schemas/RuntimeClaim'} } } }
+      responses: { '201': { description: Runtime claim committed }, '409': { description: Conflict }, '422': { description: Invalid } }
+  /api/v1/authority/category-l/evidence:
+    post: { parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], responses: { '201': { description: Evidence bound and graph recomputed } } }
+  /api/v1/authority/media:
+    post: { parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], responses: { '201': { description: QR/NFC media identifier created } } }
+  /api/v1/authority/reviews/{reviewCaseId}/issue:
+    post:
+      parameters: [{ in: path, name: reviewCaseId, required: true, schema: { type: string } }, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses: { '200': { description: Pilot outcome or production issuance result }, '409': { description: Authority chain incomplete }, '503': { description: Crown-jewel dependency unavailable } }
+  /api/v1/operations/review/{reviewCaseId}/lifecycle:
+    post:
+      parameters: [{ in: path, name: reviewCaseId, required: true, schema: { type: string } }, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: { required: true, content: { application/json: { schema: {$ref: '#/components/schemas/LifecycleCommand'} } } }
+      responses: { '200': { description: Durable registry-confirmed transition }, '409': { description: Invalid state or compensation required } }
+  /api/v1/mcp:
+    post:
+      summary: Authenticated MCP Streamable HTTP-compatible tool execution
+      responses: { '200': { description: Tool result }, '403': { description: Scope denied }, '404': { description: Tool not found } }
+  /api/v1/webhooks/replay:
+    post: { parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], responses: { '200': { description: Attributed replay queued }, '409': { description: Replay denied } } }
+
+  /api/v1/authority/operational-controls/evidence-access:
+    post:
+      summary: Grant signed bounded evidence access
+      responses: { '201': { description: Command committed } }
+
+  /api/v1/authority/operational-controls/portable-bundles:
+    post:
+      summary: Create idempotent portable verification bundle
+      responses: { '201': { description: Command committed } }
+
+  /api/v1/authority/operational-controls/status-lists:
+    post:
+      summary: Publish sequential signed status list
+      responses: { '201': { description: Command committed } }
+
+  /api/v1/authority/operational-controls/consents:
+    post:
+      summary: Record evidence-bound consent or withdrawal
+      responses: { '201': { description: Command committed } }
+
+  /api/v1/authority/operational-controls/task-events:
+    post:
+      summary: Append task execution evidence
+      responses: { '201': { description: Command committed } }
+
+  /api/v1/authority/operational-controls/launch-communications:
+    post:
+      summary: Record governed launch communication
+      responses: { '201': { description: Command committed } }

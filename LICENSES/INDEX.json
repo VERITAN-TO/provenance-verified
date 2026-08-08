@@ -1,0 +1,230 @@
+{
+  "generatedAt": "2026-07-21T03:32:19.998Z",
+  "packages": [
+    {
+      "name": "@axe-core/playwright",
+      "version": "4.10.2",
+      "license": "MPL-2.0",
+      "files": [
+        "LICENSES/axe-core__playwright__LICENSE"
+      ]
+    },
+    {
+      "name": "@eslint/eslintrc",
+      "version": "3.3.1",
+      "license": "MIT",
+      "files": [
+        "LICENSES/eslint__eslintrc__LICENSE"
+      ]
+    },
+    {
+      "name": "@hookform/resolvers",
+      "version": "3.10.0",
+      "license": "MIT",
+      "files": [
+        "LICENSES/hookform__resolvers__LICENSE"
+      ]
+    },
+    {
+      "name": "@playwright/test",
+      "version": "1.61.1",
+      "license": "Apache-2.0",
+      "files": [
+        "LICENSES/playwright__test__LICENSE",
+        "LICENSES/playwright__test__NOTICE"
+      ]
+    },
+    {
+      "name": "@testing-library/jest-dom",
+      "version": "6.6.3",
+      "license": "MIT",
+      "files": [
+        "LICENSES/testing-library__jest-dom__LICENSE"
+      ]
+    },
+    {
+      "name": "@testing-library/react",
+      "version": "16.3.0",
+      "license": "MIT",
+      "files": [
+        "LICENSES/testing-library__react__LICENSE"
+      ]
+    },
+    {
+      "name": "@types/d3",
+      "version": "7.4.3",
+      "license": "MIT",
+      "files": [
+        "LICENSES/types__d3__LICENSE"
+      ]
+    },
+    {
+      "name": "@types/node",
+      "version": "22.15.30",
+      "license": "MIT",
+      "files": [
+        "LICENSES/types__node__LICENSE"
+      ]
+    },
+    {
+      "name": "@types/qrcode",
+      "version": "1.5.5",
+      "license": "MIT",
+      "files": [
+        "LICENSES/types__qrcode__LICENSE"
+      ]
+    },
+    {
+      "name": "@types/react",
+      "version": "19.1.8",
+      "license": "MIT",
+      "files": [
+        "LICENSES/types__react__LICENSE"
+      ]
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "19.1.6",
+      "license": "MIT",
+      "files": [
+        "LICENSES/types__react-dom__LICENSE"
+      ]
+    },
+    {
+      "name": "@types/three",
+      "version": "0.177.0",
+      "license": "MIT",
+      "files": [
+        "LICENSES/types__three__LICENSE"
+      ]
+    },
+    {
+      "name": "@vitejs/plugin-react",
+      "version": "4.5.2",
+      "license": "MIT",
+      "files": [
+        "LICENSES/vitejs__plugin-react__LICENSE"
+      ]
+    },
+    {
+      "name": "@vitest/coverage-v8",
+      "version": "3.2.7",
+      "license": "MIT",
+      "files": [
+        "LICENSES/vitest__coverage-v8__LICENSE"
+      ]
+    },
+    {
+      "name": "d3",
+      "version": "7.9.0",
+      "license": "ISC",
+      "files": [
+        "LICENSES/d3__LICENSE"
+      ]
+    },
+    {
+      "name": "eslint",
+      "version": "9.30.1",
+      "license": "MIT",
+      "files": [
+        "LICENSES/eslint__LICENSE"
+      ]
+    },
+    {
+      "name": "eslint-config-next",
+      "version": "16.2.10",
+      "license": "MIT",
+      "files": [
+        "LICENSES/eslint-config-next__LICENSE.md"
+      ]
+    },
+    {
+      "name": "jsdom",
+      "version": "26.1.0",
+      "license": "MIT",
+      "files": [
+        "LICENSES/jsdom__LICENSE.txt"
+      ]
+    },
+    {
+      "name": "next",
+      "version": "16.2.10",
+      "license": "MIT",
+      "files": [
+        "LICENSES/next__license.md"
+      ]
+    },
+    {
+      "name": "qrcode",
+      "version": "1.5.4",
+      "license": "MIT",
+      "files": [
+        "LICENSES/qrcode__license"
+      ]
+    },
+    {
+      "name": "react",
+      "version": "19.2.7",
+      "license": "MIT",
+      "files": [
+        "LICENSES/react__LICENSE"
+      ]
+    },
+    {
+      "name": "react-dom",
+      "version": "19.2.7",
+      "license": "MIT",
+      "files": [
+        "LICENSES/react-dom__LICENSE"
+      ]
+    },
+    {
+      "name": "three",
+      "version": "0.178.0",
+      "license": "MIT",
+      "files": [
+        "LICENSES/three__LICENSE"
+      ]
+    },
+    {
+      "name": "typescript",
+      "version": "5.8.3",
+      "license": "Apache-2.0",
+      "files": [
+        "LICENSES/typescript__LICENSE.txt"
+      ]
+    },
+    {
+      "name": "vite",
+      "version": "7.3.6",
+      "license": "MIT",
+      "files": [
+        "LICENSES/vite__LICENSE.md"
+      ]
+    },
+    {
+      "name": "vitest",
+      "version": "3.2.7",
+      "license": "MIT",
+      "files": [
+        "LICENSES/vitest__LICENSE.md"
+      ]
+    },
+    {
+      "name": "zod",
+      "version": "3.25.76",
+      "license": "MIT",
+      "files": [
+        "LICENSES/zod__LICENSE"
+      ]
+    },
+    {
+      "name": "zustand",
+      "version": "5.0.6",
+      "license": "MIT",
+      "files": [
+        "LICENSES/zustand__LICENSE"
+      ]
+    }
+  ]
+}

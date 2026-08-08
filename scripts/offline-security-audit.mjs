@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { hasCanonicalSafeSignOut } from './lib/source-quality-detector.mjs';
+const root=process.cwd();
+const sw=fs.readFileSync(path.join(root,'public/sw.js'),'utf8');
+const crypto=fs.readFileSync(path.join(root,'src/operations/offline/crypto.ts'),'utf8');
+const db=fs.readFileSync(path.join(root,'src/operations/offline/indexedDb.ts'),'utf8');
+const shell=fs.readFileSync(path.join(root,'src/ui/authenticated/AuthenticatedProductShell.tsx'),'utf8');
+const controller=fs.readFileSync(path.join(root,'src/ui/authenticated/sign-out-controller.ts'),'utf8');
+const checks=[];const add=(id,pass)=>checks.push({id,pass:Boolean(pass)});
+add('service-worker-never-caches-app',/startsWith\('\/app'\)/.test(sw));
+add('service-worker-never-caches-api',/startsWith\('\/api\/'\)/.test(sw));
+add('service-worker-rejects-auth-headers',/authorization/.test(sw)&&/cookie/.test(sw));
+add('service-worker-rejects-private-no-store',/private\|no-store/.test(sw));
+add('service-worker-public-assets-only',/STATIC_PREFIXES/.test(sw)&&/isCacheablePublicAsset/.test(sw));
+add('service-worker-purge-message',/PURGE_PROTECTED_DATA/.test(sw)&&/PURGE_COMPLETE/.test(sw));
+add('offline-key-non-extractable',/generateKey\(\{name:'AES-GCM',length:256\},false/.test(crypto));
+add('offline-no-predictable-pbkdf',!/PBKDF2|constant salt|offline operations v1/.test(crypto+db));
+add('offline-random-per-scope-key',/randomBytes\(18\)/.test(db)&&/KEYS/.test(db));
+add('offline-aad-scope-binding',/offlineAad/.test(crypto)&&/OFFLINE_KEY_VERSION_MISMATCH/.test(db));
+add('offline-passkey-user-verification',/PublicKeyCredential/.test(db)&&/userVerification:'required'/.test(db));
+add('offline-production-anchor-required',/OFFLINE_DEVICE_ANCHOR_REQUIRED/.test(db));
+add('offline-key-rotation',/rotateOfflineScopeKey/.test(db));
+add('offline-remote-revocation-tombstone',/revokeOfflineScope/.test(db)&&/OFFLINE_SCOPE_REVOKED/.test(db));
+add('logout-purges-indexeddb-and-caches',hasCanonicalSafeSignOut(controller)&&/SIGNED_OUT_CLEANUP_REQUIRED/.test(shell)&&/await Promise\.all\(registrations\.map/.test(db)&&/PURGE_COMPLETE/.test(db));
+const failed=checks.filter(x=>!x.pass);const report={summary:{checks:checks.length,passed:checks.length-failed.length,failed:failed.length,verdict:failed.length?'FAIL':'PASS'},checks};fs.mkdirSync(path.join(root,'evidence/r3'),{recursive:true});fs.writeFileSync(path.join(root,'evidence/r3/offline-security-audit.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report.summary,null,2));if(failed.length){console.error(failed);process.exit(1);}

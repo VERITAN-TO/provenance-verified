@@ -1,0 +1,71 @@
+version: 1
+services:
+  - id: public-web
+    owner: product-platform
+    data_classification: public-and-session-metadata
+    slo_ids: [public-web-availability, public-web-latency]
+    dependencies: [registry-projection, identity-plane]
+    runbook: runbooks/public-web.md
+    rto_minutes: 30
+    rpo_minutes: 0
+  - id: trust-api
+    owner: trust-platform
+    data_classification: confidential-trust-records
+    slo_ids: [trust-api-availability, issuance-latency]
+    dependencies: [canonical-postgres, evidence-custody, custos, signing, registry-projection, event-dispatcher]
+    runbook: runbooks/trust-api.md
+    rto_minutes: 30
+    rpo_minutes: 5
+  - id: evidence-custody
+    owner: evidence-security
+    data_classification: restricted-evidence
+    slo_ids: [evidence-upload-availability, evidence-scan-latency]
+    dependencies: [object-lock-store, scanner, canonical-postgres]
+    runbook: runbooks/evidence-custody.md
+    rto_minutes: 60
+    rpo_minutes: 0
+  - id: custos
+    owner: independent-custos-operations
+    release_authority: independent-custos-release
+    incident_authority: independent-custos-incident-command
+    account_boundary: separate-aws-account
+    terraform_state: separate-encrypted-backend
+    data_classification: restricted-verdicts
+    slo_ids: [custos-availability, custos-verdict-latency]
+    dependencies: [independent-custos-store, independent-request-control, canonical-read-only, verification-key-registry]
+    forbidden_authority: [canonical-write, remediation, credential-signing, registry-write, mark-authorization]
+    runbook: runbooks/custos.md
+    rto_minutes: 60
+    rpo_minutes: 0
+  - id: signing
+    owner: cryptographic-authority
+    data_classification: restricted-signing-metadata
+    slo_ids: [signer-availability, signer-latency]
+    dependencies: [kms-hsm, activation-authority, custos]
+    runbook: runbooks/signing.md
+    rto_minutes: 60
+    rpo_minutes: 0
+  - id: registry-projection
+    owner: registry-operations
+    data_classification: approved-public-projection
+    slo_ids: [registry-availability, registry-freshness]
+    dependencies: [registry-event-store, verification-key-registry]
+    runbook: runbooks/registry.md
+    rto_minutes: 30
+    rpo_minutes: 0
+  - id: event-dispatcher
+    owner: integration-platform
+    data_classification: confidential-event-metadata
+    slo_ids: [webhook-delivery-success, outbox-lag]
+    dependencies: [transactional-outbox, queue, dlq, secret-vault]
+    runbook: runbooks/event-dispatcher.md
+    rto_minutes: 60
+    rpo_minutes: 0
+  - id: readiness-engine
+    owner: launch-authority
+    data_classification: confidential-governance-evidence
+    slo_ids: [freshness-evaluation-lag, gate-evaluation-lag]
+    dependencies: [canonical-postgres, verification-key-registry]
+    runbook: runbooks/readiness.md
+    rto_minutes: 60
+    rpo_minutes: 5

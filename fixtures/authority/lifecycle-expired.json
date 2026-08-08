@@ -1,0 +1,608 @@
+{
+  "fixtureKey": "expired",
+  "name": "Expired credential",
+  "description": "Time-bounded credential remains resolvable after expiration.",
+  "publicId": "PV-TEST-EX1006",
+  "policyVersion": "PV-POLICY-2026.07-R2",
+  "eligibility": {
+    "policyVersion": "PV-POLICY-2026.07-R2",
+    "tier": 3,
+    "tierName": "Silver",
+    "ringCount": 3,
+    "disclosure": "INDEPENDENTLY CORROBORATED — At least one material claim is confirmed by an approved independent source.",
+    "basis": [
+      "Submitter identity",
+      "Self-declared origin",
+      "Photographs",
+      "Weight and dimensions",
+      "Timestamp",
+      "Registry ID",
+      "Structured signed attestation",
+      "Identified attesting party",
+      "Legal declaration",
+      "Valid attestation signature",
+      "Signature timestamp",
+      "Attestation version",
+      "Append-only registry event",
+      "Integrity hash",
+      "Claim-level evidence correspondence",
+      "1 qualifying independent source"
+    ],
+    "failedRequirements": [],
+    "upgradePath": [
+      "Verified origin",
+      "Physical fingerprint",
+      "Qualifying laboratory evidence",
+      "Complete transfer history",
+      "Complete custody transfers",
+      "At least two qualifying independent sources"
+    ],
+    "claimScope": {
+      "verified": 3,
+      "corroborated": 1,
+      "self-attested": 0,
+      "unknown": 0,
+      "not-claimed": 1,
+      "conflicting": 0
+    },
+    "eligible": true,
+    "reasonCodes": [
+      "PV_ELIGIBLE_TIER_3"
+    ]
+  },
+  "authorityInput": {
+    "reviewerApprovals": [
+      {
+        "id": "approval-primary",
+        "reviewerId": "reviewer-alpha",
+        "role": "primary",
+        "independent": true,
+        "conflictFree": true,
+        "decision": "approve",
+        "decidedAt": "2026-07-16T09:40:00Z",
+        "reasonCodes": [
+          "PV_REVIEW_EVIDENCE_SUFFICIENT"
+        ]
+      }
+    ],
+    "conflictClearance": "clear",
+    "custosVerdict": {
+      "status": "pass",
+      "verdictId": "custos-test-001",
+      "evaluatedAt": "2026-07-16T09:48:00Z",
+      "reasonCodes": [
+        "CUSTOS_TEST_PASS"
+      ]
+    },
+    "signingKeyStatus": "active",
+    "registryStatus": "ready",
+    "revocationCapability": true,
+    "markAuthorization": "authorized"
+  },
+  "credential": {
+    "id": "cred_pv_test_ex1006_v1",
+    "publicId": "PV-TEST-EX1006",
+    "issuer": "VERITAN, INC.",
+    "platform": "PROVENANCE VERIFIED",
+    "program": "Provenance Verified™",
+    "subject": {
+      "assetType": "gemstone",
+      "assetId": "asset_expired",
+      "description": "Deterministic demonstration asset record"
+    },
+    "status": "issued",
+    "eligibleTier": 3,
+    "eligibleTierName": "Silver",
+    "tier": 3,
+    "tierName": "Silver",
+    "disclosure": "INDEPENDENTLY CORROBORATED — At least one material claim is confirmed by an approved independent source.",
+    "authorization": {
+      "eligibleTier": 3,
+      "status": "authorized",
+      "credentialAuthorized": true,
+      "sealAuthorized": true,
+      "requiredApprovalCount": 1,
+      "acceptedApprovalCount": 1,
+      "blockers": [],
+      "reasonCodes": [
+        "PV_CREDENTIAL_AUTHORIZED",
+        "PV_MARK_AUTHORIZED"
+      ]
+    },
+    "sealAuthorization": {
+      "status": "not-authorized",
+      "tier": null,
+      "reasonCodes": [
+        "PV_MARK_BLOCKED_LIFECYCLE_EXPIRED"
+      ]
+    },
+    "claims": [
+      {
+        "id": "claim-origin",
+        "label": "Origin",
+        "value": "Recorded mine lot MX-204",
+        "status": "verified",
+        "evidenceIds": [
+          "ev-attest",
+          "ev-lab-a"
+        ],
+        "material": true,
+        "scopeNote": "Origin is bound to attestation and independent laboratory correspondence."
+      },
+      {
+        "id": "claim-identity",
+        "label": "Physical identity",
+        "value": "Fingerprint PF-61A9",
+        "status": "verified",
+        "evidenceIds": [
+          "ev-photo",
+          "ev-measure",
+          "ev-lab-a"
+        ],
+        "material": true,
+        "scopeNote": "Physical fingerprint and measurements correspond."
+      },
+      {
+        "id": "claim-treatment",
+        "label": "Treatment status",
+        "value": "No treatment detected",
+        "status": "corroborated",
+        "evidenceIds": [
+          "ev-lab-a"
+        ],
+        "material": true,
+        "scopeNote": "Two independent reports correspond at claim level."
+      },
+      {
+        "id": "claim-custody",
+        "label": "Custody chain",
+        "value": "Four documented custody events",
+        "status": "verified",
+        "evidenceIds": [
+          "ev-custody"
+        ],
+        "material": true,
+        "scopeNote": "All applicable custody transitions are hashed."
+      },
+      {
+        "id": "claim-value",
+        "label": "Market value",
+        "value": "Not claimed",
+        "status": "not-claimed",
+        "evidenceIds": [],
+        "material": false,
+        "scopeNote": "The credential makes no market-value claim."
+      }
+    ],
+    "evidence": [
+      {
+        "id": "ev-photo",
+        "type": "photo",
+        "label": "Macro identity image set",
+        "sourceId": "src-owner",
+        "hash": "sha256:1a4d9f7b0cf1",
+        "capturedAt": "2026-07-16T09:00:00Z",
+        "qualified": true,
+        "independent": false,
+        "claimIds": [
+          "claim-identity"
+        ]
+      },
+      {
+        "id": "ev-measure",
+        "type": "measurement",
+        "label": "Weight and dimension capture",
+        "sourceId": "src-owner",
+        "hash": "sha256:2bf6a80c1ee4",
+        "capturedAt": "2026-07-16T09:04:00Z",
+        "qualified": true,
+        "independent": false,
+        "claimIds": [
+          "claim-identity"
+        ]
+      },
+      {
+        "id": "ev-attest",
+        "type": "attestation",
+        "label": "Signed origin attestation",
+        "sourceId": "src-attestor",
+        "hash": "sha256:35f8b2c4d712",
+        "capturedAt": "2026-07-16T09:08:00Z",
+        "qualified": true,
+        "independent": false,
+        "claimIds": [
+          "claim-origin"
+        ]
+      },
+      {
+        "id": "ev-lab-a",
+        "type": "laboratory",
+        "label": "Laboratory identity and origin report",
+        "sourceId": "src-lab-a",
+        "hash": "sha256:4ca55b8e120f",
+        "capturedAt": "2026-07-16T09:20:00Z",
+        "qualified": true,
+        "independent": true,
+        "claimIds": [
+          "claim-origin",
+          "claim-identity",
+          "claim-treatment"
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "src-owner",
+        "name": "Declared asset owner",
+        "category": "submitter",
+        "independent": false,
+        "qualified": true,
+        "jurisdiction": "US-AZ"
+      },
+      {
+        "id": "src-attestor",
+        "name": "Licensed trade attestor",
+        "category": "attestor",
+        "independent": false,
+        "qualified": true,
+        "jurisdiction": "US-CA"
+      },
+      {
+        "id": "src-lab-a",
+        "name": "Independent Laboratory A",
+        "category": "laboratory",
+        "independent": true,
+        "qualified": true,
+        "jurisdiction": "US-NY"
+      }
+    ],
+    "custody": [
+      {
+        "id": "cust-1",
+        "actor": "Origin facility",
+        "action": "Released",
+        "at": "2026-06-02T08:00:00Z",
+        "location": "MX",
+        "hash": "sha256:c1"
+      },
+      {
+        "id": "cust-2",
+        "actor": "Secure carrier",
+        "action": "Accepted",
+        "at": "2026-06-02T14:20:00Z",
+        "location": "MX",
+        "hash": "sha256:c2"
+      },
+      {
+        "id": "cust-3",
+        "actor": "Independent Laboratory A",
+        "action": "Examined",
+        "at": "2026-06-05T10:10:00Z",
+        "location": "US-NY",
+        "hash": "sha256:c3"
+      }
+    ],
+    "lifecycle": "expired",
+    "issuedAt": "2026-07-16T10:00:00Z",
+    "expiresAt": "2026-07-16T10:30:00Z",
+    "version": 1,
+    "signature": {
+      "algorithm": "Ed25519",
+      "keyId": "veritan-test-key-2026-01",
+      "value": "ed25519:test:3caada29a31b9d56",
+      "valid": true,
+      "status": "valid"
+    },
+    "integrityHash": "sha256:4d12fa9f8667293f260fddda23ca4c8f",
+    "warnings": [
+      "Lifecycle state is expired.",
+      "Credential is issued, but certification-mark use is not authorized."
+    ],
+    "testMode": true
+  },
+  "registry": {
+    "publicId": "PV-TEST-EX1006",
+    "url": "/registry/PV-TEST-EX1006",
+    "issuer": "VERITAN, INC.",
+    "program": "Provenance Verified™",
+    "subject": {
+      "assetType": "gemstone",
+      "assetId": "asset_expired",
+      "description": "Deterministic demonstration asset record"
+    },
+    "published": true,
+    "credentialStatus": "issued",
+    "eligibility": {
+      "tier": 3,
+      "name": "Silver"
+    },
+    "certification": {
+      "tier": 3,
+      "name": "Silver",
+      "disclosure": "INDEPENDENTLY CORROBORATED — At least one material claim is confirmed by an approved independent source."
+    },
+    "authorization": {
+      "eligibleTier": 3,
+      "status": "authorized",
+      "credentialAuthorized": true,
+      "sealAuthorized": true,
+      "requiredApprovalCount": 1,
+      "acceptedApprovalCount": 1,
+      "blockers": [],
+      "reasonCodes": [
+        "PV_CREDENTIAL_AUTHORIZED",
+        "PV_MARK_AUTHORIZED"
+      ]
+    },
+    "sealAuthorization": {
+      "status": "not-authorized",
+      "tier": null,
+      "reasonCodes": [
+        "PV_MARK_BLOCKED_LIFECYCLE_EXPIRED"
+      ]
+    },
+    "claimScope": [
+      {
+        "id": "claim-origin",
+        "label": "Origin",
+        "value": "Recorded mine lot MX-204",
+        "status": "verified",
+        "scopeNote": "Origin is bound to attestation and independent laboratory correspondence."
+      },
+      {
+        "id": "claim-identity",
+        "label": "Physical identity",
+        "value": "Fingerprint PF-61A9",
+        "status": "verified",
+        "scopeNote": "Physical fingerprint and measurements correspond."
+      },
+      {
+        "id": "claim-treatment",
+        "label": "Treatment status",
+        "value": "No treatment detected",
+        "status": "corroborated",
+        "scopeNote": "Two independent reports correspond at claim level."
+      },
+      {
+        "id": "claim-custody",
+        "label": "Custody chain",
+        "value": "Four documented custody events",
+        "status": "verified",
+        "scopeNote": "All applicable custody transitions are hashed."
+      },
+      {
+        "id": "claim-value",
+        "label": "Market value",
+        "value": "Not claimed",
+        "status": "not-claimed",
+        "scopeNote": "The credential makes no market-value claim."
+      }
+    ],
+    "evidenceSummary": {
+      "count": 4,
+      "qualifiedSources": 3,
+      "independentSources": 1
+    },
+    "lifecycle": "expired",
+    "version": 1,
+    "issuedAt": "2026-07-16T10:00:00Z",
+    "signature": {
+      "algorithm": "Ed25519",
+      "keyId": "veritan-test-key-2026-01",
+      "value": "ed25519:test:3caada29a31b9d56",
+      "valid": true,
+      "status": "valid"
+    },
+    "integrityHash": "sha256:4d12fa9f8667293f260fddda23ca4c8f",
+    "warnings": [
+      "Lifecycle state is expired.",
+      "Credential is issued, but certification-mark use is not authorized."
+    ],
+    "testMode": true
+  },
+  "events": [
+    {
+      "id": "evt_1_f4c30587488e374c",
+      "type": "verification.started",
+      "at": "2026-07-16T10:00:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 1,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:cadff0307390f302",
+      "previousEventHash": "genesis:test-mode",
+      "eventHash": "sha256:cbc9ef15c4e30af6"
+    },
+    {
+      "id": "evt_2_7c5dfe7a9a4f29d5",
+      "type": "evidence.bound",
+      "at": "2026-07-16T10:01:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 2,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:d7d3b6c3abd7f186",
+      "previousEventHash": "sha256:cbc9ef15c4e30af6",
+      "eventHash": "sha256:69aa8abab50f6f94"
+    },
+    {
+      "id": "evt_3_629274ce7b50acca",
+      "type": "claims.resolved",
+      "at": "2026-07-16T10:02:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 3,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:c70fd14d98024274",
+      "previousEventHash": "sha256:69aa8abab50f6f94",
+      "eventHash": "sha256:4ae0518646766e1b"
+    },
+    {
+      "id": "evt_4_dfaf9c6c597358e4",
+      "type": "review.completed",
+      "at": "2026-07-16T10:03:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 4,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:3d3dca68ed4b299d",
+      "previousEventHash": "sha256:4ae0518646766e1b",
+      "eventHash": "sha256:58e0c08c24206203"
+    },
+    {
+      "id": "evt_5_699c9eef09e2d524",
+      "type": "approval.completed",
+      "at": "2026-07-16T10:04:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 5,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:4dca69d2b41d793a",
+      "previousEventHash": "sha256:58e0c08c24206203",
+      "eventHash": "sha256:6a1e71efd4fb8c10"
+    },
+    {
+      "id": "evt_6_dc45929f0b31fd65",
+      "type": "credential.issued",
+      "at": "2026-07-16T10:05:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 6,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:9cfc597ac58dcf5c",
+      "previousEventHash": "sha256:6a1e71efd4fb8c10",
+      "eventHash": "sha256:e8c6d4f9cbbe97b4"
+    },
+    {
+      "id": "evt_7_ac981b0201a147cd",
+      "type": "registry.published",
+      "at": "2026-07-16T10:06:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 7,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:9c9110ce9d077273",
+      "previousEventHash": "sha256:e8c6d4f9cbbe97b4",
+      "eventHash": "sha256:fcc2fe031025c03e"
+    },
+    {
+      "id": "evt_8_a707afe350e4666e",
+      "type": "webhook.attempted",
+      "at": "2026-07-16T10:07:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 8,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:43fe244d923c69d9",
+      "previousEventHash": "sha256:fcc2fe031025c03e",
+      "eventHash": "sha256:225a69952ec483cb"
+    },
+    {
+      "id": "evt_9_f1167091b97c354a",
+      "type": "webhook.failed",
+      "at": "2026-07-16T10:08:00Z",
+      "recordId": "PV-TEST-EX1006",
+      "sequence": 9,
+      "payload": {
+        "eligibleTier": 3,
+        "issuedTier": 3,
+        "credentialStatus": "issued",
+        "issuanceStatus": "authorized",
+        "lifecycle": "expired",
+        "sealAuthorization": "not-authorized",
+        "evidenceCount": 4,
+        "claimCount": 5
+      },
+      "signature": "ed25519:test:8f4363d1544aa314",
+      "previousEventHash": "sha256:225a69952ec483cb",
+      "eventHash": "sha256:acb658ffa2c1623a"
+    }
+  ],
+  "webhooks": [
+    {
+      "id": "wh_01",
+      "eventId": "evt_8_a707afe350e4666e",
+      "endpoint": "https://example.test/hooks/provenance",
+      "attempt": 1,
+      "status": "failed",
+      "responseCode": 503,
+      "scheduledAt": "2026-07-16T10:05:00Z",
+      "completedAt": "2026-07-16T10:05:02Z",
+      "signature": "pvwh_test_43fe244d923c69d9"
+    },
+    {
+      "id": "wh_02",
+      "eventId": "evt_8_a707afe350e4666e",
+      "endpoint": "https://example.test/hooks/provenance",
+      "attempt": 2,
+      "status": "waiting",
+      "scheduledAt": "2026-07-16T10:10:00Z",
+      "signature": "pvwh_test_05ecc30f4df5860b"
+    }
+  ],
+  "mode": "TEST MODE / NON-AUTHORITATIVE / NOT A PRODUCTION CREDENTIAL"
+}

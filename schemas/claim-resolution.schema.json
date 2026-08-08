@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/claim-resolution.schema.json",
+  "title": "Claim Resolution",
+  "type": "object",
+  "required": [
+    "id",
+    "claim",
+    "state",
+    "evidenceIds",
+    "publicDisclosure"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "claim": {
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "verified",
+        "corroborated",
+        "self_attested",
+        "unknown",
+        "conflicting",
+        "not_claimed"
+      ]
+    },
+    "evidenceIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "publicDisclosure": {
+      "type": "string"
+    },
+    "confidenceBoundary": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

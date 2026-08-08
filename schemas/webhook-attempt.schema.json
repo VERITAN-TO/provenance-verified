@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://provenanceverified.org/schemas/webhook-attempt.schema.json",
+  "title": "Webhook Attempt",
+  "type": "object",
+  "required": [
+    "id",
+    "eventId",
+    "endpoint",
+    "attempt",
+    "status",
+    "scheduledAt",
+    "signature"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "eventId": {
+      "type": "string"
+    },
+    "endpoint": {
+      "type": "string"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "enum": [
+        "waiting",
+        "delivered",
+        "failed"
+      ]
+    },
+    "responseCode": {
+      "type": "integer"
+    },
+    "scheduledAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature": {
+      "type": "string"
+    },
+    "replayOf": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

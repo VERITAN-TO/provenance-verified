@@ -1,0 +1,6 @@
+-- Apply only after the worker functions are deployed and vault secrets are configured.
+-- The URLs are placeholders and this template is not executed by the build.
+select cron.schedule('pv-freshness-every-five-minutes','*/5 * * * *',$$select net.http_post(url:='https://<project>.supabase.co/functions/v1/freshness-worker',headers:=jsonb_build_object('Authorization','Bearer <service-worker-token>'))$$);
+select cron.schedule('pv-webhook-worker-every-minute','* * * * *',$$select net.http_post(url:='https://<project>.supabase.co/functions/v1/webhook-worker',headers:=jsonb_build_object('Authorization','Bearer <service-worker-token>'))$$);
+select cron.schedule('pv-notification-worker-every-minute','* * * * *',$$select net.http_post(url:='https://<project>.supabase.co/functions/v1/notification-worker',headers:=jsonb_build_object('Authorization','Bearer <service-worker-token>'))$$);
+select cron.schedule('pv-audit-export-worker-every-minute','* * * * *',$$select net.http_post(url:='https://<project>.supabase.co/functions/v1/audit-export-worker',headers:=jsonb_build_object('Authorization','Bearer <service-worker-token>'))$$);

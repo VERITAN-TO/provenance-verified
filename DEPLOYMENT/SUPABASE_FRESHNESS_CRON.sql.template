@@ -1,0 +1,21 @@
+-- Apply only after storing the Edge Function URL and service-role JWT in Supabase Vault.
+-- Required Vault names: pv_freshness_worker_url, pv_freshness_worker_service_jwt.
+-- The job is intentionally not self-installing: deployment authority must approve the
+-- schedule and preserve the returned cron job ID as activation evidence.
+select cron.schedule(
+  'provenance-r3-freshness-regression',
+  '*/5 * * * *',
+  $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name='pv_freshness_worker_url'),
+    headers := jsonb_build_object(
+      'authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='pv_freshness_worker_service_jwt'),
+      'content-type','application/json',
+      'x-pv-timestamp',to_char(clock_timestamp() at time zone 'utc','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+      'x-pv-nonce',gen_random_uuid()::text
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 30000
+  );
+  $$
+);
