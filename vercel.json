@@ -1,4 +1,5 @@
 {
   "framework": "nextjs",
-  "buildCommand": "NEXT_SKIP_INTERNAL_TYPECHECK=1 next build"
+  "buildCommand": "NEXT_SKIP_INTERNAL_TYPECHECK=1 next build",
+    "trailingSlash": false
 }
