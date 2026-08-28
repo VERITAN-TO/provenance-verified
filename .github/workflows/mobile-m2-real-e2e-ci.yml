@@ -346,11 +346,12 @@ jobs:
         id: int_test
         env:
           PV_API_KEY: ${{ secrets.PV_QUAL_API_KEY }}
-          PV_TENANT_ID: ${{ secrets.PV_QUAL_TENANT_ID }}
+          PV_TENANT_ID: ${{ vars.PV_QUAL_TENANT_ID }}
           PV_QUAL_SUBJECT_ID: ${{ vars.PV_QUAL_SUBJECT_ID }}
+          PV_QUAL_API_BASE_URL: ${{ vars.PV_QUAL_API_BASE_URL }}
         run: |
           flutter test test/integration/ --reporter expanded \
-            --dart-define=PV_API_BASE_URL=${{ env.PV_API_BASE_URL }} \
+            --dart-define=PV_API_BASE_URL=$PV_QUAL_API_BASE_URL \
             --dart-define=PV_API_KEY=$PV_API_KEY \
             --dart-define=PV_TENANT_ID=$PV_TENANT_ID \
             --dart-define=PV_QUAL_SUBJECT_ID=$PV_QUAL_SUBJECT_ID \
