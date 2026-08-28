@@ -85,8 +85,6 @@ class ApiClient {
     required String purposeId,
     required String requestedAction,
     required String claimScope,
-    required String principal,
-    required String organization,
   }) async {
     final uri = Uri.parse('$_baseUrl/api/v1/actionability');
     final response = await _client
@@ -98,8 +96,6 @@ class ApiClient {
             'purpose_id': purposeId,
             'requested_action': requestedAction,
             'claim_scope': claimScope,
-            'principal': principal,
-            'organization': organization,
           }),
         )
         .timeout(const Duration(seconds: 30));
@@ -133,7 +129,7 @@ class ApiClient {
           uri,
           headers: _authHeaders,
           body: jsonEncode({
-            'subject_id': subjectId,
+            'subject_public_id': subjectId,
             'purpose_id': purposeId,
             'requested_action': requestedAction,
             'claim_scope': claimScope,

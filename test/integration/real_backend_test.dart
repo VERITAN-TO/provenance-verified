@@ -126,8 +126,6 @@ void main() {
         purposeId: 'PURCHASE',
         requestedAction: 'evaluate',
         claimScope: 'standard',
-        principal: 'pv-mobile-qual',
-        organization: 'pv-mobile-qual',
       );
       final result = ActionabilityResult.fromJson(json);
       // Decision must be ALLOW, QUALIFY, DENY, or UNKNOWN — never arbitrary value.
@@ -148,8 +146,6 @@ void main() {
         purposeId: 'PURCHASE',
         requestedAction: 'evaluate',
         claimScope: 'standard',
-        principal: 'pv-mobile-qual',
-        organization: 'pv-mobile-qual',
       );
       final result = ActionabilityResult.fromJson(json);
       expect(result.trustStateDigest, isNotEmpty);
@@ -234,7 +230,7 @@ void main() {
   group('M2-INT-08: Freshness state from real backend', () {
     test('freshness state is a known value', () async {
       final r = await client.getMachineTrust(_qualSubjectId);
-      final knownStates = ['CURRENT', 'APPROACHING_STALE', 'STALE', 'EXPIRED', 'REVERIFY_REQUIRED', 'UNKNOWN'];
+      final knownStates = ['CURRENT', 'APPROACHING_STALE', 'STALE', 'EXPIRED', 'REVERIFY_REQUIRED', 'UNKNOWN', 'POLICY_NOT_DEFINED'];
       expect(knownStates, contains(r.freshnessState));
     }, timeout: const Timeout(Duration(seconds: 30)));
 

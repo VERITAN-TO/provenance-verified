@@ -310,8 +310,6 @@ void main() {
         purposeId: 'PURCHASE',
         requestedAction: 'evaluate',
         claimScope: 'standard',
-        principal: 'mobile-consumer',
-        organization: 'pv-mobile-qual',
       );
 
       expect(capturedUri?.path, '/api/v1/actionability');

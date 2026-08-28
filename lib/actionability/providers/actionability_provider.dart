@@ -13,8 +13,6 @@ typedef ActionabilityArgs = ({
   String purposeId,
   String requestedAction,
   String claimScope,
-  String principal,
-  String organization,
 });
 
 // Evaluates actionability via POST /api/v1/actionability.
@@ -27,8 +25,6 @@ final actionabilityProvider = FutureProvider.family<ActionabilityResult, Actiona
       purposeId: args.purposeId,
       requestedAction: args.requestedAction,
       claimScope: args.claimScope,
-      principal: args.principal,
-      organization: args.organization,
     );
     return ActionabilityResult.fromJson(json);
   },
@@ -43,8 +39,6 @@ final simpleActionabilityProvider = FutureProvider.family<ActionabilityResult, (
       purposeId: args.purpose,
       requestedAction: 'evaluate',
       claimScope: 'standard',
-      principal: 'mobile-consumer',
-      organization: 'pv-mobile-qual',
     );
     return ActionabilityResult.fromJson(json);
   },
