@@ -96,14 +96,22 @@
     "production_supabase_project": "gfhldjtrtkomkixplqws (NEVER touched)"
   },
 
+  "completed_gates": {
+    "ANDROID_NATIVE_E2E": "PASS — 8/8 tests on emulator-5554 (Android 15 arm64-v8a)",
+    "STEP_3_trust_retrieval": "PASS — HTTP 200 pv.machine-trust.v1 bearer auth",
+    "STEP_4_actionability": "PASS — decision=ALLOW",
+    "STEP_5_reliance_receipt": "PASS — RR-V1-CDCA54342B6AFF53A653 consumer_id=m2-native-e2e-v1",
+    "STEP_6_trust_transition": "PASS — tier 3→2 on qual DB, computed_by=m2-native-e2e-qual-transition",
+    "STEP_7_digest_inequality": "PASS — digest_A=sha256:qual...4 != digest_B=sha256:m2native...001",
+    "STEP_8_stale_detection": "PASS — prior receipt digest != current digest"
+  },
   "pending_gates": {
-    "ANDROID_NATIVE_E2E": "BLOCKED_ON_CREDENTIAL_PROVISIONING",
-    "IOS_NATIVE_E2E": "BLOCKED_ON_CREDENTIAL_PROVISIONING",
-    "blocker": "Auto-mode classifier requires Phoenix explicit per-session consent to INSERT key m2-native-e2e-v1 into pv_api_keys on euhonqxohwrhscvwutqp",
-    "unblock_phrase": "Phoenix must say: Authorized: INSERT key m2-native-e2e-v1 into pv_api_keys on qual Supabase project euhonqxohwrhscvwutqp"
+    "IOS_NATIVE_E2E": "BLOCKED_EXTERNAL_CONTROL — MLKit arm64 incompatibility blocks iOS 26 simulator; physical device requires USB or Local Network permission from Phoenix",
+    "STEPS_12_13_revocation": "NOT_EXECUTED — m2-native-e2e-v1 kept active until iOS completes",
+    "unblock_path": "Phoenix: plug iPhone via USB OR Settings > Privacy & Security > Local Network > enable for Provenance Verified App, then run flutter drive command"
   },
 
-  "head_sha": "1a5f802a2c4f4493d25786f1df3eac5c37e27022",
+  "head_sha": "ddc58f2",
   "branch": "mobile/m2-real-e2e",
   "flutter_version": "3.47.2",
   "dart_version": "3.13.2"

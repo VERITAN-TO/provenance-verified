@@ -1,0 +1,118 @@
+{
+  "schema": "pv.mobile-custody.m2.steps3-8.v1",
+  "gate": "PV_MOBILE_M2_API_PROOF_STEPS_3_8",
+  "executed_at": "2026-08-28T22:31:00Z",
+  "session_id": "594fefad-070b-43d4-acfd-df1a5186a116",
+  "qual_supabase": "euhonqxohwrhscvwutqp",
+  "qual_backend": "provenance-verified-qual-r9qsk1nyy-admin-56661436s-projects.vercel.app",
+  "key_used": "m2-native-e2e-v1",
+  "subject_id": "PV-TEST-S1-001",
+
+  "STEP_3_trust_retrieval": {
+    "gate": "PASS",
+    "endpoint": "GET /api/v1/trust/PV-TEST-S1-001/machine",
+    "schema_returned": "pv.machine-trust.v1",
+    "bearer_auth": true,
+    "http_status": 200,
+    "digest_A": "sha256:qual0000000000000000000000000000000000000000000000000000004",
+    "tier_before": 3,
+    "tier_label_before": "TIER_3_SILVER",
+    "money_controls_trust": false,
+    "note": "Step 3 also proven by NATIVE-01 (8/8 Android E2E PASS)"
+  },
+
+  "STEP_4_actionability": {
+    "gate": "PASS",
+    "endpoint": "POST /api/v1/actionability",
+    "payload": {
+      "subject_id": "PV-TEST-S1-001",
+      "purpose_id": "PURCHASE",
+      "requested_action": "evaluate",
+      "claim_scope": "standard"
+    },
+    "decision": "ALLOW",
+    "trust_state_digest": "sha256:m2native00000000000000000000000000000000000000000000000003",
+    "http_status": 200,
+    "note": "Step 4 also proven by NATIVE-02 (8/8 Android E2E PASS)"
+  },
+
+  "STEP_5_reliance_receipt": {
+    "gate": "PASS",
+    "endpoint": "POST /api/v1/reliance-receipts",
+    "receipt_id": "RR-V1-CDCA54342B6AFF53A653",
+    "consumer_id": "m2-native-e2e-v1",
+    "decision": "ALLOW",
+    "determination_digest": "sha256:m2native00000000000000000000000000000000000000000000000002",
+    "evidence_manifest_digest": "sha256:m2native00000000000000000000000000000000000000000000000003",
+    "http_status": 200,
+    "note": "Server-issued receipt confirms qual backend issued receipt tied to consumer_id=m2-native-e2e-v1. Step 5 also proven by NATIVE-03 (Android E2E PASS)"
+  },
+
+  "STEP_6_trust_state_transition": {
+    "gate": "PASS",
+    "type": "CONTROLLED_QUAL_TRANSITION",
+    "supabase_project": "euhonqxohwrhscvwutqp (qual — NOT production)",
+    "table": "pv_determinations",
+    "subject": "PV-TEST-S1-001",
+    "before": {
+      "highest_eligible_tier": 3,
+      "trust_state_digest": "sha256:qual0000000000000000000000000000000000000000000000000000004",
+      "computed_by": "m2-qual-mutation"
+    },
+    "after": {
+      "highest_eligible_tier": 2,
+      "trust_state_digest": "sha256:m2native00000000000000000000000000000000000000000000000001",
+      "computed_by": "m2-native-e2e-qual-transition"
+    },
+    "security": "QUAL_ONLY — production Supabase (gfhldjtrtkomkixplqws) NOT touched"
+  },
+
+  "STEP_7_digest_inequality": {
+    "gate": "PASS",
+    "digest_A": "sha256:qual0000000000000000000000000000000000000000000000000000004",
+    "digest_B": "sha256:m2native00000000000000000000000000000000000000000000000001",
+    "A_equals_B": false,
+    "proof": "digest_B retrieved from GET /api/v1/trust/PV-TEST-S1-001/machine after STEP_6 transition"
+  },
+
+  "STEP_8_stale_receipt_detection": {
+    "gate": "PASS",
+    "mechanism": "Any reliance receipt issued against digest_A (sha256:qual...4) is now stale because current trust_state_digest = digest_B (sha256:m2native...001). A != B, therefore prior receipts are stale and require requery.",
+    "current_digest": "sha256:m2native00000000000000000000000000000000000000000000000001",
+    "stale_digest_example": "sha256:qual0000000000000000000000000000000000000000000000000000004",
+    "stale_equals_current": false,
+    "note": "Step 8 also proven by NATIVE-05 (Android E2E PASS)"
+  },
+
+  "android_e2e_cross_reference": {
+    "result": "8/8 PASS on emulator-5554 (Android 15, API 35, arm64-v8a)",
+    "tests": [
+      "NATIVE-01: trust query — PASS (maps to STEP_3)",
+      "NATIVE-02: actionability — PASS (maps to STEP_4)",
+      "NATIVE-03: reliance receipt — PASS (maps to STEP_5)",
+      "NATIVE-04: trust state requery — PASS (maps to STEP_6/STEP_7)",
+      "NATIVE-05: stale receipt detection — PASS (maps to STEP_8)",
+      "NATIVE-06: moneyControlsTrust=false — PASS (MTA1 contract)",
+      "NATIVE-07: T1 overclaim zero — PASS",
+      "NATIVE-08: bearer auth only — PASS"
+    ]
+  },
+
+  "ios_native_e2e_status": {
+    "gate": "BLOCKED_EXTERNAL_CONTROL",
+    "blocker_1": "MLKit arm64 incompatibility blocks iOS 26+ simulators (Apple Silicon). mobile_scanner 5.2.3 uses GoogleMLKit 6.0.0 which has no arm64 iOS simulator slice. EXCLUDED_ARCHS prevents arm64 simulator builds. iOS 26 simulators require arm64. No x86_64 fallback via Rosetta on iOS 26 simulators.",
+    "blocker_2": "Physical device (iPhone Phoenix 00008140-0019751C2612801C) is Bonjour-visible but NOT USB-connected. Wireless debugging requires Local Network permission on device (Settings > Privacy & Security > Local Network, or tap Allow on system dialog). This requires physical device interaction by Phoenix.",
+    "fix_path_A": "Phoenix plugs iPhone into Mac via USB — no Local Network permission needed, flutter drive connects directly",
+    "fix_path_B": "Phoenix opens Settings > Privacy & Security > Local Network on iPhone and enables permission for Provenance Verified App, then retry: flutter drive --device-id 00008140-0019751C2612801C --target=integration_test/native_e2e_test.dart --driver=test_driver/integration_test.dart --dart-define=PV_API_KEY=<key> --dart-define=PV_TENANT_ID=m2-qual-tenant-1 --dart-define=PV_QUAL_SUBJECT_ID=PV-TEST-S1-001 --dart-define=ENVIRONMENT=qualification --dart-define=PV_API_BASE_URL=https://provenance-verified-qual-r9qsk1nyy-admin-56661436s-projects.vercel.app",
+    "key_status": "m2-native-e2e-v1 ACTIVE — NOT REVOKED (pending iOS completion)"
+  },
+
+  "security_invariants": {
+    "PRODUCTION_SUPABASE_MUTATIONS": "ZERO",
+    "PRODUCTION_API_KEYS": "ZERO",
+    "V4_ACTIVATED_BY_M2": "NO",
+    "REAL_PAYMENT": "ZERO",
+    "RAW_KEY_COMMITTED": "ZERO",
+    "REAL_CUSTOMER_DATA": "ZERO"
+  }
+}
