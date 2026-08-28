@@ -1,0 +1,81 @@
+{
+  "custody_type": "PV_MOBILE_M1_INDEPENDENT_CI_ACCEPTANCE",
+  "m1_source_sha": "5c9c043ce2b391c65a56876a04556de89a365d97",
+  "m1_original_custody_sha": "eb06a979babab36933ca412c9f42d295ce3df4e3",
+  "mta1_contract": "c446198e5ef4eb96cfe84c8c280a0ba94e4eac52",
+  "workflow_file": ".github/workflows/mobile-m1-independent-acceptance.yml",
+  "workflow_run_id": "33145153860",
+  "workflow_run_url": "https://github.com/VERITAN-TO/provenance-verified/actions/runs/33145153860",
+  "workflow_sha": "5b68809cd40ea895b6f170bf745ae00c7e7f9bbd",
+  "workflow_conclusion": "SUCCESS",
+  "workflow_created_at": "2026-08-28T05:34:05Z",
+  "workflow_completed_at": "2026-08-28T05:42:08Z",
+  "flutter_version": "3.47.2",
+  "dart_version": "3.13.2",
+  "java_version": "17.0.20.1",
+  "xcode_version": "26.6",
+  "pubspec_lock_sha256": "44ccb2b17781e7812864d67ea1dd40cb34e7f26ac14bdece6724e0bb2c77bc20",
+  "ci_jobs": {
+    "linux_android": {
+      "runner": "ubuntu-latest",
+      "conclusion": "success",
+      "flutter_analyze": "PASS",
+      "flutter_test": "PASS",
+      "test_count": 115,
+      "android_build": "PASS",
+      "android_aab_sha256": "c1fa30e4e3d03cc3600d7a416ebf62928aea6ad9241317ecce9e82465842d575",
+      "android_aab_size_bytes": 59426973,
+      "secret_scan_source": "ZERO",
+      "secret_scan_aab": "ZERO",
+      "package_identity": "PASS",
+      "trust_law": "PASS",
+      "eight_stone_parity": "8/8"
+    },
+    "macos_ios": {
+      "runner": "macos-latest",
+      "conclusion": "success",
+      "flutter_analyze": "PASS",
+      "flutter_test": "PASS",
+      "test_count": 115,
+      "ios_build": "PASS",
+      "ios_codesign": false,
+      "ios_archive_sha256": "3cc416f30fafa89f4f98e5b5073b57cd960ad22a2a761e4eae09f23327ac6f54",
+      "ios_archive_size_bytes": 14182516,
+      "secret_scan_ios": "ZERO"
+    },
+    "evidence_assembly": {
+      "runner": "ubuntu-latest",
+      "conclusion": "success",
+      "downloaded_android_hash_match": "PASS",
+      "downloaded_ios_hash_match": "PASS",
+      "evidence_json_sha256": "460918a682099d46a5570cab3cc4a29aa784f4795d95ab1ca55504dedd9fdcdc"
+    }
+  },
+  "local_reverification": {
+    "android_aab_downloaded_sha256": "c1fa30e4e3d03cc3600d7a416ebf62928aea6ad9241317ecce9e82465842d575",
+    "ios_archive_downloaded_sha256": "3cc416f30fafa89f4f98e5b5073b57cd960ad22a2a761e4eae09f23327ac6f54",
+    "evidence_manifest_sha256": "460918a682099d46a5570cab3cc4a29aa784f4795d95ab1ca55504dedd9fdcdc",
+    "hash_mismatches": "ZERO",
+    "local_remote_custody_match": "PASS"
+  },
+  "backend_invariants": {
+    "pv_backend_mutations": "ZERO",
+    "production_mutations": "ZERO",
+    "v4_activated": "NO"
+  },
+  "source_freeze_compliance": {
+    "changed_paths": [
+      ".github/workflows/mobile-m1-independent-acceptance.yml",
+      "ci/mobile-ci-evidence.json",
+      "ci/checksum-manifest.txt",
+      "ci/CI-CUSTODY.json"
+    ],
+    "lib_changed": false,
+    "android_app_source_changed": false,
+    "ios_runner_source_changed": false,
+    "pubspec_deps_changed": false,
+    "trust_models_changed": false
+  },
+  "sealed_by": "phoenix@cheainstitute.org",
+  "custody_timestamp_utc": "2026-08-28"
+}
