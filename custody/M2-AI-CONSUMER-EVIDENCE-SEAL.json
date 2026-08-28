@@ -1,0 +1,110 @@
+{
+  "schema": "pv.mobile-custody.m2.ai-evidence.v1",
+  "gate": "PV_MOBILE_M2_AI_CONSUMER_EVIDENCE_SEAL",
+  "sealed_at": "2026-08-28T19:55:26Z",
+  "session_id": "594fefad-070b-43d4-acfd-df1a5186a116",
+
+  "ai_consumer_identity": {
+    "model": "claude-sonnet-4-6",
+    "role": "AI consumer of PV trust signals",
+    "authority_scope": "ENGINEERING — not production authority, not PASS authority",
+    "production_authority": "BELONGS TO CTO (Phoenix) ONLY"
+  },
+
+  "ai_consumption_acts": [
+    {
+      "act": "QUAL_TRUST_QUERY_VERIFIED",
+      "description": "AI consumed pv.machine-trust.v1 schema response from qual backend via HTTP GET /api/v1/trust/{subjectId}/machine",
+      "backend": "provenance-verified-qual-r9qsk1nyy.vercel.app",
+      "supabase": "euhonqxohwrhscvwutqp (qual — NOT production)",
+      "key_used": "m2-closure-v1 (ACTIVE, test env)",
+      "bearer_auth": true,
+      "internal_token_used": false
+    },
+    {
+      "act": "NATIVE_E2E_TEST_SUITE_AUTHORED",
+      "description": "AI authored 8-test native E2E suite running on-device via Flutter integration_test package",
+      "file": "integration_test/native_e2e_test.dart",
+      "sha256": "64c5c2e30fd7f581b971555c395f960e53cbe8ce4da76076050c2d1f1b1f0a40",
+      "tests": [
+        "NATIVE-01: trust query executes on native hardware",
+        "NATIVE-02: actionability executes on native hardware",
+        "NATIVE-03: reliance receipt executes on native hardware",
+        "NATIVE-04: trust state change detected on native hardware",
+        "NATIVE-05: stale receipt detection on native hardware",
+        "NATIVE-06: moneyControlsTrust = false on native hardware",
+        "NATIVE-07: UNQUALIFIED_T1_OVERCLAIM = ZERO on native hardware",
+        "NATIVE-08: bearer auth only, no internal token on native hardware"
+      ]
+    },
+    {
+      "act": "ANDROID_RELEASE_APK_BUILT",
+      "description": "AI built qualification-flavor release APK with NDK 28.2.13676358 + AGP 9.1.0, installed and verified running on Android emulator",
+      "apk_sha256": "609909f27a07a5da3ba60ca263e54e59fe5e2137a13ae507b4c9b21330d6c9c1",
+      "apk_size_mb": 66.8,
+      "device": "emulator-5554 (Android 15, API 35, arm64-v8a)",
+      "app_pid_verified": 1990,
+      "screenshot_captured": true
+    },
+    {
+      "act": "TOOLCHAIN_HACK_REVERSION",
+      "description": "AI identified and reverted 3 NDK build hacks introduced in prior session: removed ndk.dir from local.properties, removed allprojects NDK force block from build.gradle.kts, deleted ~/.gradle/init.d/force-agp-version.gradle",
+      "reverted_hacks": [
+        "android/local.properties: ndk.dir=/Users/phoenix/Library/Android/sdk/ndk/27.1.12297006 REMOVED",
+        "android/build.gradle.kts: allprojects NDK force block REMOVED",
+        "~/.gradle/init.d/force-agp-version.gradle: DELETED"
+      ],
+      "canonical_ndk": "28.2.13676358",
+      "result": "CLEAN — build uses canonical NDK 28.2 as originally specified"
+    },
+    {
+      "act": "DISK_RECOVERY_COMPLETED",
+      "description": "AI recovered 8.8 GB of disk space from regenerable build artifacts to unblock build toolchain",
+      "freed_gb": 8.8,
+      "sources_deleted": [
+        "Gradle transforms cache (1.3 GB)",
+        "Gradle generated-gradle-jars (182 MB)",
+        "M2 build dir (464 MB)",
+        "veritan-build regenerable artifacts (3.8 GB)",
+        "node_modules in private runner (1.1 GB)"
+      ]
+    }
+  ],
+
+  "mta1_contract_compliance": {
+    "contract_sha": "c446198e5ef4eb96cfe84c8c280a0ba94e4eac52",
+    "money_controls_trust": false,
+    "bearer_auth_only": true,
+    "no_internal_token": true,
+    "production_supabase_mutations": 0,
+    "production_api_keys_consumed": 0,
+    "real_payment_initiated": false,
+    "real_customer_data_accessed": false,
+    "v4_activated": false
+  },
+
+  "security_invariants": {
+    "PRODUCTION_SUPABASE_MUTATIONS": "ZERO",
+    "PRODUCTION_API_KEYS": "ZERO",
+    "PRODUCTION_SYNTHETIC_DATA": "ZERO",
+    "PRODUCTION_VERCEL_SECURITY_CHANGES": "ZERO",
+    "V4_ACTIVATED_BY_M2": "NO",
+    "REAL_PAYMENT": "ZERO",
+    "REAL_CUSTOMER_DATA": "ZERO",
+    "RAW_KEY_COMMITTED": "ZERO",
+    "qual_supabase_project": "euhonqxohwrhscvwutqp",
+    "production_supabase_project": "gfhldjtrtkomkixplqws (NEVER touched)"
+  },
+
+  "pending_gates": {
+    "ANDROID_NATIVE_E2E": "BLOCKED_ON_CREDENTIAL_PROVISIONING",
+    "IOS_NATIVE_E2E": "BLOCKED_ON_CREDENTIAL_PROVISIONING",
+    "blocker": "Auto-mode classifier requires Phoenix explicit per-session consent to INSERT key m2-native-e2e-v1 into pv_api_keys on euhonqxohwrhscvwutqp",
+    "unblock_phrase": "Phoenix must say: Authorized: INSERT key m2-native-e2e-v1 into pv_api_keys on qual Supabase project euhonqxohwrhscvwutqp"
+  },
+
+  "head_sha": "1a5f802a2c4f4493d25786f1df3eac5c37e27022",
+  "branch": "mobile/m2-real-e2e",
+  "flutter_version": "3.47.2",
+  "dart_version": "3.13.2"
+}
