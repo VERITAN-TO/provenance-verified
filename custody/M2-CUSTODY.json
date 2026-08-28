@@ -1,0 +1,81 @@
+{
+  "schema": "pv.mobile-custody.m2.v1",
+  "gate": "PV_MOBILE_M2_REAL_E2E_CANDIDATE_READY",
+  "as_of": "2026-08-28",
+  "head_sha": "c391f03603b9bd878c5576d37cba00c6cd148bfe",
+  "branch": "mobile/m2-real-e2e",
+  "remote": "https://github.com/VERITAN-TO/provenance-verified",
+  "m1_ancestry_sha": "82ad06a",
+  "flutter_version": "3.47.2",
+  "dart_version": "3.13.2",
+  "unit_tests": {
+    "count": 164,
+    "result": "PASS",
+    "command": "flutter test test/unit/"
+  },
+  "flutter_analyze": "PASS",
+  "local_builds": {
+    "ios": {
+      "result": "PASS",
+      "size_mb": 37.4,
+      "runner_binary_sha256": "3ceeed25d65015ae60cea2bbc011e703ee8a403a71083ad86fafddccf597b0a1",
+      "codesign": false
+    },
+    "android_aab": {
+      "result": "PASS",
+      "flavor": "qualification",
+      "size_mb": 59.4,
+      "sha256": "a959abbe13e2e21155feb866cc0722cfa4c123ae532431cdcd76046446ae43a2"
+    }
+  },
+  "m2_gates": {
+    "M2-01_schema_parsing": "PASS (unit)",
+    "M2-02_trust_state_digest_from_header": "PASS (unit)",
+    "M2-03_physical_subject_id_from_header": "PASS (unit)",
+    "M2-04_money_controls_trust_false": "PASS (unit + static)",
+    "M2-05_unqualified_safe_tier_null": "PASS (unit)",
+    "M2-06_error_fail_closed": "PASS (unit)",
+    "M2-07_stale_digest_detection": "PASS (unit)",
+    "M2-08_freshness_state_mapping": "PASS (unit)",
+    "M2-09_full_trust_record_mapping": "PASS (unit)",
+    "M2-10_is_server_issued_flag": "PASS (unit)",
+    "M2-11_bearer_auth": "PASS (mock)",
+    "M2-12_correct_endpoint": "PASS (mock)",
+    "M2-13_digest_from_header": "PASS (mock)",
+    "M2-14_physical_subject_from_header": "PASS (mock)",
+    "M2-15_401_api_exception": "PASS (mock)",
+    "M2-16_403_insufficient_scope": "PASS (mock)",
+    "M2-17_429_rate_limit": "PASS (mock)",
+    "M2-18_actionability_request_body": "PASS (mock)",
+    "M2-19_reliance_receipt_request": "PASS (mock)",
+    "M2-INT-01_real_trust_query": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-02_real_digest_from_header": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-03_real_money_controls_false": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-04_real_unqualified_overclaim_zero": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-05_real_actionability": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-06_real_reliance_receipt": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-07_real_stale_detection": "PENDING_CREDENTIAL_PROVISIONING",
+    "M2-INT-08_real_freshness_state": "PENDING_CREDENTIAL_PROVISIONING"
+  },
+  "ci_workflow": ".github/workflows/mobile-m2-real-e2e-ci.yml",
+  "ci_gate": "PENDING_DISPATCH (requires GitHub secret PV_QUAL_API_KEY)",
+  "security": {
+    "bearer_auth": "PASS",
+    "internal_token_absent_from_consumer_client": "PASS",
+    "money_controls_trust": false,
+    "actionability_cache_for_reliance": false,
+    "secrets_in_source": "ZERO",
+    "secrets_in_android_artifact": "ZERO (asserted by build)",
+    "secrets_in_ios_artifact": "ZERO (asserted by build)"
+  },
+  "human_only_boundary": {
+    "description": "API key provisioning for real backend integration tests",
+    "authorization_required": "Phoenix must explicitly authorize: provision a new API key with trust:read + actionability:evaluate + reliance:create scopes for M2 qualification",
+    "provisioning_script": "/Users/phoenix/pv-mobile/scripts/provision_qual_key.sh",
+    "github_secret_name": "PV_QUAL_API_KEY",
+    "github_var_name": "PV_QUAL_BACKEND_ENABLED=true",
+    "github_var_subject_id": "PV_QUAL_SUBJECT_ID=<real_registered_subject_id>"
+  },
+  "pv_backend_mutations": "ZERO",
+  "v4_activated": "NO"
+}
