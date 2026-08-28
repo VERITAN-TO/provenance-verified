@@ -142,7 +142,7 @@ jobs:
           PATTERNS='sk_live_|rk_live_|service_role|BEGIN PRIVATE KEY|STRIPE_SECRET|OPENAI_API_KEY|ANTHROPIC_API_KEY'
           COUNT=$(find /tmp/aab-scan -type f -name "*.dex" \
             -exec strings {} \; 2>/dev/null | \
-            grep -cE "$PATTERNS" || echo 0)
+            grep -E "$PATTERNS" 2>/dev/null | wc -l)
           echo "AAB secrets: $COUNT"
           [ "$COUNT" -eq 0 ] || { echo "::error::Secrets found in Android AAB!"; exit 1; }
           echo "SECRETS_IN_ANDROID_ARTIFACT=ZERO"
@@ -281,7 +281,7 @@ jobs:
         run: |
           PATTERNS='sk_live_|rk_live_|service_role|BEGIN PRIVATE KEY|STRIPE_SECRET|OPENAI_API_KEY|ANTHROPIC_API_KEY'
           COUNT=$(strings build/ios/iphoneos/Runner.app/Runner 2>/dev/null | \
-            grep -cE "$PATTERNS" || echo 0)
+            grep -E "$PATTERNS" 2>/dev/null | wc -l)
           echo "iOS secrets: $COUNT"
           [ "$COUNT" -eq 0 ] || { echo "::error::Secrets found in iOS artifact!"; exit 1; }
           echo "SECRETS_IN_IOS_ARTIFACT=ZERO"
