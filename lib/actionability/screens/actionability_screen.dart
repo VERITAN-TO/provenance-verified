@@ -37,7 +37,7 @@ class _ActionabilityScreenState extends ConsumerState<ActionabilityScreen> {
   @override
   Widget build(BuildContext context) {
     final args = (publicId: widget.publicId, purpose: _purpose.toJson());
-    final actionAsync = ref.watch(actionabilityProvider(args));
+    final actionAsync = ref.watch(simpleActionabilityProvider(args));
 
     return Scaffold(
       appBar: AppBar(

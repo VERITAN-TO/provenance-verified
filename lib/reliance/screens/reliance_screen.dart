@@ -27,7 +27,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
     assert(!PvConstants.actionabilityCacheForReliance, 'Actionability must not be cached for reliance');
 
     final args = (publicId: widget.publicId, purpose: _purpose.toJson());
-    final actionAsync = ref.watch(actionabilityProvider(args));
+    final actionAsync = ref.watch(simpleActionabilityProvider(args));
     final trustAsync = ref.watch(trustRecordProvider(widget.publicId));
 
     return Scaffold(

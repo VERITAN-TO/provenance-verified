@@ -1,3 +1,9 @@
+// M2: Reliance receipt model — supports both server-issued and local receipts.
+// Server-issued receipts: isServerIssued=true, receiptId from server.
+// Local receipts: isServerIssued=false, receiptId from UUID v4.
+// trust_state_digest is canonical — used for stale detection.
+// MTA1_CONTRACT: c446198e5ef4eb96cfe84c8c280a0ba94e4eac52
+
 import '../actionability/actionability_models.dart';
 
 enum ReceiptValidityState {
@@ -20,6 +26,8 @@ class RelianceReceipt {
   final DateTime? validUntil;
   final ReceiptValidityState validityState;
   final String? policyVersion;
+  // M2: true if receipt was issued by the PV server; false if local-only.
+  final bool isServerIssued;
 
   const RelianceReceipt({
     required this.receiptId,
@@ -34,7 +42,31 @@ class RelianceReceipt {
     this.validUntil,
     this.validityState = ReceiptValidityState.unknown,
     this.policyVersion,
+    this.isServerIssued = false,
   });
+
+  // Check if the receipt is stale: trust state has changed since issuance.
+  bool isStaleFor(String currentTrustStateDigest) {
+    if (trustStateDigest.isEmpty) return false;
+    return trustStateDigest != currentTrustStateDigest;
+  }
+
+  // A stale receipt MUST be invalidated — never reused for reliance decisions.
+  RelianceReceipt invalidate() => RelianceReceipt(
+        receiptId: receiptId,
+        publicId: publicId,
+        physicalSubjectId: physicalSubjectId,
+        trustStateDigest: trustStateDigest,
+        purpose: purpose,
+        decision: decision,
+        limitations: limitations,
+        prohibitedInferences: prohibitedInferences,
+        createdAt: createdAt,
+        validUntil: validUntil,
+        validityState: ReceiptValidityState.invalidated,
+        policyVersion: policyVersion,
+        isServerIssued: isServerIssued,
+      );
 
   Map<String, dynamic> toJson() => {
         'receipt_id': receiptId,
@@ -49,6 +81,7 @@ class RelianceReceipt {
         if (validUntil != null) 'valid_until': validUntil!.toIso8601String(),
         'validity_state': validityState.name.toUpperCase(),
         if (policyVersion != null) 'policy_version': policyVersion,
+        'is_server_issued': isServerIssued,
       };
 
   factory RelianceReceipt.fromJson(Map<String, dynamic> j) => RelianceReceipt(
@@ -69,6 +102,7 @@ class RelianceReceipt {
             : null,
         validityState: _parseValidity(j['validity_state']),
         policyVersion: j['policy_version'] as String?,
+        isServerIssued: j['is_server_issued'] as bool? ?? false,
       );
 
   static ReceiptValidityState _parseValidity(dynamic v) {

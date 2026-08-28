@@ -1,7 +1,7 @@
 name: provenance_verified_app
-description: PROVENANCE VERIFIED™ — Native trust client (M1)
+description: PROVENANCE VERIFIED™ — Real E2E trust client (M2)
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: '>=3.13.0 <4.0.0'

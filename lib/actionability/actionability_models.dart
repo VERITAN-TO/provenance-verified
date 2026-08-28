@@ -1,5 +1,6 @@
-// Actionability contract — MTA1_CONTRACT: c446198e5ef4eb96cfe84c8c280a0ba94e4eac52
+// M2: Actionability contract — real pv.machine-actionability.v1 schema.
 // UNKNOWN must NOT be treated as soft ALLOW. Fail-closed.
+// MTA1_CONTRACT: c446198e5ef4eb96cfe84c8c280a0ba94e4eac52
 
 enum ActionabilityDecision {
   allow,
@@ -16,6 +17,7 @@ enum ActionabilityDecision {
     }
   }
 
+  // FAIL CLOSED: any unrecognized value maps to UNKNOWN (not ALLOW).
   static ActionabilityDecision fromJson(dynamic v) {
     if (v == null) return unknown;
     switch (v.toString().toUpperCase()) {
@@ -63,25 +65,39 @@ enum ActionabilityPurpose {
   }
 }
 
+// Maps pv.machine-actionability.v1 response.
 class ActionabilityResult {
   final ActionabilityDecision decision;
+  final String schema;
+  final List<String> reasonCodes;
   final String? rationale;
   final List<String> qualifications;
   final List<String> limitations;
   final List<String> prohibitedInferences;
   final String? policyVersion;
+  // trust_state_digest from the actionability response — for reliance receipt.
+  final String trustStateDigest;
+  final String? receiptId;
+  final String asOf;
 
   const ActionabilityResult({
     required this.decision,
+    this.schema = 'pv.machine-actionability.v1',
+    this.reasonCodes = const [],
     this.rationale,
     this.qualifications = const [],
     this.limitations = const [],
     this.prohibitedInferences = const [],
     this.policyVersion,
+    this.trustStateDigest = '',
+    this.receiptId,
+    this.asOf = '',
   });
 
   factory ActionabilityResult.fromJson(Map<String, dynamic> j) => ActionabilityResult(
         decision: ActionabilityDecision.fromJson(j['decision']),
+        schema: j['schema'] as String? ?? 'pv.machine-actionability.v1',
+        reasonCodes: (j['reason_codes'] as List?)?.map((e) => e.toString()).toList() ?? [],
         rationale: j['rationale'] as String?,
         qualifications: (j['qualifications'] as List?)
                 ?.map((e) => e.toString())
@@ -93,5 +109,8 @@ class ActionabilityResult {
                 .toList() ??
             [],
         policyVersion: j['policy_version'] as String?,
+        trustStateDigest: j['trust_state_digest'] as String? ?? '',
+        receiptId: j['receipt_id'] as String?,
+        asOf: j['as_of'] as String? ?? '',
       );
 }
