@@ -120,7 +120,9 @@ void main() {
               'check for -34018 keychain error or server POST failure');
 
       // ── Navigate to receipt list ──────────────────────────────────────────
-      // Pop back through reliance → actionability → trust → scan (3 backs).
+      // ManualEntry uses context.go() which resets the stack to [/verify/:id].
+      // Pop back through reliance → actionability → trust result (2 pops).
+      // The loop breaks naturally at trust result (no back button = root).
       for (int pops = 0; pops < 3; pops++) {
         final back = find.byIcon(Icons.arrow_back);
         if (back.evaluate().isEmpty) break;
@@ -128,11 +130,12 @@ void main() {
         await tester.pumpAndSettle(const Duration(seconds: 2));
       }
 
-      // Tap history icon on scan screen → /receipts
-      final historyIcon = find.byIcon(Icons.history);
-      expect(historyIcon, findsOneWidget,
-          reason: 'IOS_ACTUAL_APP_E2E: history icon missing after navigating to scan screen');
-      await tester.tap(historyIcon);
+      // Now at trust result screen — tap receipt_long_outlined icon → /receipts.
+      // (Icons.history is on /scan; trust result uses Icons.receipt_long_outlined.)
+      final receiptsIcon = find.byIcon(Icons.receipt_long_outlined);
+      expect(receiptsIcon, findsOneWidget,
+          reason: 'IOS_ACTUAL_APP_E2E: receipt icon missing on trust result screen');
+      await tester.tap(receiptsIcon);
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       // ── Receipt list: saved receipt must appear ────────────────────────────
