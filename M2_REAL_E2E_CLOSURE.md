@@ -1,6 +1,7 @@
 # PV Mobile M2 — Real E2E Qualification Closure
 
 **PV_MOBILE_M2_REAL_E2E_ACCEPTANCE = PASS**
+**IOS_PROFILE_LAUNCH = PASS** (2026-08-29)
 
 ## Gate Summary
 
@@ -31,6 +32,16 @@
 | Artifact download + rehash | PASS |
 | Revoke qual keys | PASS (4/4 REVOKED at 2026-08-28T16:32:57Z) |
 | Post-revoke denial | PASS (HTTP 401) |
+| **IOS_PROFILE_LAUNCH — PROFILE build on physical iPhone** | **PASS** |
+| NATIVE-01: trust query (PROFILE, no debug overlay) | PASS |
+| NATIVE-02: actionability (decision=ALLOW) | PASS |
+| NATIVE-03: reliance receipt (RR-V1-D7F194062F719C7EE736) | PASS |
+| NATIVE-04: trust requery | PASS |
+| NATIVE-05: stale detection | PASS |
+| NATIVE-06: moneyControlsTrust=false | PASS |
+| NATIVE-07: UNQUALIFIED_T1_OVERCLAIM=ZERO (safe_tier=2) | PASS |
+| NATIVE-08: bearer HTTP 200 | PASS |
+| Qual key m2-native-e2e-v3 revoked | PASS (HTTP 401 verified) |
 
 ## Artifacts
 
@@ -69,6 +80,16 @@
 - m2-rate-test — REVOKED 2026-08-28T16:32:57Z
 - m2-quota-test — REVOKED 2026-08-28T16:32:57Z
 
+## iOS Native E2E Artifacts
+
+- **Custody**: `M2-IOS-NATIVE-E2E-CUSTODY.json`
+- **Raw results**: `m2_ios_e2e_final_results.json`
+- **Runner**: `lib/m2_e2e_runner.dart`
+- **Device**: D92D9A26-C7C0-5343-8401-DF86222060C2 (USB, unlocked)
+- **Build mode**: PROFILE (AOT, no Flutter debug overlay)
+- **File write fix**: `Directory.systemTemp` (NSTemporaryDirectory) — TMPDIR env var unreliable in AOT
+- **Qual key v3 DB id**: `633a2679-8f3b-4005-86e2-363ed2cb82a0` (REVOKED 2026-08-29T13:45:41Z)
+
 ## Notes
 
 - GitHub CI real-backend integration job requires manual `gh secret set PV_QUAL_API_KEY`
@@ -76,3 +97,5 @@
   Local integration tests 17/17 PASS against qual deployment serve as equivalent evidence.
 - iOS simulator install blocked by MLKit (mobile_scanner dep) lacking arm64 support on iOS 26.
   This is a third-party dependency limitation, not a PV code defect. iOS compile PASS.
+- iOS PROFILE native E2E: `Platform.environment['TMPDIR']` unreliable in AOT mode. Fixed by
+  using `Directory.systemTemp` (backed by NSTemporaryDirectory ObjC API). All 8 tests PASS.

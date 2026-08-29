@@ -1,0 +1,88 @@
+{
+  "custody_type": "PV_MOBILE_M2_IOS_NATIVE_E2E",
+  "gate": "IOS_PROFILE_LAUNCH",
+  "gate_result": "PASS",
+  "timestamp_utc": "2026-08-29T13:45:00Z",
+  "sealed_by": "phoenix@cheainstitute.org",
+
+  "build": {
+    "flutter_version": "3.47.2",
+    "dart_version": "3.13.2",
+    "flutter_channel": "stable",
+    "build_mode": "PROFILE",
+    "codesign": "MANUAL",
+    "entry_point": "lib/m2_e2e_runner.dart",
+    "bundle_id": "to.veritan.pv.provenanceVerifiedApp",
+    "team_id": "KHZN4HKNXC",
+    "provisioning_profile_uuid": "548d0148-661d-4a63-9d59-9e9b3258bed4",
+    "provisioning_profile_type": "Development",
+    "get_task_allow": true
+  },
+
+  "device": {
+    "udid": "D92D9A26-C7C0-5343-8401-DF86222060C2",
+    "platform": "iOS",
+    "connection": "USB"
+  },
+
+  "ios_native_e2e": {
+    "schema": "pv.m2.ios-e2e-results.v1",
+    "final_result": "PASS",
+    "pass": 8,
+    "fail": 0,
+    "total": 8,
+    "tests": [
+      {"id": "NATIVE-01", "result": "PASS", "desc": "trust query on native hardware",
+       "detail": {"schema": "pv.machine-trust.v1", "tier": 2}},
+      {"id": "NATIVE-02", "result": "PASS", "desc": "actionability on native hardware",
+       "detail": {"decision": "ALLOW"}},
+      {"id": "NATIVE-03", "result": "PASS", "desc": "reliance receipt on native hardware",
+       "detail": {"receipt_id": "RR-V1-D7F194062F719C7EE736"}},
+      {"id": "NATIVE-04", "result": "PASS", "desc": "trust requery on native hardware"},
+      {"id": "NATIVE-05", "result": "PASS", "desc": "stale detection on native hardware",
+       "detail": {"stale_mismatch": true}},
+      {"id": "NATIVE-06", "result": "PASS", "desc": "moneyControlsTrust=false on native hardware",
+       "detail": {"money_controls_trust": false}},
+      {"id": "NATIVE-07", "result": "PASS", "desc": "UNQUALIFIED_T1_OVERCLAIM=ZERO on native hardware",
+       "detail": {"is_qualified": true, "safe_tier": 2}},
+      {"id": "NATIVE-08", "result": "PASS", "desc": "bearer auth HTTP 200 on native hardware",
+       "detail": {"http": 200, "schema": "pv.machine-trust.v1"}}
+    ]
+  },
+
+  "qual_key": {
+    "key_id": "m2-native-e2e-v3",
+    "db_id": "633a2679-8f3b-4005-86e2-363ed2cb82a0",
+    "status_after_test": "REVOKED",
+    "revoked_at_utc": "2026-08-29T13:45:41Z",
+    "post_revoke_http_status": 401,
+    "revocation_verified": true
+  },
+
+  "qual_backend": {
+    "project_id": "euhonqxohwrhscvwutqp",
+    "deployment": "provenance-verified-qual-r9qsk1nyy-admin-56661436s-projects.vercel.app",
+    "environment": "test",
+    "tenant_id": "m2-qual-tenant-1",
+    "qual_subject_id": "PV-TEST-S1-001"
+  },
+
+  "security_invariants": {
+    "PRODUCTION_SUPABASE_MUTATIONS": "ZERO",
+    "REAL_PAYMENT": "ZERO",
+    "V4_ACTIVATION": "NO",
+    "V4_ACTIVATED_BY_M2": "NO",
+    "RAW_KEY_COMMITTED": "ZERO",
+    "PRODUCTION_API_KEYS": "ZERO",
+    "PRODUCTION_SYNTHETIC_DATA": "ZERO",
+    "PRODUCTION_VERCEL_SECURITY_CHANGES": "ZERO",
+    "REAL_CUSTOMER_DATA": "ZERO"
+  },
+
+  "prior_closures": {
+    "m2_unit_tests": "164/164 PASS",
+    "m2_android_native_e2e": "PASS (previous session)",
+    "m2_integration_tests": "17/17 PASS",
+    "m2_real_e2e_acceptance": "PASS at 7c5f6e0"
+  }
+}

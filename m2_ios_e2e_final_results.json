@@ -1,0 +1,84 @@
+{
+  "schema": "pv.m2.ios-e2e-results.v1",
+  "final_result": "PASS",
+  "pass": 8,
+  "fail": 0,
+  "total": 8,
+  "tests": [
+    {
+      "id": "NATIVE-01",
+      "result": "PASS",
+      "desc": "trust query on native hardware",
+      "detail": {
+        "schema": "pv.machine-trust.v1",
+        "tier": 2,
+        "digest": "sha256:m2native00000000000000000000000000000000000000000000000001"
+      }
+    },
+    {
+      "id": "NATIVE-02",
+      "result": "PASS",
+      "desc": "actionability on native hardware",
+      "detail": {
+        "decision": "ALLOW",
+        "digest": "sha256:m2native00000000000000000000000000000000000000000000000003"
+      }
+    },
+    {
+      "id": "NATIVE-03",
+      "result": "PASS",
+      "desc": "reliance receipt on native hardware",
+      "detail": {
+        "receipt_id": "RR-V1-D7F194062F719C7EE736"
+      }
+    },
+    {
+      "id": "NATIVE-04",
+      "result": "PASS",
+      "desc": "trust requery on native hardware",
+      "detail": {
+        "digest1": "sha256:m2native00000000000000000000000000000000000000000000000001",
+        "digest2": "sha256:m2native00000000000000000000000000000000000000000000000001"
+      }
+    },
+    {
+      "id": "NATIVE-05",
+      "result": "PASS",
+      "desc": "stale detection on native hardware",
+      "detail": {
+        "current_digest": "sha256:m2native00000000000000000000000000000000000000000000000001",
+        "stale_mismatch": true
+      }
+    },
+    {
+      "id": "NATIVE-06",
+      "result": "PASS",
+      "desc": "moneyControlsTrust=false on native hardware",
+      "detail": {
+        "money_controls_trust": false
+      }
+    },
+    {
+      "id": "NATIVE-07",
+      "result": "PASS",
+      "desc": "UNQUALIFIED_T1_OVERCLAIM=ZERO on native hardware",
+      "detail": {
+        "is_qualified": true,
+        "safe_tier": 2
+      }
+    },
+    {
+      "id": "NATIVE-08",
+      "result": "PASS",
+      "desc": "bearer auth HTTP 200 on native hardware",
+      "detail": {
+        "http": 200,
+        "schema": "pv.machine-trust.v1"
+      }
+    }
+  ],
+  "security": {
+    "PRODUCTION_SUPABASE_MUTATIONS": "ZERO",
+    "V4_ACTIVATED_BY_M2": "NO"
+  }
+}
