@@ -59,3 +59,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // integration_test is a Flutter SDK dev_dependency that registers as an Android plugin.
+    // Without this explicit dependency, its classes are absent from the release compile path.
+    implementation(project(":integration_test"))
+}
