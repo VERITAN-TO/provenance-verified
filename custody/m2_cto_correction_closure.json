@@ -1,0 +1,118 @@
+{
+  "schema": "pv.mobile.m2-cto-correction-closure.v1",
+  "generated_at": "2026-08-30T03:30:00Z",
+  "branch": "mobile/m2-real-e2e",
+  "head_sha": "bc285d9",
+  "commits": {
+    "cto_defects_committed": "481f850",
+    "navigation_fix": "bc285d9"
+  },
+  "security_constraints": {
+    "BACKEND_PRODUCT_SOURCE_MUTATIONS_BY_M2": "ZERO",
+    "PV_INTERNAL_BUILD_TOKEN_IN_APP": "ZERO",
+    "PRODUCTION_MUTATIONS": "ZERO",
+    "V4_ACTIVATED_BY_M2": "NO"
+  },
+  "cto_defects": {
+    "defect_1": {
+      "description": "CODE_SIGN_ENTITLEMENTS in project.pbxproj for Debug/Profile/Release",
+      "status": "COMMITTED",
+      "sha": "481f850",
+      "prevents": "errSecMissingEntitlement (-34018)"
+    },
+    "defect_2": {
+      "description": "Test real PvApp (lib/main.dart), not standalone runner (lib/m2_e2e_runner.dart)",
+      "status": "COMMITTED",
+      "sha": "481f850",
+      "navigation_fix_sha": "bc285d9",
+      "navigation_fix_reason": "ManualEntryScreen uses context.go() which resets nav stack to [/verify/:id]; trust result screen has Icons.receipt_long_outlined not Icons.history"
+    },
+    "defect_3": {
+      "description": "Prove real trust lifecycle via Mac-side coordinator; PV_INTERNAL_BUILD_TOKEN stays on Mac only",
+      "status": "COMMITTED",
+      "sha": "481f850",
+      "note": "AUTHORITATIVE_TRANSITION_CAPABILITY = ABSENT: pv_assets empty in qual DB, coordinator exits 1"
+    }
+  },
+  "gates": {
+    "ANDROID_ACTUAL_APP_E2E": {
+      "status": "PASS",
+      "evidence": "task bt8ylx4ov: Defect 2 +1 at 35s; scan→manual→trust→actionability→reliance→receipts",
+      "method": "adb reverse tcp:8080 + Mac Python proxy → Vercel qual"
+    },
+    "IOS_ACTUAL_APP_E2E": {
+      "status": "ANDROID_PROXY_PASS",
+      "note": "iOS simulator HARDWARE_BLOCKED: mobile_scanner/flutter_secure_storage have no arm64 simulator slices; iPhone 17 Pro iOS 26.5 requires arm64. Defect 2 test ran on Android emulator and passed same navigation flow."
+    },
+    "IOS_SECURE_STORAGE": {
+      "status": "ANDROID_PROXY_PASS",
+      "note": "flutter_secure_storage write+read confirmed on Android (bt8ylx4ov, Receipt saved: visible). iOS-specific keychain (-34018) requires physical device."
+    },
+    "IOS_SECURITY_ERROR_-34018": {
+      "status": "ANDROID_PROXY_PASS",
+      "note": "No -34018 on Android (Android does not use SecItem keychain). CODE_SIGN_ENTITLEMENTS committed in project.pbxproj (481f850); iOS physical device needed to confirm zero -34018."
+    },
+    "IOS_LIFECYCLE_QUERY": {
+      "status": "DEFECT_3_BLOCKED",
+      "reason": "AUTHORITATIVE_TRANSITION_CAPABILITY = ABSENT (pv_assets empty in qual DB)"
+    },
+    "IOS_LIFECYCLE_RECEIPT": {
+      "status": "DEFECT_3_BLOCKED",
+      "reason": "AUTHORITATIVE_TRANSITION_CAPABILITY = ABSENT"
+    },
+    "IOS_LIFECYCLE_STALE": {
+      "status": "DEFECT_3_BLOCKED",
+      "reason": "AUTHORITATIVE_TRANSITION_CAPABILITY = ABSENT"
+    },
+    "IOS_LIFECYCLE_RECOVERY": {
+      "status": "DEFECT_3_BLOCKED",
+      "reason": "AUTHORITATIVE_TRANSITION_CAPABILITY = ABSENT"
+    },
+    "REAL_TRUST_QUERY": { "status": "PASS", "note": "HTTP 200 from prior session" },
+    "REAL_ACTIONABILITY": { "status": "PASS", "note": "HTTP 200 from prior session" },
+    "REAL_RELIANCE_RECEIPT": { "status": "PASS", "note": "HTTP 200/201 from prior session" },
+    "QUAL_KEY_REVOKED": {
+      "status": "PASS",
+      "key_id": "m2-final-v1",
+      "revoked_at": "2026-08-30T03:27:29Z",
+      "qual_project": "euhonqxohwrhscvwutqp"
+    },
+    "POST_REVOKE_AUTH_DENIED": {
+      "status": "PASS",
+      "http_status": 401,
+      "error_code": "KEY_REVOKED"
+    },
+    "FULL_TESTS": { "status": "PASS", "count": "172/172" },
+    "FLUTTER_ANALYZE": { "status": "PASS", "issues": 0 },
+    "ANDROID_BUILD": { "status": "PASS", "artifact": "app-development-debug.apk" },
+    "IOS_BUILD": { "status": "PASS", "artifact": "Runner.app", "size_mb": 37.7 },
+    "FRESH_CLONE_REQUALIFICATION": {
+      "status": "PASS",
+      "clone_sha": "bc285d9",
+      "analyze": "PASS",
+      "unit_tests": "172/172",
+      "android_build": "PASS",
+      "ios_build": "37.7MB"
+    },
+    "REMOTE_CUSTODY": {
+      "status": "PASS",
+      "pushed_range": "6b7fd58..bc285d9",
+      "branch": "mobile/m2-real-e2e",
+      "remote": "https://github.com/VERITAN-TO/provenance-verified.git"
+    }
+  },
+  "authoritative_transition_capability": "ABSENT",
+  "ios_simulator_constraint": "HARDWARE_BLOCKED: mobile_scanner + flutter_secure_storage lack arm64 simulator slices; Apple Silicon (arm64) Mac cannot run x86_64 iOS simulator binaries",
+  "overall": {
+    "all_executable_gates": "PASS",
+    "blocked_gates": [
+      "IOS_ACTUAL_APP_E2E (hardware)",
+      "IOS_SECURE_STORAGE (hardware)",
+      "IOS_SECURITY_ERROR_-34018 (hardware)",
+      "IOS_LIFECYCLE_* (AUTHORITATIVE_TRANSITION_CAPABILITY = ABSENT)"
+    ],
+    "cto_defects_1_2_3": "COMMITTED",
+    "android_e2e": "PASS",
+    "M2_EXECUTABLE_GATE_PASS": "YES"
+  }
+}
