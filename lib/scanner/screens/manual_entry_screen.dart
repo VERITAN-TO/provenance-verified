@@ -54,7 +54,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
             FilledButton(
               onPressed: _submit,
               style: FilledButton.styleFrom(
-                backgroundColor: PvColors.tier4,
+                backgroundColor: PvColors.cyan,
                 foregroundColor: Colors.black,
               ),
               child: const Text('Look up'),

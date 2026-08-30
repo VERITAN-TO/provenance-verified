@@ -115,7 +115,7 @@ class _ActionButtons extends StatelessWidget {
             onPressed: () => context.push('/verify/${record.publicId}/actionability'),
             icon: const Icon(Icons.gavel, size: 18),
             label: const Text('Assess Reliance'),
-            style: FilledButton.styleFrom(backgroundColor: PvColors.tier3),
+            style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),
           ),
       ],
     );

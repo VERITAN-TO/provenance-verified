@@ -120,7 +120,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                             )
                           : const Icon(Icons.save_outlined),
                       label: const Text('Save Reliance Receipt'),
-                      style: FilledButton.styleFrom(backgroundColor: PvColors.tier3),
+                      style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),
                     ),
                 ],
               );
@@ -141,7 +141,10 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
   }
 
   Future<void> _saveReceipt(dynamic result, dynamic record) async {
-    if (record == null) return;
+    if (record == null) {
+      debugPrint('PV_RECEIPT_SAVE_ERROR: record is null (trustAsync not loaded)');
+      return;
+    }
     setState(() => _saving = true);
     try {
       final notifier = ref.read(receiptNotifierProvider.notifier);
@@ -157,6 +160,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
       );
       setState(() => _savedReceiptId = 'saved');
     } catch (e) {
+      debugPrint('PV_RECEIPT_SAVE_ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save: $e'), backgroundColor: PvColors.error),

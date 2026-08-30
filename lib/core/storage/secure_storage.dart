@@ -4,7 +4,6 @@ class PvSecureStorage {
   static const _storage = FlutterSecureStorage(
     iOptions: IOSOptions(
       accessibility: KeychainAccessibility.first_unlock_this_device,
-      groupId: 'to.veritan.pv',
     ),
     aOptions: AndroidOptions(
       encryptedSharedPreferences: true,

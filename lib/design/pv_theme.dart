@@ -6,8 +6,8 @@ class PvTheme {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: PvColors.background,
         colorScheme: const ColorScheme.dark(
-          primary: PvColors.tier4,
-          secondary: PvColors.tier3,
+          primary: PvColors.cyan,
+          secondary: PvColors.silver,
           surface: PvColors.surface,
           error: PvColors.error,
         ),
