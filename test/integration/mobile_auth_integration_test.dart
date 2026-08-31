@@ -141,7 +141,7 @@ void main() {
       );
       final body      = jsonDecode(resp.body) as Map<String, dynamic>;
       final errorCode = (body['error'] as Map<String, dynamic>?)?['code'] as String?;
-      expect(errorCode, 'VALIDATION_ERROR');
+      expect(errorCode, 'INVALID_TENANT_ID');
     }, timeout: const Timeout(Duration(seconds: 30)));
   });
 

@@ -20,6 +20,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:provenance_verified_app/main.dart' as app;
 import 'package:provenance_verified_app/core/config/environment.dart';
+import 'package:provenance_verified_app/core/auth/mobile_token_service.dart';
 import 'package:provenance_verified_app/core/storage/secure_storage.dart';
 
 void main() {
@@ -178,7 +179,8 @@ void main() {
           reason: 'DEFECT_3_BLOCKED: PV_M2_STALE_DIGEST not provided — coordinator must run first.');
 
       final baseUrl = Env.pvApiBaseUrl;
-      final apiKey = Env.pvApiKey;
+      final tokenService = MobileTokenService();
+      final apiKey = await tokenService.getToken();
       final storage = PvSecureStorage();
       String receiptIdB = '';
       String recoveryReceiptId = '';
