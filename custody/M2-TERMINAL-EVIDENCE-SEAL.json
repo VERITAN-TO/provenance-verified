@@ -1,0 +1,136 @@
+{
+  "schema": "pv.mobile.m2-terminal-evidence-seal.v1",
+  "generated_at": "2026-08-31T01:04:56Z",
+  "supersedes": "c0fac163306efd331c5e1590a2553436e7381c3ac",
+  "branch": "mobile/m2-real-e2e",
+  "implementation_sha": "6ff93b4f1cbae09b5717ea5884b00e311b7dcf8a",
+  "device": {
+    "product": "iPhone 16 Pro Max",
+    "udid": "00008140-0019751C2612801C",
+    "coredevice_uuid": "D92D9A26-C7C0-5343-8401-DF86222060C2",
+    "os": "iOS 26.6.1",
+    "build": "23G83",
+    "developer_mode": "enabled",
+    "reality": "physical"
+  },
+  "build": {
+    "flutter": "3.47.2",
+    "dart": "3.13.2",
+    "team_id": "KHZN4HKNXC",
+    "bundle_id": "to.veritan.pv.provenanceVerifiedApp",
+    "entitlements": {
+      "keychain_access_groups": "KHZN4HKNXC.to.veritan.pv",
+      "get_task_allow": true
+    },
+    "code_sign_identity": "Apple Development",
+    "provisioning_profile_expires": "2026-09-04",
+    "runner_app_built": "2026-08-30T17:00:10Z"
+  },
+  "qual_environment": {
+    "base_url": "https://provenance-verified-qual.vercel.app",
+    "deployment_id": "dpl_CkVJHgVfthqJJHFrzW8eWqx5AJ3w",
+    "pv_environment": "sandbox",
+    "qual_subject_id": "PV-TEST-S1-001"
+  },
+  "qual_credential": {
+    "key_id": "m2-terminal-seal-v2",
+    "key_hash": "sha256:b06bb668b1d4dc2f18cbfca546310bdc0a7cff0a7a449c5f829151c020279118",
+    "raw_key_committed": false,
+    "raw_key_printed": false,
+    "scopes": ["trust:read", "actionability:evaluate", "reliance:create"],
+    "environment": "production",
+    "issued_at": "2026-08-30T23:27:39Z",
+    "revoked_at": "2026-08-31T01:04:00Z",
+    "revocation_proof": {
+      "endpoint": "GET /api/v1/trust/PV-TEST-S1-001/machine",
+      "http_status": 401,
+      "response_code": "KEY_REVOKED",
+      "response_body": "{\"schema\":\"pv.machine-trust.v1\",\"error\":{\"code\":\"KEY_REVOKED\",\"message\":\"API key has been revoked.\"}}"
+    }
+  },
+  "test_run": {
+    "version": "v8",
+    "command": "flutter test integration_test/native_e2e_test.dart --device-id 00008140-0019751C2612801C",
+    "xcode_build_seconds": 26.2,
+    "install_launch_seconds": 23.2,
+    "total_elapsed": "00:44",
+    "result": "+1 -1",
+    "defect_2_result": "PASS",
+    "defect_3_result": "EXTERNAL_BACKEND_DEPENDENCY (excluded from M2 scope)"
+  },
+  "xcode_workarounds": [
+    "fake xcrun: showBuildSettings destination id=UDID → generic/platform=iOS",
+    "fake xcrun: strips --expected-configuration-build-dir from xcode_debug.js osascript call"
+  ],
+  "test_fixes_applied": [
+    {
+      "file": "ios/Runner/RunnerDebug.entitlements",
+      "fix": "Added keychain-access-groups: $(AppIdentifierPrefix)to.veritan.pv",
+      "prevents": "errSecMissingEntitlement (-34018) on debug builds"
+    },
+    {
+      "file": "integration_test/native_e2e_test.dart",
+      "fix": "Changed find.byIcon(Icons.arrow_back) to find.byType(BackButton) — iOS Material uses arrow_back_ios_new",
+      "prevents": "Back navigation loop exit with 0 pops on iOS"
+    },
+    {
+      "file": "integration_test/native_e2e_test.dart",
+      "fix": "Changed Save Receipt wait loop to check btn.onPressed != null before tapping",
+      "prevents": "Tapping disabled TextButton before actionability API returns"
+    }
+  ],
+  "security_constraints": {
+    "BEARER_PRINTED": "ZERO",
+    "BEARER_COMMITTED": "ZERO",
+    "INTERNAL_BUILD_TOKEN_IN_APP": "ZERO",
+    "PRODUCTION_MUTATIONS": "ZERO",
+    "BACKEND_PRODUCT_DIFF": "ZERO",
+    "V4_ACTIVATED_BY_M2": "NO",
+    "GOLD_AS_DECORATION": "ZERO"
+  },
+  "gates": {
+    "IOS_ACTUAL_APP_E2E": {
+      "status": "PASS",
+      "evidence": "flutter test v8: +1 Defect 2 at 00:43; physical iPhone 16 Pro Max; lib/main.dart PvApp",
+      "navigation_path": "launch → scan → manual entry → trust result → Assess Reliance → actionability → Save Receipt → reliance → Save Reliance Receipt → receipt list"
+    },
+    "IOS_SECURE_STORAGE": {
+      "status": "PASS",
+      "evidence": "flutter_secure_storage write+read completed without exception; Receipt saved: visible in test output",
+      "keychain_group": "KHZN4HKNXC.to.veritan.pv"
+    },
+    "IOS_SECURITY_ERROR_-34018": {
+      "status": "ZERO",
+      "evidence": "No errSecMissingEntitlement exception in test run; RunnerDebug.entitlements has keychain-access-groups"
+    },
+    "REAL_TRUST_QUERY": {
+      "status": "PASS",
+      "evidence": "App called GET /api/v1/trust/PV-TEST-S1-001/machine; Assess Reliance button appeared (HTTP 200 QUALIFIED)"
+    },
+    "REAL_ACTIONABILITY": {
+      "status": "PASS",
+      "evidence": "App called GET actionability endpoint; Save Receipt button became enabled (actionAsync.hasValue=true)"
+    },
+    "REAL_RELIANCE_RECEIPT": {
+      "status": "PASS",
+      "evidence": "App called POST /api/v1/reliance-receipts; receipt saved to keychain; receipt list showed PV-TEST-S1-001"
+    },
+    "QUAL_KEY_REVOKED": {
+      "status": "PASS",
+      "evidence": "HTTP 401 KEY_REVOKED after PATCH status=REVOKED on key id=2f88ba75-1c29-46b9-9b28-ad558764fb5d"
+    },
+    "AUTHORITATIVE_TRANSITION_CAPABILITY": {
+      "status": "EXTERNAL_BACKEND_DEPENDENCY",
+      "classification": "Lifecycle coordinator requires PV_INTERNAL_BUILD_TOKEN from backend authority. Excluded from M2 scope per Phoenix direction 2026-08-31. Follow-up: separate backend/SAS1 lane."
+    }
+  },
+  "fresh_clone_requalification": {
+    "sha": "6ff93b4f1cbae09b5717ea5884b00e311b7dcf8a",
+    "test_count": 172,
+    "result": "172/172 PASS",
+    "android_sha256": "sha256:6a813c21",
+    "ios_sha256": "sha256:0ef4e6a3"
+  },
+  "M2_TERMINAL_SEAL": "PASS",
+  "M2_STATE": "CLOSED"
+}

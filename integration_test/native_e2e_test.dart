@@ -85,13 +85,19 @@ void main() {
 
       // ── Navigate to actionability ─────────────────────────────────────────
       await tester.tap(assessBtn);
-      for (int i = 0; i < 10; i++) {
+      // 'Save Receipt' is always rendered in AppBar but onPressed=null until
+      // actionAsync.hasValue — wait up to 20s for the API to return data.
+      final saveReceiptFinder = find.widgetWithText(TextButton, 'Save Receipt');
+      for (int i = 0; i < 20; i++) {
         await tester.pump(const Duration(seconds: 1));
-        if (find.widgetWithText(TextButton, 'Save Receipt').evaluate().isNotEmpty) break;
+        if (saveReceiptFinder.evaluate().isNotEmpty) {
+          final btn = tester.widget<TextButton>(saveReceiptFinder.first);
+          if (btn.onPressed != null) break;
+        }
       }
 
       // ── Actionability screen: Save Receipt AppBar button ──────────────────
-      final saveReceiptBtn = find.widgetWithText(TextButton, 'Save Receipt');
+      final saveReceiptBtn = saveReceiptFinder;
       expect(saveReceiptBtn, findsOneWidget,
           reason: 'IOS_ACTUAL_APP_E2E: "Save Receipt" missing on actionability screen');
 
@@ -124,7 +130,8 @@ void main() {
       // Pop back through reliance → actionability → trust result (2 pops).
       // The loop breaks naturally at trust result (no back button = root).
       for (int pops = 0; pops < 3; pops++) {
-        final back = find.byIcon(Icons.arrow_back);
+        // iOS Material uses arrow_back_ios_new; use BackButton type to be platform-agnostic.
+        final back = find.byType(BackButton);
         if (back.evaluate().isEmpty) break;
         await tester.tap(back.first);
         await tester.pumpAndSettle(const Duration(seconds: 2));
