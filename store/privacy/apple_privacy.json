@@ -1,0 +1,84 @@
+{
+  "_audit_note": "Every declaration below is bound to source file evidence. Last audited: 2026-08-30. Auditor: AGENT D.",
+
+  "data_used_to_track_you": [],
+
+  "data_linked_to_you": [],
+
+  "data_not_linked_to_you": [
+    {
+      "category": "Identifiers",
+      "type": "Other Identifiers",
+      "description": "The subject public record identifier (e.g. PV-GEMREF-001) entered manually or extracted from a scanned QR code is sent to the operator's own PV API server in GET /api/v1/trust/{publicId}/machine, POST /api/v1/actionability, and POST /api/v1/reliance-receipts. This identifier refers to a gemstone/asset record, NOT to the end-user of the app. No user identity, device ID, or advertising ID is attached to these requests.",
+      "purpose": "App Functionality",
+      "linked_to_identity": false,
+      "used_for_tracking": false,
+      "evidence": [
+        "lib/core/network/api_client.dart:53 — GET /api/v1/trust/{publicId}/machine",
+        "lib/core/network/api_client.dart:93 — POST /api/v1/actionability body: {subject_id, purpose_id, requested_action, claim_scope}",
+        "lib/core/network/api_client.dart:130 — POST /api/v1/reliance-receipts body: {subject_public_id, purpose_id, requested_action, claim_scope}"
+      ]
+    },
+    {
+      "category": "Other Data",
+      "type": "Other Data Types",
+      "description": "The purpose_id (e.g. 'purchase', 'insurance') and claim_scope are sent with each actionability and reliance-receipt request. These describe the operator's intended use, not personal information.",
+      "purpose": "App Functionality",
+      "linked_to_identity": false,
+      "used_for_tracking": false,
+      "evidence": [
+        "lib/core/network/api_client.dart:93-106 — evaluateActionability payload",
+        "lib/core/network/api_client.dart:130-144 — createRelianceReceipt payload"
+      ]
+    }
+  ],
+
+  "no_data_collected": false,
+
+  "data_stored_locally_not_transmitted": [
+    {
+      "type": "Recent search history (subject public IDs)",
+      "storage": "iOS Keychain (flutter_secure_storage, first_unlock_this_device) / Android EncryptedSharedPreferences",
+      "max_count": 10,
+      "never_sent_to_server": true,
+      "evidence": "lib/core/storage/secure_storage.dart:13-27 — pv_recent_searches key"
+    },
+    {
+      "type": "Reliance receipts (local-fallback receipts)",
+      "storage": "iOS Keychain (flutter_secure_storage, first_unlock_this_device) / Android EncryptedSharedPreferences",
+      "fields_stored": ["receiptId", "publicId", "physicalSubjectId", "trustStateDigest", "purpose", "decision", "limitations", "prohibitedInferences", "createdAt", "policyVersion", "isServerIssued"],
+      "never_sent_to_server": true,
+      "evidence": "lib/core/storage/secure_storage.dart:30-48 — pv_receipt_* keys; lib/reliance/providers/receipt_provider.dart:80-95 — local fallback path"
+    },
+    {
+      "type": "Offline trust record cache",
+      "storage": "NSUserDefaults / SharedPreferences (shared_preferences package)",
+      "fields_stored": ["publicId", "trust_data_from_server", "cached_at_timestamp"],
+      "never_sent_to_server": true,
+      "evidence": "lib/offline/providers/cache_provider.dart:47-48 — prefs.setString('pv_cache_'+publicId, ...)"
+    }
+  ],
+
+  "data_not_collected": [
+    {"type": "Name", "evidence": "No name field in any model or API payload."},
+    {"type": "Email address", "evidence": "No email field. No user account or login flow in lib/."},
+    {"type": "Phone number", "evidence": "No phone field in any model or API payload."},
+    {"type": "Physical address", "evidence": "Not collected."},
+    {"type": "Precise location", "evidence": "No geolocator import; no LOCATION permission in AndroidManifest.xml; no NSLocationWhenInUseUsageDescription in Info.plist."},
+    {"type": "Coarse location", "evidence": "Same as precise location — not collected."},
+    {"type": "Health & fitness", "evidence": "No health API access."},
+    {"type": "Financial info", "evidence": "No payment or financial data collected."},
+    {"type": "Sensitive info", "evidence": "Not collected."},
+    {"type": "Contacts", "evidence": "No contacts permission in AndroidManifest.xml; no CNContactStore or contacts plugin in pubspec.yaml."},
+    {"type": "Photos or videos", "evidence": "Camera is used for live QR scanning only (mobile_scanner); images are NOT stored or transmitted. Camera frames are processed on-device by mobile_scanner; only the extracted text (publicId) is used."},
+    {"type": "Audio data", "evidence": "No microphone usage."},
+    {"type": "Customer support", "evidence": "No support chat, ticketing, or feedback feature in the app."},
+    {"type": "Other user content", "evidence": "No UGC feature."},
+    {"type": "Browsing history", "evidence": "No web view or browser history collection."},
+    {"type": "Advertising data", "evidence": "No ad SDK; no IDFA/GAID access; no tracking domain."},
+    {"type": "Device ID / advertising identifier", "evidence": "No device_info_plus plugin; no getDeviceId() call; no advertisingIdentifier access. grep lib/ returns zero matches for deviceId, IDFA, GAID."},
+    {"type": "Crash data / diagnostics", "evidence": "No Firebase, Sentry, Crashlytics, Bugsnag, or any crash reporting SDK in pubspec.yaml or pubspec.lock."},
+    {"type": "Performance data", "evidence": "No analytics or performance monitoring SDK."},
+    {"type": "Other diagnostic data", "evidence": "No telemetry SDK of any kind."}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "PROVENANCE VERIFIED",
+  "subtitle": "Trust before you rely",
+  "description": "PROVENANCE VERIFIED™ by Veritan Inc lets trust clients look up provenance records for physical goods — gemstones, certificates, luxury items, and other high-value assets.\n\nScan the QR code on an item or enter a record ID manually. The app retrieves the server-issued trust determination: T1 through T4, or NOT QUALIFIED. Each tier reflects a different level of evidence and verification, clearly explained in the record.\n\nFor every record you can review:\n• Claim verdicts — supported, asserted, contradicted, or revoked\n• Evidence items and their integrity states\n• Continuity and custody gaps\n• Limitations and prohibited inferences\n\nFor qualified records, run a Reliance Assessment. Choose your purpose — Purchase, Resale, Insurance, or Public Marketing Claim — and the server returns a live actionability decision: ALLOW, ALLOW WITH QUALIFICATIONS, or DENY.\n\nSave a Reliance Receipt that records the trust state, your purpose, and the decision at that moment. Receipts are stored on-device and flagged if the underlying record changes.\n\nPROVENANCE VERIFIED™ displays what the server determines. The app does not guarantee value, ownership, legal title, or any insurance outcome.",
+  "keywords": "provenance,trust,gemstone,certificate,reliance,verification,luxury,physical goods,receipt",
+  "category": "Business",
+  "category_secondary": "Utilities",
+  "age_rating": "4+",
+  "support_url": "https://provenanceverified.org/support",
+  "privacy_policy_url": "https://provenanceverified.org/privacy",
+  "copyright": "2026 Veritan Inc",
+  "release_notes": "M3 release. Adds server-issued reliance receipts, actionability purpose selection, receipt staleness detection, and continuity gap display. Requires iOS 16 or later.",
+  "review_notes": "To test without a live QR code: tap 'Enter ID manually' on the scanner screen and type a valid record ID. The app will fetch the trust record from the server and display the result. Network access is required — the app makes no local trust determinations. A test record ID can be provided on request."
+}
