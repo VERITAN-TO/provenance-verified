@@ -9,6 +9,6 @@
   "support_url": "https://provenanceverified.org/support",
   "privacy_policy_url": "https://provenanceverified.org/privacy",
   "copyright": "2026 Veritan Inc",
-  "release_notes": "M3 release. Adds server-issued reliance receipts, actionability purpose selection, receipt staleness detection, and continuity gap display. Requires iOS 16 or later.",
+  "release_notes": "M3 release. Adds server-issued reliance receipts, actionability purpose selection, receipt staleness detection, and continuity gap display. Requires iOS 15 or later.",
   "review_notes": "To test without a live QR code: tap 'Enter ID manually' on the scanner screen and type a valid record ID. The app will fetch the trust record from the server and display the result. Network access is required — the app makes no local trust determinations. A test record ID can be provided on request."
 }
