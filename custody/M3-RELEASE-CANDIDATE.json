@@ -1,0 +1,53 @@
+{
+  "milestone": "M3",
+  "state": "RELEASE_CANDIDATE",
+  "sealed": false,
+  "m2_source_sha": "ae3eb7d",
+  "m3_implementation_sha": "21aa40796cb03b86d4c25fc69380e56ee4dcf801",
+  "m3_branch": "mobile/m3-release-candidate",
+  "build_date": "2026-08-31T02:20:49Z",
+  "flutter_version": "3.47.2",
+  "dart_version": "3.13.2",
+  "ios_bundle_id": "to.veritan.pv",
+  "ios_development_team": "KHZN4HKNXC",
+  "ios_deployment_target": "15.0",
+  "android_application_id": "to.veritan.pv",
+  "android_flavor": "production",
+  "version_name": "3.0.0",
+  "version_code": 1,
+  "unit_tests": "172/172",
+  "static_api_key_in_binary": "ZERO",
+  "service_role_in_binary": "ZERO",
+  "secret_scan": "PENDING_LANE_D",
+  "android_release_aab": "PENDING_LANE_B",
+  "ios_archive": "PENDING_APPLE_DISTRIBUTION_CERT",
+  "sas1_mobile_auth_contract": "PENDING_SAS1_INTEGRATION",
+  "store_visual_package": "PENDING_LANE_C",
+  "apple_distribution_signing": "EXTERNAL_GATE",
+  "google_play_console": "EXTERNAL_GATE",
+  "gates_complete": [
+    "M2_SOURCE_SHA_VERIFIED",
+    "IOS_CONFIG_PASS",
+    "ANDROID_CONFIG_PASS",
+    "PRIVACY_MANIFEST_WIRED",
+    "STORE_METADATA_COMMITTED",
+    "IOS_METADATA_PARITY_FIX",
+    "IOS_ENTITLEMENT_MINIMUM_FIX",
+    "ANDROID_KEYSTORE_SECURITY_REMEDIATION"
+  ],
+  "gates_pending": [
+    "SAS1_MOBILE_AUTH_CONTRACT",
+    "ANDROID_RELEASE_AAB_NEW_KEYSTORE",
+    "IOS_DISTRIBUTION_ARCHIVE",
+    "STORE_VISUAL_PACKAGE",
+    "TESTFLIGHT_BUILD",
+    "PLAY_INTERNAL_BUILD",
+    "M3_FRESH_CLONE_VERIFICATION",
+    "M3_FREEZE"
+  ],
+  "laws": {
+    "STATIC_PRODUCTION_API_KEY_IN_MOBILE": "ZERO",
+    "SERVICE_ROLE_IN_MOBILE": "ZERO",
+    "PV_INTERNAL_BUILD_TOKEN_IN_MOBILE": "ZERO"
+  }
+}
