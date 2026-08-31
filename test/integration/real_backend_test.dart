@@ -1,7 +1,8 @@
-// M2: Real backend integration tests.
-// These tests call the LIVE PV backend. They SKIP when PV_API_KEY is not set.
-// Run with: flutter test --dart-define=PV_API_KEY=<key> --dart-define=PV_TENANT_ID=<tenant>
+// M3: Real backend integration tests.
+// These tests call the LIVE PV backend. They SKIP when PV_TENANT_ID is not set.
+// Run with: flutter test --dart-define=PV_TENANT_ID=<tenant_id>
 //            --dart-define=PV_QUAL_SUBJECT_ID=<real_public_id>
+// The MobileTokenService bootstraps a dynamic token automatically.
 //
 // Gates covered:
 //   M2-INT-01: Trust query → real MachineTrustResponse
@@ -28,20 +29,17 @@ const _qualSubjectId = String.fromEnvironment(
 );
 
 void main() {
-  // Skip all integration tests when credentials are not configured.
-  if (!Env.hasQualCredentials) {
-    print('SKIP: PV_API_KEY or PV_TENANT_ID not set — skipping real backend tests.');
-    print('Run with: flutter test --dart-define=PV_API_KEY=<key> --dart-define=PV_TENANT_ID=<id>');
+  // Skip all integration tests when PV_TENANT_ID is not configured.
+  if (!Env.isConfigured) {
+    print('SKIP: PV_TENANT_ID not set — skipping real backend tests.');
+    print('Run with: flutter test --dart-define=PV_TENANT_ID=<id>');
     return;
   }
 
   late ApiClient client;
 
   setUpAll(() {
-    client = ApiClient(
-      baseUrl: Env.pvApiBaseUrl,
-      apiKey: Env.pvApiKey,
-    );
+    client = ApiClient(baseUrl: Env.pvApiBaseUrl);
   });
 
   tearDownAll(() => client.dispose());

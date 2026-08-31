@@ -8,7 +8,6 @@
 // SECURITY: qual backend only, no production mutations.
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'core/config/environment.dart';
@@ -60,7 +59,7 @@ class _E2ERunnerScreenState extends State<E2ERunnerScreen> {
     _emit('START qual=$qualSubjectId base=${Env.pvApiBaseUrl}');
 
     await _run('NATIVE-01', 'trust query on native hardware', () async {
-      if (Env.pvApiKey.isEmpty) throw Exception('PV_API_KEY missing');
+      if (Env.pvTenantId.isEmpty) throw Exception('PV_TENANT_ID missing');
       if (qualSubjectId.isEmpty) throw Exception('PV_QUAL_SUBJECT_ID missing');
       final r = await client.getMachineTrust(qualSubjectId);
       if (r.schema != 'pv.machine-trust.v1') throw Exception('schema=${r.schema}');
@@ -114,13 +113,11 @@ class _E2ERunnerScreenState extends State<E2ERunnerScreen> {
       return {'is_qualified': tr.isQualified, 'safe_tier': tr.safeTier};
     });
 
-    await _run('NATIVE-08', 'bearer auth HTTP 200 on native hardware', () async {
-      final uri = Uri.parse('${Env.pvApiBaseUrl}/api/v1/trust/${Uri.encodeComponent(qualSubjectId)}/machine');
-      final resp = await http.get(uri, headers: {'Authorization': 'Bearer ${Env.pvApiKey}', 'Content-Type': 'application/json'});
-      if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
-      final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      if (body['schema'] != 'pv.machine-trust.v1') throw Exception('schema=${body['schema']}');
-      return {'http': 200, 'schema': 'pv.machine-trust.v1'};
+    await _run('NATIVE-08', 'mobile token bootstrap + auth HTTP 200 on native hardware', () async {
+      // M3: ApiClient acquires token via MobileTokenService — no static key.
+      final r = await client.getMachineTrust(qualSubjectId);
+      if (r.schema != 'pv.machine-trust.v1') throw Exception('schema=${r.schema}');
+      return {'http': 200, 'schema': 'pv.machine-trust.v1', 'via_token_service': true};
     });
 
     client.dispose();

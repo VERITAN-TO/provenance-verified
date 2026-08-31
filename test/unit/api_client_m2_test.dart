@@ -1,13 +1,13 @@
-// M2: API client real endpoint tests with mocked HTTP.
+// M3: API client tests with mocked HTTP — dynamic token service, no static key.
 // Tests the actual request construction, auth headers, and response parsing.
-// M2-11: getMachineTrust sends Bearer token auth.
+// M2-11: getMachineTrust sends Bearer token from MobileTokenService.
 // M2-12: getMachineTrust calls correct endpoint.
 // M2-13: trust_state_digest extracted from x-pv-trust-state-digest header.
 // M2-14: physical_subject_id extracted from x-pv-physical-subject header.
-// M2-15: 401 → ApiException with INVALID_API_KEY code.
+// M2-15: 401 → auto-retry → ApiException on second 401.
 // M2-16: 403 → ApiException with INSUFFICIENT_SCOPE.
 // M2-17: 429 → ApiException with RATE_LIMIT_EXCEEDED.
-// M2-18: Evaluateactionability sends correct request body.
+// M2-18: evaluateActionability sends correct request body.
 // M2-19: createRelianceReceipt sends correct request.
 
 import 'dart:convert';
@@ -15,11 +15,28 @@ import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:provenance_verified_app/core/network/api_client.dart';
+import 'package:provenance_verified_app/core/auth/mobile_token_service.dart';
 
-const _baseUrl = 'https://provenance-verified-private.vercel.app';
-const _apiKey = 'pv_live_test_key_for_qual_only';
+const _baseUrl   = 'https://provenance-verified-private.vercel.app';
+const _testToken = 'pvm_live_test_token_for_qual_only';
 const _trustStateDigest = 'sha256:aaaa0000000000000000000000000000000000000000000000000000deadbeef';
-const _physicalSubject = 'phys-qual-001';
+const _physicalSubject  = 'phys-qual-001';
+
+/// Creates a MobileTokenService backed by a mock bootstrap client that always
+/// returns _testToken. Storage calls will throw MissingPluginException in unit
+/// tests; all storage operations in MobileTokenService are wrapped in catch(_),
+/// so they degrade gracefully and the in-memory cache takes over.
+MobileTokenService _makeTokenService() => MobileTokenService(
+      client: MockClient((_) async => http.Response(
+            jsonEncode({
+              'token':      _testToken,
+              'expires_at': '2099-12-31T00:00:00Z',
+            }),
+            201,
+            headers: {'content-type': 'application/json'},
+          )),
+      tenantId: 'test-tenant-id-m3',
+    );
 
 Map<String, dynamic> _machineTrustPayload({bool eligible = true, int tier = 3}) => {
   'schema': 'pv.machine-trust.v1',
@@ -51,10 +68,10 @@ Map<String, dynamic> _machineTrustPayload({bool eligible = true, int tier = 3}) 
 };
 
 void main() {
-  // ── M2-11: Bearer auth header ─────────────────────────────────────────────
+  // ── M2-11: Bearer auth header from token service ──────────────────────────
 
-  group('M2-11: getMachineTrust sends Authorization: Bearer', () {
-    test('Bearer token sent in request', () async {
+  group('M2-11: getMachineTrust sends Authorization: Bearer from token service', () {
+    test('Bearer token from MobileTokenService sent in request', () async {
       String? capturedAuth;
       final mockClient = MockClient((req) async {
         capturedAuth = req.headers['authorization'];
@@ -72,13 +89,13 @@ void main() {
       final client = ApiClient(
         client: mockClient,
         baseUrl: _baseUrl,
-        apiKey: _apiKey,
+        tokenService: _makeTokenService(),
       );
       await client.getMachineTrust('PV-QUAL-001');
-      expect(capturedAuth, 'Bearer $_apiKey');
+      expect(capturedAuth, 'Bearer $_testToken');
     });
 
-    test('no Authorization header when apiKey empty', () async {
+    test('Authorization header always present (M3: token service always provides token)', () async {
       String? capturedAuth;
       final mockClient = MockClient((req) async {
         capturedAuth = req.headers['authorization'];
@@ -93,9 +110,14 @@ void main() {
         );
       });
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: '');
+      final client = ApiClient(
+        client: mockClient,
+        baseUrl: _baseUrl,
+        tokenService: _makeTokenService(),
+      );
       await client.getMachineTrust('PV-QUAL-001');
-      expect(capturedAuth, null);
+      expect(capturedAuth, isNotNull);
+      expect(capturedAuth, startsWith('Bearer '));
     });
   });
 
@@ -117,7 +139,7 @@ void main() {
         );
       });
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       await client.getMachineTrust('PV-QUAL-001');
       expect(capturedUri?.path, '/api/v1/trust/PV-QUAL-001/machine');
     });
@@ -137,7 +159,7 @@ void main() {
         );
       });
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       await client.getMachineTrust('PV-QUAL-A/B');
       expect(capturedUri?.toString(), contains('/api/v1/trust/PV-QUAL-A%2FB/machine'));
     });
@@ -157,7 +179,7 @@ void main() {
         );
       });
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       await client.getMachineTrust('PV-QUAL-001');
       expect(capturedMethod, 'GET');
     });
@@ -176,7 +198,7 @@ void main() {
               'x-pv-physical-subject': _physicalSubject,
             },
           ));
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       final r = await client.getMachineTrust('PV-QUAL-001');
       expect(r.trustStateDigest, _trustStateDigest);
     });
@@ -195,38 +217,39 @@ void main() {
               'x-pv-physical-subject': _physicalSubject,
             },
           ));
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       final r = await client.getMachineTrust('PV-QUAL-001');
       expect(r.physicalSubjectId, _physicalSubject);
     });
   });
 
-  // ── M2-15: 401 → ApiException ─────────────────────────────────────────────
+  // ── M2-15: 401 → auto-retry → ApiException ────────────────────────────────
 
-  group('M2-15: 401 → ApiException (fail-closed)', () {
-    test('401 INVALID_API_KEY throws ApiException', () async {
+  group('M2-15: 401 → auto-retry → ApiException (fail-closed)', () {
+    test('persistent 401 throws ApiException after retry', () async {
+      // Mock always returns 401; M3 client retries once then throws.
       final mockClient = MockClient((_) async => http.Response(
             jsonEncode({
               'schema': 'pv.machine-trust.v1',
-              'error': {'code': 'INVALID_API_KEY', 'message': 'API key not found.'},
+              'error': {'code': 'TOKEN_EXPIRED', 'message': 'Mobile token expired.'},
             }),
             401,
             headers: {'content-type': 'application/json'},
           ));
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: 'bad_key');
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       expect(() => client.getMachineTrust('PV-QUAL-001'), throwsA(isA<ApiException>()));
     });
 
-    test('401 exception has correct statusCode', () async {
+    test('persistent 401 exception has correct statusCode', () async {
       final mockClient = MockClient((_) async => http.Response(
             jsonEncode({
               'schema': 'pv.machine-trust.v1',
-              'error': {'code': 'INVALID_API_KEY'},
+              'error': {'code': 'TOKEN_EXPIRED'},
             }),
             401,
             headers: {'content-type': 'application/json'},
           ));
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: 'bad_key');
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       try {
         await client.getMachineTrust('PV-QUAL-001');
         fail('Should have thrown');
@@ -248,7 +271,7 @@ void main() {
             403,
             headers: {'content-type': 'application/json'},
           ));
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       try {
         await client.getMachineTrust('PV-QUAL-001');
         fail('Should have thrown');
@@ -271,7 +294,7 @@ void main() {
             429,
             headers: {'content-type': 'application/json'},
           ));
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       try {
         await client.getMachineTrust('PV-QUAL-001');
         fail('Should have thrown');
@@ -289,7 +312,7 @@ void main() {
       Uri? capturedUri;
       Map<String, dynamic>? capturedBody;
       final mockClient = MockClient((req) async {
-        capturedUri = req.url;
+        capturedUri  = req.url;
         capturedBody = jsonDecode(req.body) as Map<String, dynamic>;
         return http.Response(
           jsonEncode({
@@ -304,12 +327,12 @@ void main() {
         );
       });
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       final result = await client.evaluateActionability(
-        subjectId: 'PV-QUAL-001',
-        purposeId: 'PURCHASE',
+        subjectId:       'PV-QUAL-001',
+        purposeId:       'PURCHASE',
         requestedAction: 'evaluate',
-        claimScope: 'standard',
+        claimScope:      'standard',
       );
 
       expect(capturedUri?.path, '/api/v1/actionability');
@@ -340,12 +363,12 @@ void main() {
         );
       });
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       final result = await client.createRelianceReceipt(
-        subjectId: 'PV-QUAL-001',
-        purposeId: 'PURCHASE',
+        subjectId:       'PV-QUAL-001',
+        purposeId:       'PURCHASE',
         requestedAction: 'evaluate',
-        claimScope: 'standard',
+        claimScope:      'standard',
       );
 
       expect(capturedUri?.path, '/api/v1/reliance-receipts');
@@ -367,12 +390,12 @@ void main() {
             headers: {'content-type': 'application/json'},
           ));
 
-      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, apiKey: _apiKey);
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
       final result = await client.createRelianceReceipt(
-        subjectId: 'PV-QUAL-001',
-        purposeId: 'PURCHASE',
+        subjectId:       'PV-QUAL-001',
+        purposeId:       'PURCHASE',
         requestedAction: 'evaluate',
-        claimScope: 'standard',
+        claimScope:      'standard',
       );
       expect(result['trust_state_digest'], _trustStateDigest);
     });
