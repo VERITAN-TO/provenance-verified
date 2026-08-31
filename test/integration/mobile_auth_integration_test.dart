@@ -59,7 +59,7 @@ void main() {
   // ── MA-01: VALID_BOOTSTRAP ────────────────────────────────────────────────
 
   group('MA-01: VALID_BOOTSTRAP — enrolled tenant → 201 + valid token', () {
-    test('returns 201 or 200 with pvm_live_* token', () async {
+    test('returns 201 or 200 with pvm_* token', () async {
       if (!Env.isConfigured) {
         print('SKIP MA-01: PV_TENANT_ID not set.');
         return;
@@ -101,6 +101,7 @@ void main() {
     test('non-existent tenant_id returns 403 TENANT_NOT_AUTHORIZED_FOR_MOBILE', () async {
       final resp = await _callBootstrap(
         tenantId: '00000000-0000-0000-0000-000000000000',
+        deviceId: '00000000-0000-0000-0000-000000000001',
       );
       // Skip gracefully if the endpoint is not yet live (returns HTML instead of JSON).
       final contentType = resp.headers['content-type'] ?? '';
@@ -310,7 +311,7 @@ void main() {
       // Unit-level confirmation: MobileTokenService + ApiClient wiring is correct.
       final bootstrapClient = MockClient((_) async => http.Response(
             jsonEncode({
-              'token':      'pvm_live_mock_token_for_gate_ma09',
+              'token':      'pv_mock_token_for_gate_ma09',
               'expires_at': '2099-12-31T00:00:00Z',
             }),
             201,
@@ -320,7 +321,7 @@ void main() {
       final apiClient = MockClient((req) async {
         // Verify the token from the service appears in the Authorization header
         final auth = req.headers['authorization'];
-        expect(auth, 'Bearer pvm_live_mock_token_for_gate_ma09');
+        expect(auth, 'Bearer pv_mock_token_for_gate_ma09');
         return http.Response(
           jsonEncode({
             'schema':           'pv.machine-actionability.v1',

@@ -18,7 +18,7 @@ import 'package:provenance_verified_app/core/network/api_client.dart';
 import 'package:provenance_verified_app/core/auth/mobile_token_service.dart';
 
 const _baseUrl   = 'https://provenance-verified-private.vercel.app';
-const _testToken = 'pvm_live_test_token_for_qual_only';
+const _testToken = 'pv_test_token_for_qual_only';
 const _trustStateDigest = 'sha256:aaaa0000000000000000000000000000000000000000000000000000deadbeef';
 const _physicalSubject  = 'phys-qual-001';
 
