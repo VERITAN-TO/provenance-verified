@@ -40,4 +40,15 @@ class Env {
   static bool get isDevelopment   => current == AppEnvironment.development;
 
   static bool get isConfigured => pvTenantId.isNotEmpty;
+
+  // Supabase — customer auth only. Not a secret (anon key is public by design).
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: '',
+  );
+
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: '',
+  );
 }
