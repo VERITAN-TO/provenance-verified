@@ -17,7 +17,7 @@ class PvApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'PROVENANCE VERIFIED',
+      title: 'PROVENANCE VERIFIED™',
       theme: PvTheme.dark,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,

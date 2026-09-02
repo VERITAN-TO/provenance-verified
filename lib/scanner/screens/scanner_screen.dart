@@ -50,7 +50,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PROVENANCE VERIFIED'),
+        title: const Text('PROVENANCE VERIFIED™'),
         actions: [
           IconButton(
             icon: const Icon(Icons.keyboard_alt_outlined),
@@ -80,7 +80,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 style: PvTypography.bodySmall.copyWith(
                   color: Colors.white70,
                 ),
-                semanticsLabel: 'Scan a PROVENANCE VERIFIED QR code',
+                semanticsLabel: 'Scan a PROVENANCE VERIFIED™ QR code',
               ),
             ),
           ),
