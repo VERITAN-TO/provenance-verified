@@ -21,7 +21,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PROVENANCE VERIFIED', style: PvTypography.label),
+        title: const Text('PROVENANCE VERIFIED™', style: PvTypography.label),
         actions: [
           if (isAuthenticated)
             IconButton(

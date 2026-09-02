@@ -324,7 +324,7 @@ class _Step0ServiceSelection extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(
                 'This is your requested service tier — it is not a guaranteed outcome. '
-                'The trust determination is made exclusively by the PROVENANCE VERIFIED '
+                'The trust determination is made exclusively by the PROVENANCE VERIFIED™ '
                 'team after evidence review.',
                 style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               ),
@@ -674,7 +674,7 @@ class _Step2Evidence extends ConsumerWidget {
                       child: Text(
                         'Uploaded documents are reviewed by our team. '
                         'Uploading a document does not guarantee any specific trust tier. '
-                        'Trust determination is made exclusively by PROVENANCE VERIFIED '
+                        'Trust determination is made exclusively by PROVENANCE VERIFIED™ '
                         'after review.',
                         style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                       ),
@@ -868,7 +868,7 @@ class _Step3Declarations extends ConsumerWidget {
                 // Core constraint: client cannot over-claim tier
                 text:      'I understand the determined trust tier may differ from my '
                            'requested service tier. The final determination is made '
-                           'exclusively by the PROVENANCE VERIFIED review team.',
+                           'exclusively by the PROVENANCE VERIFIED™ review team.',
               ),
               const SizedBox(height: 12),
               _DeclarationCheckbox(

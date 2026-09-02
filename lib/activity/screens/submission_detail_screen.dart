@@ -290,7 +290,7 @@ class _IssuedAction extends StatelessWidget {
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              'This submission has been issued a PROVENANCE VERIFIED record.',
+              'This submission has been issued a PROVENANCE VERIFIED™ record.',
               style: PvTypography.body,
             ),
           ),
