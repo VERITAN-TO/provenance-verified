@@ -43,10 +43,22 @@ class AuthService {
   // Public API
   // ---------------------------------------------------------------------------
 
+  /// Parse { ok, data: { accessToken, refreshToken, expiresAt, userId, displayName } }
+  CustomerSession _sessionFromApiResponse(Map<String, dynamic> response) {
+    final data = (response['data'] as Map<String, dynamic>?) ?? response;
+    return CustomerSession(
+      accessToken:  data['accessToken']  as String,
+      refreshToken: data['refreshToken'] as String,
+      expiresAt:    DateTime.parse(data['expiresAt'] as String).toUtc(),
+      userId:       data['userId']       as String,
+      displayName:  (data['displayName'] as String?) ?? '',
+    );
+  }
+
   Future<CustomerSession> signIn(String email, String password) async {
     final body = jsonEncode({'email': email, 'password': password});
     final response = await _post('/api/v1/customer/auth/sign-in', body);
-    final session = CustomerSession.fromJson(response);
+    final session = _sessionFromApiResponse(response);
     await _storeSession(session);
     return session;
   }
@@ -62,7 +74,7 @@ class AuthService {
       'display_name': displayName,
     });
     final response = await _post('/api/v1/customer/auth/sign-up', body);
-    final session = CustomerSession.fromJson(response);
+    final session = _sessionFromApiResponse(response);
     await _storeSession(session);
     return session;
   }
@@ -96,11 +108,11 @@ class AuthService {
     }
     final body = jsonEncode({'refresh_token': stored.refreshToken});
     final response = await _post('/api/v1/customer/auth/refresh', body);
+    final session = _sessionFromApiResponse(response);
     final updated = stored.copyWith(
-      accessToken: response['access_token'] as String,
-      refreshToken: response['refresh_token'] as String,
-      expiresAt:
-          DateTime.parse(response['expires_at'] as String).toUtc(),
+      accessToken:  session.accessToken,
+      refreshToken: session.refreshToken,
+      expiresAt:    session.expiresAt,
     );
     await _storeSession(updated);
     return updated;
@@ -147,13 +159,10 @@ class AuthService {
     final body = jsonEncode({'refresh_token': refreshToken});
     final response = await _post('/api/v1/customer/auth/refresh', body);
     final stored = await getStoredSession();
-    final updated = CustomerSession(
-      accessToken: response['access_token'] as String,
-      refreshToken: response['refresh_token'] as String,
-      expiresAt:
-          DateTime.parse(response['expires_at'] as String).toUtc(),
-      userId: stored?.userId ?? '',
-      displayName: stored?.displayName ?? '',
+    final session = _sessionFromApiResponse(response);
+    final updated = session.copyWith(
+      userId:      session.userId.isNotEmpty ? null : stored?.userId,
+      displayName: session.displayName.isNotEmpty ? null : stored?.displayName,
     );
     await _storeSession(updated);
     return updated;
