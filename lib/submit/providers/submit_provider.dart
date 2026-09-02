@@ -10,29 +10,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/submit_models.dart';
 import '../../core/config/environment.dart';
-import '../../core/auth/mobile_token_service.dart';
+import '../../auth/providers/auth_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Submission API client (scoped to submit/activity modules)
+//
+// Uses the customer JWT (Supabase access token) — NOT the M3 mobile token.
+// M4_CONTRACT: customer submission endpoints require customer auth.uid() context.
 // ---------------------------------------------------------------------------
 
 class SubmissionApiClient {
   final http.Client _client;
   final String _baseUrl;
-  final MobileTokenService _tokenService;
-  final bool _ownsTokenService;
+  final String? Function() _getToken;
 
   SubmissionApiClient({
     http.Client? client,
     String? baseUrl,
-    MobileTokenService? tokenService,
-  })  : _client           = client ?? http.Client(),
-        _baseUrl          = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _ownsTokenService = tokenService == null,
-        _tokenService     = tokenService ?? MobileTokenService();
+    required String? Function() getToken,
+  })  : _client    = client ?? http.Client(),
+        _baseUrl   = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
+        _getToken  = getToken;
 
   Future<Map<String, String>> _authHeaders() async {
-    final token = await _tokenService.getToken();
+    final token = _getToken();
+    if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -40,14 +42,17 @@ class SubmissionApiClient {
   }
 
   Future<Map<String, String>> _authHeadersNoContent() async {
-    final token = await _tokenService.getToken();
+    final token = _getToken();
+    if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return {
       'Authorization': 'Bearer $token',
     };
   }
 
   Future<Map<String, String>> _refreshedHeaders() async {
-    final token = await _tokenService.forceRefresh();
+    // Customer JWT refresh is handled by AuthNotifier. Just re-read current token.
+    final token = _getToken();
+    if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -116,8 +121,9 @@ class SubmissionApiClient {
     required String filePath,
     required String fileName,
     required String docType,
-    required String token,
   }) async {
+    final token = _getToken();
+    if (token == null || token.isEmpty) throw Exception('Not authenticated');
     final uri     = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/evidence');
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
@@ -203,11 +209,10 @@ class SubmissionApiClient {
 
   /// Returns the current auth token (for multipart uploads that build their
   /// own request).
-  Future<String> getToken() => _tokenService.getToken();
+  String? getToken() => _getToken();
 
   void dispose() {
     _client.close();
-    if (_ownsTokenService) _tokenService.dispose();
   }
 }
 
@@ -225,7 +230,10 @@ class SubmitApiException implements Exception {
 // ---------------------------------------------------------------------------
 
 final submissionApiClientProvider = Provider<SubmissionApiClient>((ref) {
-  final c = SubmissionApiClient();
+  // Customer JWT — updated when auth state changes via authProvider.
+  final c = SubmissionApiClient(
+    getToken: () => ref.read(authProvider)?.accessToken,
+  );
   ref.onDispose(c.dispose);
   return c;
 });

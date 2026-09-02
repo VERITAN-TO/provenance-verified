@@ -7,30 +7,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/activity_models.dart';
 import '../../core/config/environment.dart';
-import '../../core/auth/mobile_token_service.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../submit/providers/submit_provider.dart' show submissionApiClientProvider, SubmitApiException;
 
 // ---------------------------------------------------------------------------
-// Activity API client (thin wrapper; reuses SubmissionApiClient's token layer)
+// Activity API client — uses customer JWT, not M3 mobile token.
 // ---------------------------------------------------------------------------
 
 class _ActivityApiClient {
   final http.Client _client;
   final String _baseUrl;
-  final MobileTokenService _tokenService;
-  final bool _ownsTokenService;
+  final String? Function() _getToken;
 
   _ActivityApiClient({
     http.Client? client,
     String? baseUrl,
-    MobileTokenService? tokenService,
-  })  : _client           = client ?? http.Client(),
-        _baseUrl          = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _ownsTokenService = tokenService == null,
-        _tokenService     = tokenService ?? MobileTokenService();
+    required String? Function() getToken,
+  })  : _client    = client ?? http.Client(),
+        _baseUrl   = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
+        _getToken  = getToken;
 
   Future<Map<String, String>> _authHeaders() async {
-    final token = await _tokenService.getToken();
+    final token = _getToken();
+    if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -38,7 +37,8 @@ class _ActivityApiClient {
   }
 
   Future<Map<String, String>> _refreshedHeaders() async {
-    final token = await _tokenService.forceRefresh();
+    final token = _getToken();
+    if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -109,7 +109,6 @@ class _ActivityApiClient {
 
   void dispose() {
     _client.close();
-    if (_ownsTokenService) _tokenService.dispose();
   }
 }
 
@@ -118,7 +117,9 @@ class _ActivityApiClient {
 // ---------------------------------------------------------------------------
 
 final _activityApiClientProvider = Provider<_ActivityApiClient>((ref) {
-  final c = _ActivityApiClient();
+  final c = _ActivityApiClient(
+    getToken: () => ref.read(authProvider)?.accessToken,
+  );
   ref.onDispose(c.dispose);
   return c;
 });
