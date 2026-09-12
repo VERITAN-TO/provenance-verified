@@ -17,7 +17,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   void _submit() {
     final text = _controller.text.trim();
     if (!QrHandler.isValidPublicId(text)) {
-      setState(() => _error = 'Enter a valid PV or DET public ID (e.g. PV-TEST-T4D004)');
+      setState(() => _error = 'Enter a valid PV or DET public ID (e.g. PV-GEM-001234)');
       return;
     }
     context.go('/verify/${text.toUpperCase()}');
@@ -44,7 +44,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
               textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
                 labelText: 'Public ID',
-                hintText: 'PV-TEST-T4D004',
+                hintText: 'PV-GEM-001234',
                 errorText: _error,
                 border: const OutlineInputBorder(),
               ),
