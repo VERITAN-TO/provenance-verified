@@ -62,30 +62,13 @@ enum ServiceTier {
   List<String> get features {
     switch (this) {
       case ServiceTier.t1Free:
-        return [
-          'Asset fingerprint record',
-          'Public verification reference when authorized',
-          'No provenance claim is inferred',
-        ];
+        return ['Asset fingerprint record', 'Public verification reference when authorized', 'No provenance claim is inferred'];
       case ServiceTier.t2Standard:
-        return [
-          'Declared source information recorded',
-          'Document and evidence review',
-          'Customer-visible case status',
-        ];
+        return ['Declared source information recorded', 'Document and evidence review', 'Customer-visible case status'];
       case ServiceTier.t3Professional:
-        return [
-          'Evidence evaluation',
-          'Chain-of-custody documentation',
-          'Expert review',
-        ];
+        return ['Evidence evaluation', 'Chain-of-custody documentation', 'Expert review'];
       case ServiceTier.t4Certified:
-        return [
-          'Multi-source evidence review',
-          'Chain-of-custody audit',
-          'Physical examination where required by the operating protocol',
-          'Any trust or mark outcome remains independently determined',
-        ];
+        return ['Multi-source evidence review', 'Chain-of-custody audit', 'Physical examination where required by the operating protocol', 'Any trust or mark outcome remains independently determined'];
     }
   }
 }
@@ -98,23 +81,9 @@ class GemstoneAttributes {
   final String origin;
   final String treatments;
 
-  const GemstoneAttributes({
-    this.species = '',
-    this.variety = '',
-    this.weight = '',
-    this.dimensions = '',
-    this.origin = '',
-    this.treatments = '',
-  });
+  const GemstoneAttributes({this.species = '', this.variety = '', this.weight = '', this.dimensions = '', this.origin = '', this.treatments = ''});
 
-  GemstoneAttributes copyWith({
-    String? species,
-    String? variety,
-    String? weight,
-    String? dimensions,
-    String? origin,
-    String? treatments,
-  }) => GemstoneAttributes(
+  GemstoneAttributes copyWith({String? species, String? variety, String? weight, String? dimensions, String? origin, String? treatments}) => GemstoneAttributes(
     species: species ?? this.species,
     variety: variety ?? this.variety,
     weight: weight ?? this.weight,
@@ -123,14 +92,7 @@ class GemstoneAttributes {
     treatments: treatments ?? this.treatments,
   );
 
-  Map<String, dynamic> toJson() => {
-    'species': species,
-    'variety': variety,
-    'weight': weight,
-    'dimensions': dimensions,
-    'origin': origin,
-    'treatments': treatments,
-  };
+  Map<String, dynamic> toJson() => {'species': species, 'variety': variety, 'weight': weight, 'dimensions': dimensions, 'origin': origin, 'treatments': treatments};
 }
 
 enum EvidenceDocumentType {
@@ -141,19 +103,19 @@ enum EvidenceDocumentType {
 
   String get displayName {
     switch (this) {
-      case EvidenceDocumentType.laboratoryReport:   return 'Laboratory Report';
+      case EvidenceDocumentType.laboratoryReport: return 'Laboratory Report';
       case EvidenceDocumentType.provenanceDocument: return 'Provenance Document';
-      case EvidenceDocumentType.custodyRecord:      return 'Custody Record';
-      case EvidenceDocumentType.other:              return 'Other';
+      case EvidenceDocumentType.custodyRecord: return 'Custody Record';
+      case EvidenceDocumentType.other: return 'Other';
     }
   }
 
   String get apiValue {
     switch (this) {
-      case EvidenceDocumentType.laboratoryReport:   return 'laboratory_report';
+      case EvidenceDocumentType.laboratoryReport: return 'laboratory_report';
       case EvidenceDocumentType.provenanceDocument: return 'provenance_document';
-      case EvidenceDocumentType.custodyRecord:      return 'custody_record';
-      case EvidenceDocumentType.other:              return 'other';
+      case EvidenceDocumentType.custodyRecord: return 'custody_record';
+      case EvidenceDocumentType.other: return 'other';
     }
   }
 }
@@ -163,20 +125,8 @@ class EvidenceDocument {
   final String fileName;
   final EvidenceDocumentType docType;
   final bool uploaded;
-
-  const EvidenceDocument({
-    required this.filePath,
-    required this.fileName,
-    required this.docType,
-    this.uploaded = false,
-  });
-
-  EvidenceDocument copyWith({
-    String? filePath,
-    String? fileName,
-    EvidenceDocumentType? docType,
-    bool? uploaded,
-  }) => EvidenceDocument(
+  const EvidenceDocument({required this.filePath, required this.fileName, required this.docType, this.uploaded = false});
+  EvidenceDocument copyWith({String? filePath, String? fileName, EvidenceDocumentType? docType, bool? uploaded}) => EvidenceDocument(
     filePath: filePath ?? this.filePath,
     fileName: fileName ?? this.fileName,
     docType: docType ?? this.docType,
@@ -213,20 +163,7 @@ class SubmissionDraft {
     this.declaredTermsAgreed = false,
   });
 
-  SubmissionDraft copyWith({
-    String? submissionId,
-    String? orderId,
-    int? step,
-    ServiceTier? selectedTier,
-    String? assetName,
-    String? assetType,
-    GemstoneAttributes? gemstoneAttributes,
-    List<String>? photoPaths,
-    List<EvidenceDocument>? documents,
-    bool? declaredAccurate,
-    bool? declaredTierMayDiffer,
-    bool? declaredTermsAgreed,
-  }) => SubmissionDraft(
+  SubmissionDraft copyWith({String? submissionId, String? orderId, int? step, ServiceTier? selectedTier, String? assetName, String? assetType, GemstoneAttributes? gemstoneAttributes, List<String>? photoPaths, List<EvidenceDocument>? documents, bool? declaredAccurate, bool? declaredTierMayDiffer, bool? declaredTermsAgreed}) => SubmissionDraft(
     submissionId: submissionId ?? this.submissionId,
     orderId: orderId ?? this.orderId,
     step: step ?? this.step,
@@ -251,6 +188,8 @@ class SubmissionQuote {
   final double price;
   final String currency;
   final String priceVersion;
+  final String csaVersion;
+  final bool paymentRequired;
   final int turnaroundDays;
 
   const SubmissionQuote({
@@ -260,6 +199,8 @@ class SubmissionQuote {
     required this.price,
     required this.currency,
     required this.priceVersion,
+    required this.csaVersion,
+    required this.paymentRequired,
     this.turnaroundDays = 0,
   });
 
@@ -276,6 +217,8 @@ class SubmissionQuote {
       price: amountCents / 100,
       currency: data['currency'] as String? ?? 'USD',
       priceVersion: data['price_version'] as String? ?? '',
+      csaVersion: data['csa_version'] as String? ?? '',
+      paymentRequired: data['payment_required'] as bool? ?? amountCents > 0,
       turnaroundDays: (data['estimated_turnaround_days'] as num?)?.toInt() ?? 0,
     );
   }
