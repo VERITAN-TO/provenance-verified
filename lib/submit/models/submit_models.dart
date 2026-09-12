@@ -251,6 +251,7 @@ class SubmissionQuote {
   final double price;
   final String currency;
   final String priceVersion;
+  final int turnaroundDays;
 
   const SubmissionQuote({
     required this.serviceCode,
@@ -259,6 +260,7 @@ class SubmissionQuote {
     required this.price,
     required this.currency,
     required this.priceVersion,
+    this.turnaroundDays = 0,
   });
 
   factory SubmissionQuote.fromJson(Map<String, dynamic> json) {
@@ -274,6 +276,7 @@ class SubmissionQuote {
       price: amountCents / 100,
       currency: data['currency'] as String? ?? 'USD',
       priceVersion: data['price_version'] as String? ?? '',
+      turnaroundDays: (data['estimated_turnaround_days'] as num?)?.toInt() ?? 0,
     );
   }
 
