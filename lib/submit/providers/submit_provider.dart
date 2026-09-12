@@ -1,36 +1,31 @@
 // Submit provider — manages wizard state and backend communication.
 //
 // MONEY_CONTROLS_TRUST = FALSE: Payment is a prerequisite to process,
-// not a factor in trust determination.  The trust tier is determined
+// not a factor in trust determination. The trust tier is determined
 // exclusively by the backend after evidence review.
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/submit_models.dart';
 import '../../core/config/environment.dart';
 import '../../auth/providers/auth_provider.dart';
 
-// ---------------------------------------------------------------------------
-// Submission API client (scoped to submit/activity modules)
-//
-// Uses the customer JWT (Supabase access token) — NOT the M3 mobile token.
-// M4_CONTRACT: customer submission endpoints require customer auth.uid() context.
-// ---------------------------------------------------------------------------
-
 class SubmissionApiClient {
   final http.Client _client;
   final String _baseUrl;
   final String? Function() _getToken;
+  final Future<String?> Function() _refreshToken;
 
   SubmissionApiClient({
     http.Client? client,
     String? baseUrl,
     required String? Function() getToken,
-  })  : _client    = client ?? http.Client(),
-        _baseUrl   = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _getToken  = getToken;
+    required Future<String?> Function() refreshToken,
+  })  : _client = client ?? http.Client(),
+        _baseUrl = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
+        _getToken = getToken,
+        _refreshToken = refreshToken;
 
   Future<Map<String, String>> _authHeaders() async {
     final token = _getToken();
@@ -41,18 +36,9 @@ class SubmissionApiClient {
     };
   }
 
-  Future<Map<String, String>> _authHeadersNoContent() async {
-    final token = _getToken();
-    if (token == null || token.isEmpty) throw Exception('Not authenticated');
-    return {
-      'Authorization': 'Bearer $token',
-    };
-  }
-
   Future<Map<String, String>> _refreshedHeaders() async {
-    // Customer JWT refresh is handled by AuthNotifier. Just re-read current token.
-    final token = _getToken();
-    if (token == null || token.isEmpty) throw Exception('Not authenticated');
+    final token = await _refreshToken();
+    if (token == null || token.isEmpty) throw Exception('Session refresh failed');
     return {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -61,409 +47,277 @@ class SubmissionApiClient {
 
   Map<String, dynamic> _parseError(http.Response res) {
     try {
-      final json = jsonDecode(res.body) as Map<String, dynamic>;
-      return json;
+      final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+      final nested = decoded['error'];
+      if (nested is Map<String, dynamic>) {
+        return {
+          ...decoded,
+          'message': nested['message']?.toString() ?? nested['code']?.toString(),
+        };
+      }
+      return decoded;
     } catch (_) {
       return {'message': res.reasonPhrase ?? 'Unknown error'};
     }
   }
 
-  // POST /api/v1/customer/submissions/start
-  Future<Map<String, dynamic>> startSubmission({
-    required String serviceTier,
-  }) async {
-    final uri  = Uri.parse('$_baseUrl/api/v1/customer/submissions/start');
+  Future<Map<String, dynamic>> startSubmission({required String serviceTier}) async {
+    final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/start');
     final body = jsonEncode({'requested_service_tier': serviceTier});
-
-    var res = await _client
-        .post(uri, headers: await _authHeaders(), body: body)
-        .timeout(const Duration(seconds: 30));
-
+    var res = await _client.post(uri, headers: await _authHeaders(), body: body).timeout(const Duration(seconds: 30));
     if (res.statusCode == 401) {
-      res = await _client
-          .post(uri, headers: await _refreshedHeaders(), body: body)
-          .timeout(const Duration(seconds: 30));
+      res = await _client.post(uri, headers: await _refreshedHeaders(), body: body).timeout(const Duration(seconds: 30));
     }
-
-    if (res.statusCode == 200 || res.statusCode == 201) {
-      return jsonDecode(res.body) as Map<String, dynamic>;
-    }
+    if (res.statusCode == 200 || res.statusCode == 201) return jsonDecode(res.body) as Map<String, dynamic>;
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Start failed');
   }
 
-  // POST /api/v1/customer/submissions/:id/asset-info
-  Future<void> saveAssetInfo({
-    required String submissionId,
-    required Map<String, dynamic> payload,
-  }) async {
-    final uri  = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/asset-info');
+  Future<void> saveAssetInfo({required String submissionId, required Map<String, dynamic> payload}) async {
+    final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/asset-info');
     final body = jsonEncode(payload);
-
-    var res = await _client
-        .post(uri, headers: await _authHeaders(), body: body)
-        .timeout(const Duration(seconds: 30));
-
+    var res = await _client.post(uri, headers: await _authHeaders(), body: body).timeout(const Duration(seconds: 30));
     if (res.statusCode == 401) {
-      res = await _client
-          .post(uri, headers: await _refreshedHeaders(), body: body)
-          .timeout(const Duration(seconds: 30));
+      res = await _client.post(uri, headers: await _refreshedHeaders(), body: body).timeout(const Duration(seconds: 30));
     }
-
     if (res.statusCode == 200 || res.statusCode == 204) return;
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Asset info save failed');
   }
 
-  // POST /api/v1/customer/submissions/:id/evidence (multipart)
   Future<void> uploadEvidence({
     required String submissionId,
     required String filePath,
     required String fileName,
     required String docType,
   }) async {
-    final token = _getToken();
+    Future<http.Response> send(String token) async {
+      final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/evidence');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..fields['document_type'] = docType
+        ..files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
+      final streamed = await request.send().timeout(const Duration(seconds: 60));
+      return http.Response.fromStream(streamed);
+    }
+
+    var token = _getToken();
     if (token == null || token.isEmpty) throw Exception('Not authenticated');
-    final uri     = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/evidence');
-    final request = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields['document_type']  = docType
-      ..files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
-
-    final streamed = await request.send().timeout(const Duration(seconds: 60));
-    final res      = await http.Response.fromStream(streamed);
-
+    var res = await send(token);
+    if (res.statusCode == 401) {
+      token = await _refreshToken();
+      if (token == null || token.isEmpty) throw Exception('Session refresh failed');
+      res = await send(token);
+    }
     if (res.statusCode == 200 || res.statusCode == 201) return;
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Evidence upload failed');
   }
 
-  // POST /api/v1/customer/submissions/:id/declarations
-  Future<void> saveDeclarations({
-    required String submissionId,
-    required Map<String, dynamic> payload,
-  }) async {
-    final uri  = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/declarations');
+  Future<void> saveDeclarations({required String submissionId, required Map<String, dynamic> payload}) async {
+    final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/declarations');
     final body = jsonEncode(payload);
-
-    var res = await _client
-        .post(uri, headers: await _authHeaders(), body: body)
-        .timeout(const Duration(seconds: 30));
-
+    var res = await _client.post(uri, headers: await _authHeaders(), body: body).timeout(const Duration(seconds: 30));
     if (res.statusCode == 401) {
-      res = await _client
-          .post(uri, headers: await _refreshedHeaders(), body: body)
-          .timeout(const Duration(seconds: 30));
+      res = await _client.post(uri, headers: await _refreshedHeaders(), body: body).timeout(const Duration(seconds: 30));
     }
-
     if (res.statusCode == 200 || res.statusCode == 204) return;
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Declarations save failed');
   }
 
-  // GET /api/v1/customer/submissions/:id/quote
   Future<Map<String, dynamic>> getQuote(String submissionId) async {
     final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/quote');
-
-    var res = await _client
-        .get(uri, headers: await _authHeaders())
-        .timeout(const Duration(seconds: 30));
-
+    var res = await _client.get(uri, headers: await _authHeaders()).timeout(const Duration(seconds: 30));
     if (res.statusCode == 401) {
-      res = await _client
-          .get(uri, headers: await _refreshedHeaders())
-          .timeout(const Duration(seconds: 30));
+      res = await _client.get(uri, headers: await _refreshedHeaders()).timeout(const Duration(seconds: 30));
     }
-
-    if (res.statusCode == 200) {
-      return jsonDecode(res.body) as Map<String, dynamic>;
-    }
+    if (res.statusCode == 200) return jsonDecode(res.body) as Map<String, dynamic>;
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Quote fetch failed');
   }
 
-  // POST /api/v1/customer/submissions/:id/checkout
-  Future<Map<String, dynamic>> checkout({
-    required String submissionId,
-    required Map<String, dynamic> payload,
-  }) async {
-    final uri  = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/checkout');
+  // Temporary compatibility seam. Paid checkout is being converged onto the
+  // canonical /api/v1/payments/checkout + /api/v1/submissions flow; this method
+  // must not be treated as the money authority.
+  Future<Map<String, dynamic>> checkout({required String submissionId, required Map<String, dynamic> payload}) async {
+    final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/checkout');
     final body = jsonEncode(payload);
-
-    var res = await _client
-        .post(uri, headers: await _authHeaders(), body: body)
-        .timeout(const Duration(seconds: 60));
-
+    var res = await _client.post(uri, headers: await _authHeaders(), body: body).timeout(const Duration(seconds: 60));
     if (res.statusCode == 401) {
-      res = await _client
-          .post(uri, headers: await _refreshedHeaders(), body: body)
-          .timeout(const Duration(seconds: 60));
+      res = await _client.post(uri, headers: await _refreshedHeaders(), body: body).timeout(const Duration(seconds: 60));
     }
-
-    if (res.statusCode == 200 || res.statusCode == 201) {
-      return jsonDecode(res.body) as Map<String, dynamic>;
-    }
+    if (res.statusCode == 200 || res.statusCode == 201) return jsonDecode(res.body) as Map<String, dynamic>;
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Checkout failed');
   }
 
-  /// Returns the current auth token (for multipart uploads that build their
-  /// own request).
   String? getToken() => _getToken();
-
-  void dispose() {
-    _client.close();
-  }
+  void dispose() => _client.close();
 }
 
 class SubmitApiException implements Exception {
   final int statusCode;
   final String message;
   const SubmitApiException(this.statusCode, this.message);
-
   @override
   String toString() => 'SubmitApiException($statusCode): $message';
 }
 
-// ---------------------------------------------------------------------------
-// Provider: shared SubmissionApiClient
-// ---------------------------------------------------------------------------
-
 final submissionApiClientProvider = Provider<SubmissionApiClient>((ref) {
-  // Customer JWT — updated when auth state changes via authProvider.
   final c = SubmissionApiClient(
     getToken: () => ref.read(authProvider)?.accessToken,
+    refreshToken: () async {
+      await ref.read(authProvider.notifier).refresh();
+      return ref.read(authProvider)?.accessToken;
+    },
   );
   ref.onDispose(c.dispose);
   return c;
 });
 
-// ---------------------------------------------------------------------------
-// SubmitNotifier — wizard state machine
-// ---------------------------------------------------------------------------
-
 class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
   final SubmissionApiClient _api;
-
   SubmitNotifier(this._api) : super(null);
 
-  // ---- lifecycle ----
-
   void reset() => state = null;
-
-  void beginNew() {
-    state = const SubmissionDraft(step: 0);
-  }
-
-  // ---- Step 0: Service selection ----
+  void beginNew() => state = const SubmissionDraft(step: 0);
 
   void selectTier(ServiceTier tier) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(selectedTier: tier);
   }
-
-  // ---- Step 1: Asset info ----
-
   void updateAssetName(String name) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(assetName: name);
   }
-
   void updateAssetType(String type) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(assetType: type);
   }
-
   void updateGemstoneAttributes(GemstoneAttributes attrs) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(gemstoneAttributes: attrs);
   }
-
   void addPhoto(String path) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(photoPaths: [...current.photoPaths, path]);
   }
-
   void removePhoto(String path) {
     final current = state ?? const SubmissionDraft(step: 0);
-    state = current.copyWith(
-      photoPaths: current.photoPaths.where((p) => p != path).toList(),
-    );
+    state = current.copyWith(photoPaths: current.photoPaths.where((p) => p != path).toList());
   }
-
-  // ---- Step 2: Documents ----
-
   void addDocument(EvidenceDocument doc) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(documents: [...current.documents, doc]);
   }
-
   void removeDocument(int index) {
     final current = state ?? const SubmissionDraft(step: 0);
     final docs = List<EvidenceDocument>.from(current.documents);
     if (index >= 0 && index < docs.length) docs.removeAt(index);
     state = current.copyWith(documents: docs);
   }
-
   void markDocumentUploaded(int index) {
     final current = state ?? const SubmissionDraft(step: 0);
     final docs = List<EvidenceDocument>.from(current.documents);
-    if (index >= 0 && index < docs.length) {
-      docs[index] = docs[index].copyWith(uploaded: true);
-    }
+    if (index >= 0 && index < docs.length) docs[index] = docs[index].copyWith(uploaded: true);
     state = current.copyWith(documents: docs);
   }
-
   void updateDocumentType(int index, EvidenceDocumentType docType) {
     final current = state ?? const SubmissionDraft(step: 0);
     final docs = List<EvidenceDocument>.from(current.documents);
-    if (index >= 0 && index < docs.length) {
-      docs[index] = docs[index].copyWith(docType: docType);
-    }
+    if (index >= 0 && index < docs.length) docs[index] = docs[index].copyWith(docType: docType);
     state = current.copyWith(documents: docs);
   }
-
-  // ---- Step 3: Declarations ----
-
   void setDeclaredAccurate(bool value) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(declaredAccurate: value);
   }
-
   void setDeclaredTierMayDiffer(bool value) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(declaredTierMayDiffer: value);
   }
-
   void setDeclaredTermsAgreed(bool value) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(declaredTermsAgreed: value);
   }
-
-  // ---- Step navigation ----
-
   void goToStep(int step) {
     final current = state ?? const SubmissionDraft(step: 0);
     state = current.copyWith(step: step);
   }
 
-  // ---- Backend calls ----
-
-  /// Called when the user confirms service tier and moves to step 1.
-  /// Starts the submission on the backend and stores the submissionId.
   Future<void> startSubmission() async {
     final current = state;
-    if (current == null || current.selectedTier == null) {
-      throw StateError('No tier selected');
-    }
-
-    final result = await _api.startSubmission(
-      serviceTier: current.selectedTier!.apiValue,
-    );
-
+    if (current == null || current.selectedTier == null) throw StateError('No tier selected');
+    final result = await _api.startSubmission(serviceTier: current.selectedTier!.apiValue);
     state = current.copyWith(
       submissionId: result['submission_id'] as String?,
-      orderId:      result['order_id'] as String?,
-      step:         1,
+      orderId: result['order_id'] as String?,
+      step: 1,
     );
   }
 
-  /// Saves asset info to backend.
   Future<void> saveAssetInfo() async {
     final current = state;
-    if (current == null || current.submissionId == null) {
-      throw StateError('No active submission');
-    }
-
-    final attrs = current.gemstoneAttributes;
+    if (current == null || current.submissionId == null) throw StateError('No active submission');
     await _api.saveAssetInfo(
       submissionId: current.submissionId!,
       payload: {
         'asset_name': current.assetName,
         'asset_type': current.assetType,
-        'gemstone_attributes': attrs.toJson(),
+        'gemstone_attributes': current.gemstoneAttributes.toJson(),
       },
     );
   }
 
-  /// Uploads all pending (non-uploaded) evidence documents.
   Future<void> uploadPendingDocuments() async {
     final current = state;
-    if (current == null || current.submissionId == null) {
-      throw StateError('No active submission');
-    }
-
-    final token = await _api.getToken();
+    if (current == null || current.submissionId == null) throw StateError('No active submission');
     for (int i = 0; i < current.documents.length; i++) {
       final doc = current.documents[i];
       if (!doc.uploaded) {
         await _api.uploadEvidence(
           submissionId: current.submissionId!,
-          filePath:     doc.filePath,
-          fileName:     doc.fileName,
-          docType:      doc.docType.apiValue,
-          token:        token,
+          filePath: doc.filePath,
+          fileName: doc.fileName,
+          docType: doc.docType.apiValue,
         );
         markDocumentUploaded(i);
       }
     }
   }
 
-  /// Saves declarations to backend.
   Future<void> saveDeclarations() async {
     final current = state;
-    if (current == null || current.submissionId == null) {
-      throw StateError('No active submission');
-    }
-
+    if (current == null || current.submissionId == null) throw StateError('No active submission');
     await _api.saveDeclarations(
       submissionId: current.submissionId!,
       payload: {
-        'declared_accurate':          current.declaredAccurate,
-        'declared_tier_may_differ':   current.declaredTierMayDiffer,
-        'declared_terms_agreed':      current.declaredTermsAgreed,
+        'declared_accurate': current.declaredAccurate,
+        'declared_tier_may_differ': current.declaredTierMayDiffer,
+        'declared_terms_agreed': current.declaredTermsAgreed,
       },
     );
   }
 
-  /// Fetches the pricing quote from the backend.
   Future<SubmissionQuote> fetchQuote() async {
     final current = state;
-    if (current == null || current.submissionId == null) {
-      throw StateError('No active submission');
-    }
-
+    if (current == null || current.submissionId == null) throw StateError('No active submission');
     final json = await _api.getQuote(current.submissionId!);
     return SubmissionQuote.fromJson(json);
   }
 
-  /// Initiates checkout. In QUAL test mode the caller passes
-  /// test_mode: true so the backend uses a simulated payment flow.
-  /// No real payment is processed here — the backend owns that.
   Future<Map<String, dynamic>> checkout({bool testMode = false}) async {
     final current = state;
-    if (current == null || current.submissionId == null) {
-      throw StateError('No active submission');
-    }
-
-    final payload = <String, dynamic>{
-      if (testMode) 'test_mode': true,
-    };
-
-    final result = await _api.checkout(
+    if (current == null || current.submissionId == null) throw StateError('No active submission');
+    return _api.checkout(
       submissionId: current.submissionId!,
-      payload: payload,
+      payload: <String, dynamic>{if (testMode) 'test_mode': true},
     );
-    return result;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
-
-final submitProvider =
-    StateNotifierProvider<SubmitNotifier, SubmissionDraft?>((ref) {
+final submitProvider = StateNotifierProvider<SubmitNotifier, SubmissionDraft?>((ref) {
   final api = ref.watch(submissionApiClientProvider);
   return SubmitNotifier(api);
 });
