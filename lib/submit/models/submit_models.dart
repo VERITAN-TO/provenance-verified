@@ -2,62 +2,60 @@
 //
 // MONEY_CONTROLS_TRUST = FALSE
 // Customer-selected tier is a REQUESTED SERVICE, not a guaranteed outcome.
-// The determined trust tier is set exclusively by the backend after review.
-
-// ---------------------------------------------------------------------------
-// Service tiers (requested, not guaranteed)
-// ---------------------------------------------------------------------------
+// The determined trust state is set exclusively by the governed backend after review.
 
 enum ServiceTier {
-  /// T1 — Free basic provenance record.
   t1Free,
-
-  /// T2 — Standard review with document examination.
   t2Standard,
-
-  /// T3 — Professional review with laboratory liaison.
   t3Professional,
-
-  /// T4 — Full certification with physical examination.
   t4Certified;
 
   String get displayName {
     switch (this) {
-      case ServiceTier.t1Free:          return 'T1 Free';
-      case ServiceTier.t2Standard:      return 'T2 Standard';
-      case ServiceTier.t3Professional:  return 'T3 Professional';
-      case ServiceTier.t4Certified:     return 'T4 Certified';
+      case ServiceTier.t1Free:         return 'T1 — Asset Fingerprint';
+      case ServiceTier.t2Standard:     return 'T2 — Declared Source Record';
+      case ServiceTier.t3Professional: return 'T3 — Evidence-Verified Provenance';
+      case ServiceTier.t4Certified:    return 'T4 — PV Gold Seal';
     }
   }
 
   String get apiValue {
     switch (this) {
-      case ServiceTier.t1Free:          return 'T1_FREE';
-      case ServiceTier.t2Standard:      return 'T2_STANDARD';
-      case ServiceTier.t3Professional:  return 'T3_PROFESSIONAL';
-      case ServiceTier.t4Certified:     return 'T4_CERTIFIED';
+      case ServiceTier.t1Free:         return 'T1';
+      case ServiceTier.t2Standard:     return 'T2';
+      case ServiceTier.t3Professional: return 'T3';
+      case ServiceTier.t4Certified:    return 'T4';
+    }
+  }
+
+  String get serviceCode {
+    switch (this) {
+      case ServiceTier.t1Free:         return 'T1_FREE_ASSET_FINGERPRINT';
+      case ServiceTier.t2Standard:     return 'T2_DECLARED_SOURCE';
+      case ServiceTier.t3Professional: return 'T3_EVIDENCE_VERIFIED';
+      case ServiceTier.t4Certified:    return 'T4_PV_GOLD_SEAL';
     }
   }
 
   String get priceRange {
     switch (this) {
-      case ServiceTier.t1Free:          return 'Free';
-      case ServiceTier.t2Standard:      return '\$49 – \$149';
-      case ServiceTier.t3Professional:  return '\$249 – \$599';
-      case ServiceTier.t4Certified:     return '\$799 – \$1,999';
+      case ServiceTier.t1Free:         return 'Free';
+      case ServiceTier.t2Standard:     return '\$50';
+      case ServiceTier.t3Professional: return '\$150';
+      case ServiceTier.t4Certified:    return '\$350';
     }
   }
 
   String get shortDescription {
     switch (this) {
       case ServiceTier.t1Free:
-        return 'Basic provenance record. No document examination.';
+        return 'Public-anchored asset fingerprint. No source claims or evidence review.';
       case ServiceTier.t2Standard:
-        return 'Standard review with document and evidence examination.';
+        return 'Independent documented record of declared source information.';
       case ServiceTier.t3Professional:
-        return 'Professional review including laboratory report liaison.';
+        return 'Expert-reviewed provenance with evidence evaluation and custody documentation.';
       case ServiceTier.t4Certified:
-        return 'Full certification with physical examination by our team.';
+        return 'Highest service tier with multi-source evidence review and custody audit.';
     }
   }
 
@@ -65,47 +63,40 @@ enum ServiceTier {
     switch (this) {
       case ServiceTier.t1Free:
         return [
-          'Provenance record created',
-          'QR code issued on completion',
-          'No document examination',
+          'Asset fingerprint record',
+          'Public verification reference when authorized',
+          'No provenance claim is inferred',
         ];
       case ServiceTier.t2Standard:
         return [
-          'Document examination included',
-          'Evidence review by trained staff',
-          'QR code issued on completion',
-          '10–15 business-day turnaround',
+          'Declared source information recorded',
+          'Document and evidence review',
+          'Customer-visible case status',
         ];
       case ServiceTier.t3Professional:
         return [
-          'All Standard features',
-          'Laboratory report cross-verification',
-          'Specialist gemologist review',
-          '7–10 business-day turnaround',
+          'Evidence evaluation',
+          'Chain-of-custody documentation',
+          'Expert review',
         ];
       case ServiceTier.t4Certified:
         return [
-          'All Professional features',
-          'Physical gemstone examination',
-          'Custody tracking throughout',
-          'Priority processing (3–5 business days)',
-          'Highest trust determination possible',
+          'Multi-source evidence review',
+          'Chain-of-custody audit',
+          'Physical examination where required by the operating protocol',
+          'Any trust or mark outcome remains independently determined',
         ];
     }
   }
 }
 
-// ---------------------------------------------------------------------------
-// Gemstone attributes declared by the submitter
-// ---------------------------------------------------------------------------
-
 class GemstoneAttributes {
-  final String species;     // e.g. Corundum, Beryl
-  final String variety;     // e.g. Ruby, Emerald
-  final String weight;      // e.g. "3.45 ct"
-  final String dimensions;  // e.g. "9.2 × 7.1 × 4.3 mm"
-  final String origin;      // e.g. "Mogok, Myanmar (declared)"
-  final String treatments;  // e.g. "None declared", "Heat treated (declared)"
+  final String species;
+  final String variety;
+  final String weight;
+  final String dimensions;
+  final String origin;
+  final String treatments;
 
   const GemstoneAttributes({
     this.species = '',
@@ -123,29 +114,24 @@ class GemstoneAttributes {
     String? dimensions,
     String? origin,
     String? treatments,
-  }) =>
-      GemstoneAttributes(
-        species:    species    ?? this.species,
-        variety:    variety    ?? this.variety,
-        weight:     weight     ?? this.weight,
-        dimensions: dimensions ?? this.dimensions,
-        origin:     origin     ?? this.origin,
-        treatments: treatments ?? this.treatments,
-      );
+  }) => GemstoneAttributes(
+    species: species ?? this.species,
+    variety: variety ?? this.variety,
+    weight: weight ?? this.weight,
+    dimensions: dimensions ?? this.dimensions,
+    origin: origin ?? this.origin,
+    treatments: treatments ?? this.treatments,
+  );
 
   Map<String, dynamic> toJson() => {
-        'species':    species,
-        'variety':    variety,
-        'weight':     weight,
-        'dimensions': dimensions,
-        'origin':     origin,
-        'treatments': treatments,
-      };
+    'species': species,
+    'variety': variety,
+    'weight': weight,
+    'dimensions': dimensions,
+    'origin': origin,
+    'treatments': treatments,
+  };
 }
-
-// ---------------------------------------------------------------------------
-// Evidence document (for upload step)
-// ---------------------------------------------------------------------------
 
 enum EvidenceDocumentType {
   laboratoryReport,
@@ -173,10 +159,10 @@ enum EvidenceDocumentType {
 }
 
 class EvidenceDocument {
-  final String filePath;      // local path before upload
+  final String filePath;
   final String fileName;
   final EvidenceDocumentType docType;
-  final bool uploaded;        // true once confirmed uploaded to server
+  final bool uploaded;
 
   const EvidenceDocument({
     required this.filePath,
@@ -190,39 +176,24 @@ class EvidenceDocument {
     String? fileName,
     EvidenceDocumentType? docType,
     bool? uploaded,
-  }) =>
-      EvidenceDocument(
-        filePath:  filePath  ?? this.filePath,
-        fileName:  fileName  ?? this.fileName,
-        docType:   docType   ?? this.docType,
-        uploaded:  uploaded  ?? this.uploaded,
-      );
+  }) => EvidenceDocument(
+    filePath: filePath ?? this.filePath,
+    fileName: fileName ?? this.fileName,
+    docType: docType ?? this.docType,
+    uploaded: uploaded ?? this.uploaded,
+  );
 }
-
-// ---------------------------------------------------------------------------
-// Submission draft — wizard state
-// ---------------------------------------------------------------------------
 
 class SubmissionDraft {
   final String? submissionId;
   final String? orderId;
   final int step;
-
-  // Step 0 — service selection
   final ServiceTier? selectedTier;
-
-  // Step 1 — asset information
   final String assetName;
   final String assetType;
   final GemstoneAttributes gemstoneAttributes;
-
-  // Step 1b — photos (file paths, not yet uploaded as evidence)
   final List<String> photoPaths;
-
-  // Step 2 — evidence documents
   final List<EvidenceDocument> documents;
-
-  // Step 3 — declarations
   final bool declaredAccurate;
   final bool declaredTierMayDiffer;
   final bool declaredTermsAgreed;
@@ -255,52 +226,64 @@ class SubmissionDraft {
     bool? declaredAccurate,
     bool? declaredTierMayDiffer,
     bool? declaredTermsAgreed,
-  }) =>
-      SubmissionDraft(
-        submissionId:         submissionId        ?? this.submissionId,
-        orderId:              orderId             ?? this.orderId,
-        step:                 step                ?? this.step,
-        selectedTier:         selectedTier        ?? this.selectedTier,
-        assetName:            assetName           ?? this.assetName,
-        assetType:            assetType           ?? this.assetType,
-        gemstoneAttributes:   gemstoneAttributes  ?? this.gemstoneAttributes,
-        photoPaths:           photoPaths          ?? this.photoPaths,
-        documents:            documents           ?? this.documents,
-        declaredAccurate:     declaredAccurate    ?? this.declaredAccurate,
-        declaredTierMayDiffer: declaredTierMayDiffer ?? this.declaredTierMayDiffer,
-        declaredTermsAgreed:  declaredTermsAgreed ?? this.declaredTermsAgreed,
-      );
+  }) => SubmissionDraft(
+    submissionId: submissionId ?? this.submissionId,
+    orderId: orderId ?? this.orderId,
+    step: step ?? this.step,
+    selectedTier: selectedTier ?? this.selectedTier,
+    assetName: assetName ?? this.assetName,
+    assetType: assetType ?? this.assetType,
+    gemstoneAttributes: gemstoneAttributes ?? this.gemstoneAttributes,
+    photoPaths: photoPaths ?? this.photoPaths,
+    documents: documents ?? this.documents,
+    declaredAccurate: declaredAccurate ?? this.declaredAccurate,
+    declaredTierMayDiffer: declaredTierMayDiffer ?? this.declaredTierMayDiffer,
+    declaredTermsAgreed: declaredTermsAgreed ?? this.declaredTermsAgreed,
+  );
 
-  bool get declarationsComplete =>
-      declaredAccurate && declaredTierMayDiffer && declaredTermsAgreed;
+  bool get declarationsComplete => declaredAccurate && declaredTierMayDiffer && declaredTermsAgreed;
 }
 
-// ---------------------------------------------------------------------------
-// Quote returned by GET /api/v1/customer/submissions/:id/quote
-// ---------------------------------------------------------------------------
-
 class SubmissionQuote {
-  final String submissionId;
+  final String serviceCode;
+  final String tier;
   final String serviceDescription;
   final double price;
   final String currency;
-  final int turnaroundDays;
+  final String priceVersion;
 
   const SubmissionQuote({
-    required this.submissionId,
+    required this.serviceCode,
+    required this.tier,
     required this.serviceDescription,
     required this.price,
     required this.currency,
-    required this.turnaroundDays,
+    required this.priceVersion,
   });
 
   factory SubmissionQuote.fromJson(Map<String, dynamic> json) {
+    final data = (json['data'] as Map<String, dynamic>?) ?? json;
+    final serviceCode = data['service_code'] as String? ?? '';
+    final tier = data['tier'] as String? ?? '';
+    final amountCents = (data['base_fee_cents'] as num?)?.toDouble() ?? 0;
+    final description = data['service_description'] as String? ?? _descriptionFor(serviceCode, tier);
     return SubmissionQuote(
-      submissionId:       json['submission_id'] as String? ?? '',
-      serviceDescription: json['service_description'] as String? ?? '',
-      price:              (json['price'] as num?)?.toDouble() ?? 0.0,
-      currency:           json['currency'] as String? ?? 'USD',
-      turnaroundDays:     json['turnaround_days'] as int? ?? 0,
+      serviceCode: serviceCode,
+      tier: tier,
+      serviceDescription: description,
+      price: amountCents / 100,
+      currency: data['currency'] as String? ?? 'USD',
+      priceVersion: data['price_version'] as String? ?? '',
     );
+  }
+
+  static String _descriptionFor(String serviceCode, String tier) {
+    switch (serviceCode) {
+      case 'T1_FREE_ASSET_FINGERPRINT': return 'Asset Fingerprint';
+      case 'T2_DECLARED_SOURCE': return 'Declared Source Record';
+      case 'T3_EVIDENCE_VERIFIED': return 'Evidence-Verified Provenance';
+      case 'T4_PV_GOLD_SEAL': return 'PV Gold Seal';
+      default: return tier.isEmpty ? 'PROVENANCE VERIFIED service' : '$tier service';
+    }
   }
 }
