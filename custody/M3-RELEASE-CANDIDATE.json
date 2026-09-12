@@ -4,9 +4,10 @@
   "sealed": false,
   "m2_source_sha": "ae3eb7d",
   "m3_branch": "mobile/m3-release-candidate",
-  "m3_head_sha": "c45aae3",
+  "m3_head_sha": "e5a0c08",
+  "m3_head_sha_note": "Updated from c45aae3 after cleanup gates G1/G2/G3 (2026-09-03)",
   "build_date": "2026-08-31T02:20:49Z",
-  "custody_updated": "2026-08-30T09:00:00Z",
+  "custody_updated": "2026-09-03T00:00:00Z",
   "flutter_version": "3.47.2",
   "dart_version": "3.13.2",
   "ios_bundle_id": "to.veritan.pv",
@@ -69,6 +70,15 @@
   "ios_archive": "EXTERNAL_GATE_APPLE_DISTRIBUTION_CERT",
   "apple_distribution_signing": "EXTERNAL_GATE",
   "google_play_console": "EXTERNAL_GATE",
+  "cleanup_gates": {
+    "G1_M2_RUNNER_DELETED": "PASS — lib/m2_e2e_runner.dart deleted (e5a0c08); competing void main() removed",
+    "G2_HINT_TEXT_FIXED": "PASS — PV-TEST-T4D004 replaced with PV-GEM-001234 in manual_entry_screen.dart (e5a0c08)",
+    "G3_SECRET_SCAN_UPDATED": "PASS — store/privacy/secret_scan.json updated to M3 SAS1 architecture (e5a0c08)",
+    "G4_CUSTODY_SEAL": "PENDING — requires IOS_DISTRIBUTION_ARCHIVE + TESTFLIGHT_BUILD + PLAY_INTERNAL_BUILD",
+    "G5_DEBUG_ENTITLEMENTS": "ADVISORY — ios/Runner/RunnerDebug.entitlements identical to Runner.entitlements; verify project.pbxproj wiring",
+    "G6_ICON_VISUAL_INSPECTION": "ADVISORY — human visual check of 1024x1024 + 60@3x PNG required",
+    "G7_EXPORT_OPTIONS": "ADVISORY — ios/ExportOptions.plist: confirm app-store method + team KHZN4HKNXC"
+  },
   "gates_complete": [
     "M2_SOURCE_SHA_VERIFIED",
     "IOS_CONFIG_PASS",
@@ -87,7 +97,10 @@
     "UNIT_TESTS_183_183",
     "ANDROID_RELEASE_AAB_NEW_KEYSTORE",
     "LANE_G_DEFECTS_FIXED",
-    "M3_FRESH_CLONE_VERIFICATION"
+    "M3_FRESH_CLONE_VERIFICATION",
+    "CLEANUP_G1_M2_RUNNER_DELETED",
+    "CLEANUP_G2_HINT_TEXT_FIXED",
+    "CLEANUP_G3_SECRET_SCAN_UPDATED"
   ],
   "gates_pending": [
     "IOS_DISTRIBUTION_ARCHIVE",
