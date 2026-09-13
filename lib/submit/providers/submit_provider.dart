@@ -10,6 +10,8 @@ import 'package:http/http.dart' as http;
 import '../models/submit_models.dart';
 import '../../core/config/environment.dart';
 import '../../auth/providers/auth_provider.dart';
+import 'payment_coordinator.dart';
+import 'submit_api_exception.dart';
 
 class SubmissionApiClient {
   final http.Client _client;
@@ -137,31 +139,8 @@ class SubmissionApiClient {
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Quote fetch failed');
   }
 
-  // Temporary compatibility seam. Paid checkout is being converged onto the
-  // canonical /api/v1/payments/checkout + /api/v1/submissions flow; this method
-  // must not be treated as the money authority.
-  Future<Map<String, dynamic>> checkout({required String submissionId, required Map<String, dynamic> payload}) async {
-    final uri = Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/checkout');
-    final body = jsonEncode(payload);
-    var res = await _client.post(uri, headers: await _authHeaders(), body: body).timeout(const Duration(seconds: 60));
-    if (res.statusCode == 401) {
-      res = await _client.post(uri, headers: await _refreshedHeaders(), body: body).timeout(const Duration(seconds: 60));
-    }
-    if (res.statusCode == 200 || res.statusCode == 201) return jsonDecode(res.body) as Map<String, dynamic>;
-    final err = _parseError(res);
-    throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Checkout failed');
-  }
-
   String? getToken() => _getToken();
   void dispose() => _client.close();
-}
-
-class SubmitApiException implements Exception {
-  final int statusCode;
-  final String message;
-  const SubmitApiException(this.statusCode, this.message);
-  @override
-  String toString() => 'SubmitApiException($statusCode): $message';
 }
 
 final submissionApiClientProvider = Provider<SubmissionApiClient>((ref) {
@@ -178,7 +157,8 @@ final submissionApiClientProvider = Provider<SubmissionApiClient>((ref) {
 
 class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
   final SubmissionApiClient _api;
-  SubmitNotifier(this._api) : super(null);
+  final PaymentCoordinator _payment;
+  SubmitNotifier(this._api, this._payment) : super(null);
 
   void reset() => state = null;
   void beginNew() => state = const SubmissionDraft(step: 0);
@@ -307,17 +287,58 @@ class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
     return SubmissionQuote.fromJson(json);
   }
 
+  /// Uses the existing wizard seam but delegates authority to the canonical
+  /// claimant-identity + order/payment coordinator. The caller remains on the
+  /// checkout step while external identity/payment work is pending, then taps
+  /// again after returning to reconcile the provider state and finalize.
   Future<Map<String, dynamic>> checkout({bool testMode = false}) async {
     final current = state;
     if (current == null || current.submissionId == null) throw StateError('No active submission');
-    return _api.checkout(
-      submissionId: current.submissionId!,
-      payload: <String, dynamic>{if (testMode) 'test_mode': true},
-    );
+
+    final identity = await _payment.claimantIdentityStatus();
+    if (!identity.verified) {
+      final launched = await _payment.launchClaimantIdentityVerification();
+      if (!launched) {
+        throw const SubmitApiException(502, 'Could not open identity verification.');
+      }
+      throw const SubmitApiException(
+        428,
+        'Complete government-ID + matching-selfie verification, return to PROVENANCE VERIFIED, then tap Continue again.',
+      );
+    }
+
+    var orderId = current.orderId;
+    if (orderId == null || orderId.isEmpty) {
+      final quote = await fetchQuote();
+      final order = await _payment.createOrder(submissionId: current.submissionId!, quote: quote);
+      orderId = order.orderId;
+      state = (state ?? current).copyWith(orderId: orderId);
+
+      if (order.checkoutUrl != null) {
+        final launched = await _payment.launchCheckout(order);
+        if (!launched) throw const SubmitApiException(502, 'Could not open secure checkout.');
+        throw const SubmitApiException(
+          202,
+          'Complete secure payment, return to PROVENANCE VERIFIED, then tap Continue again to reconcile and submit.',
+        );
+      }
+    }
+
+    final quote = await fetchQuote();
+    if (quote.paymentRequired) {
+      final paymentStatus = await _payment.paymentStatus(orderId);
+      if (paymentStatus != 'PAID') {
+        throw SubmitApiException(202, 'Payment status is $paymentStatus. Complete payment, then try again.');
+      }
+    }
+
+    final result = await _payment.finalize(submissionId: current.submissionId!, orderId: orderId);
+    return result;
   }
 }
 
 final submitProvider = StateNotifierProvider<SubmitNotifier, SubmissionDraft?>((ref) {
   final api = ref.watch(submissionApiClientProvider);
-  return SubmitNotifier(api);
+  final payment = ref.watch(paymentCoordinatorProvider);
+  return SubmitNotifier(api, payment);
 });
