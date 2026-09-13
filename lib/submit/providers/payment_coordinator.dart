@@ -1,9 +1,10 @@
-// Canonical payment/order coordinator for the customer submission flow.
+// Canonical claimant-identity + payment/order coordinator for the customer flow.
 //
+// VERIFIED_HUMAN_CLAIMANT_REQUIRED = TRUE.
 // MONEY_CONTROLS_TRUST = FALSE.
-// This client never sends an amount or Stripe price ID. The server owns price,
-// order state and Stripe session creation. Final intake requires a canonical
-// order whose payment state is FREE or PAID.
+// This client never sends an amount or Stripe price ID. The server owns claimant
+// verification, price, order state and Stripe session creation. Final intake
+// requires both verified claimant identity and a canonical FREE/PAID order.
 
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,30 @@ import '../../auth/providers/auth_provider.dart';
 import '../../core/config/environment.dart';
 import '../models/submit_models.dart';
 import 'submit_provider.dart' show SubmitApiException;
+
+class ClaimantIdentityStatus {
+  final String status;
+  final bool verified;
+  final String assuranceLevel;
+  final DateTime? verifiedAt;
+
+  const ClaimantIdentityStatus({
+    required this.status,
+    required this.verified,
+    required this.assuranceLevel,
+    this.verifiedAt,
+  });
+
+  factory ClaimantIdentityStatus.fromJson(Map<String, dynamic> json) {
+    final data = (json['data'] as Map<String, dynamic>?) ?? json;
+    return ClaimantIdentityStatus(
+      status: data['status']?.toString() ?? 'UNKNOWN',
+      verified: data['verified'] == true || data['status'] == 'VERIFIED',
+      assuranceLevel: data['assurance_level']?.toString() ?? 'GOVERNMENT_ID_MATCHING_SELFIE',
+      verifiedAt: DateTime.tryParse(data['verified_at']?.toString() ?? ''),
+    );
+  }
+}
 
 class CanonicalOrderResult {
   final String orderId;
@@ -86,10 +111,45 @@ class PaymentCoordinator {
     throw SubmitApiException(res.statusCode, message);
   }
 
+  Future<ClaimantIdentityStatus> claimantIdentityStatus() async {
+    final res = await _get('/api/v1/customer/identity/status');
+    if (res.statusCode != 200) _throw(res, 'Could not read claimant identity status');
+    return ClaimantIdentityStatus.fromJson(_json(res));
+  }
+
+  Future<Uri?> beginClaimantIdentityVerification() async {
+    final res = await _post('/api/v1/customer/identity/verification-session', const {});
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      _throw(res, 'Could not start identity verification');
+    }
+    final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
+    if (data['status'] == 'VERIFIED') return null;
+    final value = data['verification_url']?.toString() ?? '';
+    if (value.isEmpty) throw const SubmitApiException(502, 'Identity verification response did not include a verification URL');
+    return Uri.tryParse(value);
+  }
+
+  Future<bool> launchClaimantIdentityVerification() async {
+    final uri = await beginClaimantIdentityVerification();
+    if (uri == null) return true;
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<ClaimantIdentityStatus> ensureClaimantIdentity() async {
+    final status = await claimantIdentityStatus();
+    if (status.verified) return status;
+    throw const SubmitApiException(
+      428,
+      'Verify your government-issued photo ID and matching selfie before creating a PV claim.',
+    );
+  }
+
   Future<CanonicalOrderResult> createOrder({
     required String submissionId,
     required SubmissionQuote quote,
   }) async {
+    await ensureClaimantIdentity();
+
     if (!quote.paymentRequired) {
       final res = await _post('/api/v1/payments/orders', {'sessionId': submissionId});
       if (res.statusCode != 200 && res.statusCode != 201) _throw(res, 'Could not create free order');
@@ -146,6 +206,7 @@ class PaymentCoordinator {
     required String submissionId,
     required String orderId,
   }) async {
+    await ensureClaimantIdentity();
     final res = await _post(
       '/api/v1/customer/submissions/${Uri.encodeComponent(submissionId)}/checkout',
       {'order_id': orderId},
