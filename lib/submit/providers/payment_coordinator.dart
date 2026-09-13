@@ -13,7 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../core/config/environment.dart';
 import '../models/submit_models.dart';
-import 'submit_provider.dart' show SubmitApiException;
+import 'submit_api_exception.dart';
 
 class ClaimantIdentityStatus {
   final String status;
