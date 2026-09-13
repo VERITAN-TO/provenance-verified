@@ -1,7 +1,8 @@
-// ServiceTierCard — displays one service tier option in the selection step.
+// ServiceTierCard — displays one requested PV service path.
 //
-// The tier shown is a REQUESTED SERVICE, not a guaranteed outcome.
-// Trust determination is performed exclusively by the backend after review.
+// The service selected is never the trust outcome. PV Protocol determines the
+// result after evidence, review, and authority gates. Every path requires an
+// accountable verified-human claimant.
 
 import 'package:flutter/material.dart';
 import '../models/submit_models.dart';
@@ -31,21 +32,18 @@ class ServiceTierCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent  = _tierAccent;
+    final accent = _tierAccent;
     final borderColor = isSelected ? accent : PvColors.border;
 
     return Semantics(
-      label: '${tier.displayName}: ${tier.shortDescription}. Price: ${tier.priceRange}. '
+      label: '${tier.displayName}: ${tier.shortDescription}. ${tier.machineTrustState}. Price: ${tier.priceRange}. '
           '${isSelected ? "Currently selected." : "Tap to select."}',
       button: !isSelected,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           color: isSelected ? PvColors.surface : PvColors.background,
-          border: Border.all(
-            color: borderColor,
-            width: isSelected ? 2 : 1,
-          ),
+          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
@@ -56,7 +54,6 @@ class ServiceTierCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header row ──────────────────────────────────────────────
                 Row(
                   children: [
                     Container(
@@ -66,10 +63,7 @@ class ServiceTierCard extends StatelessWidget {
                         border: Border.all(color: accent),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        tier.displayName.toUpperCase(),
-                        style: PvTypography.label.copyWith(color: accent),
-                      ),
+                      child: Text(tier.apiValue, style: PvTypography.label.copyWith(color: accent)),
                     ),
                     const Spacer(),
                     Text(
@@ -85,76 +79,70 @@ class ServiceTierCard extends StatelessWidget {
                     ],
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
-                // ── Short description ───────────────────────────────────────
                 Text(
-                  tier.shortDescription,
-                  style: PvTypography.body.copyWith(
-                    color: PvColors.onSurface,
+                  tier.displayName.replaceFirst('${tier.apiValue} — ', ''),
+                  style: PvTypography.title.copyWith(color: PvColors.onBackground, fontSize: 16),
+                ),
+                const SizedBox(height: 6),
+                Text(tier.shortDescription, style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: accent.withAlpha(16),
+                    border: Border.all(color: accent.withAlpha(80)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('MACHINE TRUST STATE', style: PvTypography.label.copyWith(color: accent)),
+                      const SizedBox(height: 4),
+                      Text(tier.machineTrustState, style: PvTypography.bodySmall.copyWith(color: PvColors.onSurface)),
+                    ],
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                // ── Feature list ───────────────────────────────────────────
                 ...tier.features.map(
                   (f) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: 5),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.check,
-                          size: 14,
-                          color: accent,
-                        ),
+                        Icon(Icons.check, size: 14, color: accent),
                         const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            f,
-                            style: PvTypography.bodySmall.copyWith(
-                              color: PvColors.onSurface,
-                            ),
-                          ),
-                        ),
+                        Expanded(child: Text(f, style: PvTypography.bodySmall.copyWith(color: PvColors.onSurface))),
                       ],
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                // ── Select button ───────────────────────────────────────────
-                if (!isSelected)
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: onSelect,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: accent,
-                        side: BorderSide(color: accent),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: const Text('Select'),
-                    ),
-                  )
-                else
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: null, // already selected
-                      style: FilledButton.styleFrom(
-                        backgroundColor: accent.withAlpha(40),
-                        foregroundColor: accent,
-                        disabledBackgroundColor: accent.withAlpha(40),
-                        disabledForegroundColor: accent,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                      child: const Text('Selected'),
-                    ),
-                  ),
+                SizedBox(
+                  width: double.infinity,
+                  child: isSelected
+                      ? FilledButton(
+                          onPressed: null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: accent.withAlpha(40),
+                            foregroundColor: accent,
+                            disabledBackgroundColor: accent.withAlpha(40),
+                            disabledForegroundColor: accent,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: const Text('Requested service selected'),
+                        )
+                      : OutlinedButton(
+                          onPressed: onSelect,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: accent,
+                            side: BorderSide(color: accent),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          child: const Text('Select service path'),
+                        ),
+                ),
               ],
             ),
           ),
