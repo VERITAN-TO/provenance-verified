@@ -1,6 +1,7 @@
-// Submit models — gemstone certification submission workflow.
+// Submit models — gemstone verification submission workflow.
 //
 // MONEY_CONTROLS_TRUST = FALSE
+// VERIFIED_HUMAN_CLAIMANT_REQUIRED = TRUE
 // Customer-selected tier is a REQUESTED SERVICE, not a guaranteed outcome.
 // The determined trust state is set exclusively by the governed backend after review.
 
@@ -12,10 +13,10 @@ enum ServiceTier {
 
   String get displayName {
     switch (this) {
-      case ServiceTier.t1Free:         return 'T1 — Asset Fingerprint';
+      case ServiceTier.t1Free:         return 'T1 — Verified Claimant + Asset Fingerprint';
       case ServiceTier.t2Standard:     return 'T2 — Declared Source Record';
       case ServiceTier.t3Professional: return 'T3 — Evidence-Verified Provenance';
-      case ServiceTier.t4Certified:    return 'T4 — PV Gold Seal';
+      case ServiceTier.t4Certified:    return 'T4 — PROVENANCE VERIFIED™ Gold Seal Review';
     }
   }
 
@@ -49,26 +50,59 @@ enum ServiceTier {
   String get shortDescription {
     switch (this) {
       case ServiceTier.t1Free:
-        return 'Public-anchored asset fingerprint. No source claims or evidence review.';
+        return 'A real, verified person takes responsibility for a stable physical-asset record. No provenance claim is verified.';
       case ServiceTier.t2Standard:
-        return 'Independent documented record of declared source information.';
+        return 'A verified claimant makes an attributable source/origin declaration. PV records who said what; the source is not independently verified.';
       case ServiceTier.t3Professional:
-        return 'Expert-reviewed provenance with evidence evaluation and custody documentation.';
+        return 'Claims are mapped to evidence, checked for contradiction, reviewed, and deterministically bounded with reasons and limitations.';
       case ServiceTier.t4Certified:
-        return 'Highest service tier with multi-source evidence review and custody audit.';
+        return 'Highest PV review path. Gold Seal credential and mark authority exist only if every evidence, approval, signing, and lifecycle gate is earned.';
+    }
+  }
+
+  String get machineTrustState {
+    switch (this) {
+      case ServiceTier.t1Free:
+        return 'CLAIMANT VERIFIED • ASSET REGISTERED • PROVENANCE UNVERIFIED';
+      case ServiceTier.t2Standard:
+        return 'CLAIMANT VERIFIED • SOURCE DECLARED • INDEPENDENT VERIFICATION NOT YET EARNED';
+      case ServiceTier.t3Professional:
+        return 'EVIDENCE VERIFIED • REASON-CODED DETERMINATION • EXPLICIT LIMITATIONS';
+      case ServiceTier.t4Certified:
+        return 'GOLD SEAL ELIGIBLE ONLY IF DETERMINED • MARK AUTHORITY CONTROLLED';
     }
   }
 
   List<String> get features {
     switch (this) {
       case ServiceTier.t1Free:
-        return ['Asset fingerprint record', 'Public verification reference when authorized', 'No provenance claim is inferred'];
+        return [
+          'Government-issued photo ID + matching selfie required',
+          'Stable asset fingerprint under an accountable claimant',
+          'Tamper-evident PV record',
+          'Does not prove origin, source, custody history, or provenance',
+        ];
       case ServiceTier.t2Standard:
-        return ['Declared source information recorded', 'Document and evidence review', 'Customer-visible case status'];
+        return [
+          'Everything in T1 identity/accountability',
+          'Structured source/origin claim attributed to the verified declarant',
+          'Signed customer attestation and machine-readable declaration state',
+          'Declared does not mean independently verified',
+        ];
       case ServiceTier.t3Professional:
-        return ['Evidence evaluation', 'Chain-of-custody documentation', 'Expert review'];
+        return [
+          'Claim-to-evidence mapping and evidence sufficiency review',
+          'Contradiction analysis and qualified review',
+          'Deterministic determination with why-this-tier / why-not-higher reasons',
+          'Explicit evidence scope and limitations',
+        ];
       case ServiceTier.t4Certified:
-        return ['Multi-source evidence review', 'Chain-of-custody audit', 'Physical examination where required by the operating protocol', 'Any trust or mark outcome remains independently determined'];
+        return [
+          'T3 controls plus enhanced evidence and approval requirements',
+          'Physical examination / custody controls where protocol requires',
+          'Controlled signing and credential lifecycle',
+          'PROVENANCE VERIFIED™ mark authority only after independent eligibility gates pass',
+        ];
     }
   }
 }
@@ -225,10 +259,10 @@ class SubmissionQuote {
 
   static String _descriptionFor(String serviceCode, String tier) {
     switch (serviceCode) {
-      case 'T1_FREE_ASSET_FINGERPRINT': return 'Asset Fingerprint';
+      case 'T1_FREE_ASSET_FINGERPRINT': return 'Verified Claimant + Asset Fingerprint';
       case 'T2_DECLARED_SOURCE': return 'Declared Source Record';
       case 'T3_EVIDENCE_VERIFIED': return 'Evidence-Verified Provenance';
-      case 'T4_PV_GOLD_SEAL': return 'PV Gold Seal';
+      case 'T4_PV_GOLD_SEAL': return 'PROVENANCE VERIFIED™ Gold Seal Review';
       default: return tier.isEmpty ? 'PROVENANCE VERIFIED service' : '$tier service';
     }
   }
