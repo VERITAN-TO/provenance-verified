@@ -1,9 +1,9 @@
 // Submit models — gemstone verification submission workflow.
 //
+// CUSTOMER_SELECTS_TIER = FALSE
 // MONEY_CONTROLS_TRUST = FALSE
 // VERIFIED_HUMAN_CLAIMANT_REQUIRED = TRUE
-// Customer-selected tier is a REQUESTED SERVICE, not a guaranteed outcome.
-// The determined trust state is set exclusively by the governed backend after review.
+// T1–T4 are educational/result states. Evidence + policy determine the result.
 
 enum ServiceTier {
   t1Free,
@@ -13,50 +13,50 @@ enum ServiceTier {
 
   String get displayName {
     switch (this) {
-      case ServiceTier.t1Free:         return 'T1 — Verified Claimant + Asset Fingerprint';
-      case ServiceTier.t2Standard:     return 'T2 — Declared Source Record';
-      case ServiceTier.t3Professional: return 'T3 — Evidence-Verified Provenance';
-      case ServiceTier.t4Certified:    return 'T4 — PROVENANCE VERIFIED™ Gold Seal Review';
+      case ServiceTier.t1Free: return 'T1 — Accountable Existence';
+      case ServiceTier.t2Standard: return 'T2 — Accountable Declaration';
+      case ServiceTier.t3Professional: return 'T3 — Evidence-Established Trust';
+      case ServiceTier.t4Certified: return 'T4 — Highest Governed Provenance Authority';
     }
   }
 
   String get apiValue {
     switch (this) {
-      case ServiceTier.t1Free:         return 'T1';
-      case ServiceTier.t2Standard:     return 'T2';
+      case ServiceTier.t1Free: return 'T1';
+      case ServiceTier.t2Standard: return 'T2';
       case ServiceTier.t3Professional: return 'T3';
-      case ServiceTier.t4Certified:    return 'T4';
+      case ServiceTier.t4Certified: return 'T4';
     }
   }
 
   String get serviceCode {
     switch (this) {
-      case ServiceTier.t1Free:         return 'T1_FREE_ASSET_FINGERPRINT';
-      case ServiceTier.t2Standard:     return 'T2_DECLARED_SOURCE';
+      case ServiceTier.t1Free: return 'T1_FREE_ASSET_FINGERPRINT';
+      case ServiceTier.t2Standard: return 'T2_DECLARED_SOURCE';
       case ServiceTier.t3Professional: return 'T3_EVIDENCE_VERIFIED';
-      case ServiceTier.t4Certified:    return 'T4_PV_GOLD_SEAL';
+      case ServiceTier.t4Certified: return 'T4_PV_GOLD_SEAL';
     }
   }
 
   String get priceRange {
     switch (this) {
-      case ServiceTier.t1Free:         return 'Free';
-      case ServiceTier.t2Standard:     return '\$50';
-      case ServiceTier.t3Professional: return '\$150';
-      case ServiceTier.t4Certified:    return '\$350';
+      case ServiceTier.t1Free: return 'Free if determined T1';
+      case ServiceTier.t2Standard: return '\$50 if determined T2';
+      case ServiceTier.t3Professional: return '\$150 if determined T3';
+      case ServiceTier.t4Certified: return '\$350 if evidence determines T4';
     }
   }
 
   String get shortDescription {
     switch (this) {
       case ServiceTier.t1Free:
-        return 'A real, verified person takes responsibility for a stable physical-asset record. No provenance claim is verified.';
+        return 'A verified person is accountable for a stable physical-asset record. Origin, source, custody history, and provenance remain unverified.';
       case ServiceTier.t2Standard:
-        return 'A verified claimant makes an attributable source/origin declaration. PV records who said what; the source is not independently verified.';
+        return 'A verified claimant makes an attributable source/origin declaration. PV records who said what; the claim is not independently evidence-verified.';
       case ServiceTier.t3Professional:
-        return 'Claims are mapped to evidence, checked for contradiction, reviewed, and deterministically bounded with reasons and limitations.';
+        return 'Claims are mapped to evidence, checked for contradiction, reviewed, and deterministically bounded with reasons, scope, and limitations.';
       case ServiceTier.t4Certified:
-        return 'Highest PV review path. Gold Seal credential and mark authority exist only if every evidence, approval, signing, and lifecycle gate is earned.';
+        return 'The highest evidence-qualified PV state. T4 determination alone does not issue a Gold Seal or certification-mark authority.';
     }
   }
 
@@ -65,11 +65,11 @@ enum ServiceTier {
       case ServiceTier.t1Free:
         return 'CLAIMANT VERIFIED • ASSET REGISTERED • PROVENANCE UNVERIFIED';
       case ServiceTier.t2Standard:
-        return 'CLAIMANT VERIFIED • SOURCE DECLARED • INDEPENDENT VERIFICATION NOT YET EARNED';
+        return 'CLAIMANT VERIFIED • CLAIM ATTRIBUTABLE • INDEPENDENT VERIFICATION NOT EARNED';
       case ServiceTier.t3Professional:
         return 'EVIDENCE VERIFIED • REASON-CODED DETERMINATION • EXPLICIT LIMITATIONS';
       case ServiceTier.t4Certified:
-        return 'GOLD SEAL ELIGIBLE ONLY IF DETERMINED • MARK AUTHORITY CONTROLLED';
+        return 'T4 EVIDENCE QUALIFIED • OFFICIAL T4 / GOLD SEAL AUTHORITY SEPARATE';
     }
   }
 
@@ -78,7 +78,7 @@ enum ServiceTier {
       case ServiceTier.t1Free:
         return [
           'Government-issued photo ID + matching selfie required',
-          'Stable asset fingerprint under an accountable claimant',
+          'Stable physical-asset identity under an accountable claimant',
           'Tamper-evident PV record',
           'Does not prove origin, source, custody history, or provenance',
         ];
@@ -93,15 +93,15 @@ enum ServiceTier {
         return [
           'Claim-to-evidence mapping and evidence sufficiency review',
           'Contradiction analysis and qualified review',
-          'Deterministic determination with why-this-tier / why-not-higher reasons',
+          'Deterministic why-this-tier / why-not-higher explanation',
           'Explicit evidence scope and limitations',
         ];
       case ServiceTier.t4Certified:
         return [
           'T3 controls plus enhanced evidence and approval requirements',
           'Physical examination / custody controls where protocol requires',
-          'Controlled signing and credential lifecycle',
-          'PROVENANCE VERIFIED™ mark authority only after independent eligibility gates pass',
+          'T4 evidence qualification remains separate from official issuance',
+          'Gold Seal / mark authority requires signing, registry, lifecycle, and mark gates',
         ];
     }
   }
@@ -172,6 +172,8 @@ class SubmissionDraft {
   final String? submissionId;
   final String? orderId;
   final int step;
+  // Deprecated compatibility field. It is never sent to the server and cannot
+  // affect determination, quote, order, payment, credential, or mark authority.
   final ServiceTier? selectedTier;
   final String assetName;
   final String assetType;
@@ -212,7 +214,7 @@ class SubmissionDraft {
     declaredTermsAgreed: declaredTermsAgreed ?? this.declaredTermsAgreed,
   );
 
-  bool get declarationsComplete => declaredAccurate && declaredTierMayDiffer && declaredTermsAgreed;
+  bool get declarationsComplete => declaredAccurate && declaredTermsAgreed;
 }
 
 class SubmissionQuote {
@@ -225,6 +227,11 @@ class SubmissionQuote {
   final String csaVersion;
   final bool paymentRequired;
   final int turnaroundDays;
+  final String? determinationId;
+  final String? determinationDigest;
+  final String? whyThisTier;
+  final String? whyNotNextTier;
+  final List<dynamic> limitations;
 
   const SubmissionQuote({
     required this.serviceCode,
@@ -236,12 +243,17 @@ class SubmissionQuote {
     required this.csaVersion,
     required this.paymentRequired,
     this.turnaroundDays = 0,
+    this.determinationId,
+    this.determinationDigest,
+    this.whyThisTier,
+    this.whyNotNextTier,
+    this.limitations = const [],
   });
 
   factory SubmissionQuote.fromJson(Map<String, dynamic> json) {
     final data = (json['data'] as Map<String, dynamic>?) ?? json;
     final serviceCode = data['service_code'] as String? ?? '';
-    final tier = data['tier'] as String? ?? '';
+    final tier = data['determined_tier'] as String? ?? data['tier'] as String? ?? '';
     final amountCents = (data['base_fee_cents'] as num?)?.toDouble() ?? 0;
     final description = data['service_description'] as String? ?? _descriptionFor(serviceCode, tier);
     return SubmissionQuote(
@@ -254,16 +266,21 @@ class SubmissionQuote {
       csaVersion: data['csa_version'] as String? ?? '',
       paymentRequired: data['payment_required'] as bool? ?? amountCents > 0,
       turnaroundDays: (data['estimated_turnaround_days'] as num?)?.toInt() ?? 0,
+      determinationId: data['determination_id']?.toString(),
+      determinationDigest: data['determination_digest']?.toString(),
+      whyThisTier: data['why_this_tier']?.toString(),
+      whyNotNextTier: data['why_not_next_tier']?.toString(),
+      limitations: (data['limitations'] as List?) ?? const [],
     );
   }
 
   static String _descriptionFor(String serviceCode, String tier) {
     switch (serviceCode) {
-      case 'T1_FREE_ASSET_FINGERPRINT': return 'Verified Claimant + Asset Fingerprint';
-      case 'T2_DECLARED_SOURCE': return 'Declared Source Record';
-      case 'T3_EVIDENCE_VERIFIED': return 'Evidence-Verified Provenance';
-      case 'T4_PV_GOLD_SEAL': return 'PROVENANCE VERIFIED™ Gold Seal Review';
-      default: return tier.isEmpty ? 'PROVENANCE VERIFIED service' : '$tier service';
+      case 'T1_FREE_ASSET_FINGERPRINT': return 'Accountable Existence';
+      case 'T2_DECLARED_SOURCE': return 'Accountable Declaration';
+      case 'T3_EVIDENCE_VERIFIED': return 'Evidence-Established Trust';
+      case 'T4_PV_GOLD_SEAL': return 'T4 evidence-qualified provenance; Gold Seal authority remains separate';
+      default: return tier.isEmpty ? 'PROVENANCE VERIFIED determination' : '$tier determined result';
     }
   }
 }
