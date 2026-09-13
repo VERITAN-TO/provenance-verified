@@ -64,13 +64,13 @@ void main() {
       expect(quote.paymentRequired, isFalse);
     });
 
-    test('native start and settlement carry no client tier or price authority', () {
+    test('native evaluation and settlement carry no client tier or price authority', () {
       final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
       final payment = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
 
       expect(submit, contains("_postJson('/api/v1/customer/submissions/start', const {})"));
-      expect(submit, contains('submitForEvaluation'));
-      expect(submit, contains('/submit'));
+      expect(submit, contains("/api/v1/customer/submissions/\$submissionId/evaluate"));
+      expect(submit, isNot(contains("/api/v1/customer/submissions/\$submissionId/submit")));
       expect(submit, isNot(contains("'requested_service_tier'")));
 
       expect(payment, contains("'submissionId': submissionId"));
@@ -78,6 +78,13 @@ void main() {
       expect(payment, isNot(contains("'amount_cents'")));
       expect(payment, isNot(contains("'stripe_price_id'")));
       expect(payment, isNot(contains("'payment_intent_id'")));
+    });
+
+    test('both free and paid determinations bind canonical settlement explicitly', () {
+      final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      expect(submit, contains('Both FREE and PAID orders must be explicitly bound after determination.'));
+      expect(submit, contains('_payment.bindSettlement'));
+      expect(submit, isNot(contains('T1 free order is bound server-side when it is created.')));
     });
 
     test('tier cards are informational, not customer-selection controls', () {
