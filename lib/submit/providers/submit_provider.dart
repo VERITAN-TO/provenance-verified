@@ -4,6 +4,8 @@
 // not a factor in trust determination. The trust tier is determined
 // exclusively by the backend after evidence review.
 
+export 'submit_api_exception.dart';
+
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
