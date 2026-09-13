@@ -5,6 +5,9 @@ import 'design/pv_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Auth state is managed via FlutterSecureStorage ('pv_customer_session').
+  // Supabase client integration is deferred — do NOT call Supabase.initialize()
+  // until supabase_flutter is added to pubspec.yaml.
   runApp(const ProviderScope(child: PvApp()));
 }
 
@@ -14,7 +17,7 @@ class PvApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'PROVENANCE VERIFIED',
+      title: 'PROVENANCE VERIFIED™',
       theme: PvTheme.dark,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
