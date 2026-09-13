@@ -1,10 +1,10 @@
-// Canonical claimant-identity + payment/order coordinator for the customer flow.
+// Canonical claimant-identity + post-determination settlement coordinator.
 //
 // VERIFIED_HUMAN_CLAIMANT_REQUIRED = TRUE.
 // MONEY_CONTROLS_TRUST = FALSE.
-// This client never sends an amount or Stripe price ID. The server owns claimant
-// verification, price, order state and Stripe session creation. Final intake
-// requires both verified claimant identity and a canonical FREE/PAID order.
+// CUSTOMER_SELECTS_TIER = FALSE.
+// The client never sends a tier, amount, Stripe price ID, or service code.
+// Server-side canonical determination owns settlement class and price.
 
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,12 +21,7 @@ class ClaimantIdentityStatus {
   final String assuranceLevel;
   final DateTime? verifiedAt;
 
-  const ClaimantIdentityStatus({
-    required this.status,
-    required this.verified,
-    required this.assuranceLevel,
-    this.verifiedAt,
-  });
+  const ClaimantIdentityStatus({required this.status, required this.verified, required this.assuranceLevel, this.verifiedAt});
 
   factory ClaimantIdentityStatus.fromJson(Map<String, dynamic> json) {
     final data = (json['data'] as Map<String, dynamic>?) ?? json;
@@ -45,12 +40,7 @@ class CanonicalOrderResult {
   final Uri? checkoutUrl;
   final String paymentStatus;
 
-  const CanonicalOrderResult({
-    required this.orderId,
-    this.checkoutSessionId,
-    this.checkoutUrl,
-    required this.paymentStatus,
-  });
+  const CanonicalOrderResult({required this.orderId, this.checkoutSessionId, this.checkoutUrl, required this.paymentStatus});
 }
 
 class PaymentCoordinator {
@@ -63,32 +53,27 @@ class PaymentCoordinator {
         _baseUrl = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), '');
 
   Future<String> _token({bool forceRefresh = false}) async {
-    if (forceRefresh || _ref.read(authProvider)?.isExpired == true) {
-      await _ref.read(authProvider.notifier).refresh();
-    }
+    if (forceRefresh || _ref.read(authProvider)?.isExpired == true) await _ref.read(authProvider.notifier).refresh();
     final token = _ref.read(authProvider)?.accessToken;
     if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return token;
   }
 
   Future<http.Response> _post(String path, Map<String, dynamic> body) async {
-    Future<http.Response> send(String token) => _client
-        .post(
-          Uri.parse('$_baseUrl$path'),
-          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 60));
-
+    Future<http.Response> send(String token) => _client.post(
+      Uri.parse('$_baseUrl$path'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: jsonEncode(body),
+    ).timeout(const Duration(seconds: 60));
     var res = await send(await _token());
     if (res.statusCode == 401) res = await send(await _token(forceRefresh: true));
     return res;
   }
 
   Future<http.Response> _get(String path) async {
-    Future<http.Response> send(String token) => _client
-        .get(Uri.parse('$_baseUrl$path'), headers: {'Authorization': 'Bearer $token'})
-        .timeout(const Duration(seconds: 30));
+    Future<http.Response> send(String token) => _client.get(
+      Uri.parse('$_baseUrl$path'), headers: {'Authorization': 'Bearer $token'},
+    ).timeout(const Duration(seconds: 30));
     var res = await send(await _token());
     if (res.statusCode == 401) res = await send(await _token(forceRefresh: true));
     return res;
@@ -104,9 +89,7 @@ class PaymentCoordinator {
     try {
       final j = _json(res);
       final error = j['error'];
-      if (error is Map<String, dynamic>) {
-        message = error['message']?.toString() ?? error['code']?.toString() ?? fallback;
-      }
+      if (error is Map<String, dynamic>) message = error['message']?.toString() ?? error['code']?.toString() ?? fallback;
     } catch (_) {}
     throw SubmitApiException(res.statusCode, message);
   }
@@ -119,9 +102,7 @@ class PaymentCoordinator {
 
   Future<Uri?> beginClaimantIdentityVerification() async {
     final res = await _post('/api/v1/customer/identity/verification-session', const {});
-    if (res.statusCode != 200 && res.statusCode != 201) {
-      _throw(res, 'Could not start identity verification');
-    }
+    if (res.statusCode != 200 && res.statusCode != 201) _throw(res, 'Could not start identity verification');
     final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
     if (data['status'] == 'VERIFIED') return null;
     final value = data['verification_url']?.toString() ?? '';
@@ -138,35 +119,24 @@ class PaymentCoordinator {
   Future<ClaimantIdentityStatus> ensureClaimantIdentity() async {
     final status = await claimantIdentityStatus();
     if (status.verified) return status;
-    throw const SubmitApiException(
-      428,
-      'Verify your government-issued photo ID and matching selfie before creating a PV claim.',
-    );
+    throw const SubmitApiException(428, 'Verify your government-issued photo ID and matching selfie before creating a PV claim.');
   }
 
-  Future<CanonicalOrderResult> createOrder({
-    required String submissionId,
-    required SubmissionQuote quote,
-  }) async {
+  Future<CanonicalOrderResult> createOrder({required String submissionId, required SubmissionQuote quote}) async {
     await ensureClaimantIdentity();
 
     if (!quote.paymentRequired) {
-      final res = await _post('/api/v1/payments/orders', {'sessionId': submissionId});
-      if (res.statusCode != 200 && res.statusCode != 201) _throw(res, 'Could not create free order');
+      final res = await _post('/api/v1/payments/orders', {'submissionId': submissionId});
+      if (res.statusCode != 200 && res.statusCode != 201) _throw(res, 'Could not create free settlement');
       final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
       final orderId = data['orderId']?.toString() ?? '';
-      if (orderId.isEmpty) throw const SubmitApiException(502, 'Free order response did not include orderId');
-      return CanonicalOrderResult(
-        orderId: orderId,
-        paymentStatus: data['paymentStatus']?.toString() ?? 'FREE',
-      );
+      if (orderId.isEmpty) throw const SubmitApiException(502, 'Free settlement response did not include orderId');
+      return CanonicalOrderResult(orderId: orderId, paymentStatus: data['paymentStatus']?.toString() ?? 'FREE');
     }
 
-    if (quote.csaVersion.isEmpty || quote.serviceCode.isEmpty) {
-      throw const SubmitApiException(422, 'Canonical quote is missing service or CSA authority');
-    }
+    if (quote.csaVersion.isEmpty) throw const SubmitApiException(422, 'Canonical quote is missing CSA authority');
     final res = await _post('/api/v1/payments/checkout', {
-      'serviceCode': quote.serviceCode,
+      'submissionId': submissionId,
       'csaVersion': quote.csaVersion,
     });
     if (res.statusCode != 200 && res.statusCode != 201) _throw(res, 'Could not create checkout');
@@ -195,23 +165,15 @@ class PaymentCoordinator {
     final orders = data['orders'];
     if (orders is! List) throw const SubmitApiException(502, 'Order list response is invalid');
     for (final item in orders.whereType<Map<String, dynamic>>()) {
-      if (item['orderId']?.toString() == orderId) {
-        return item['paymentStatus']?.toString() ?? 'UNKNOWN';
-      }
+      if (item['orderId']?.toString() == orderId) return item['paymentStatus']?.toString() ?? 'UNKNOWN';
     }
     throw const SubmitApiException(404, 'Order not found');
   }
 
-  Future<Map<String, dynamic>> finalize({
-    required String submissionId,
-    required String orderId,
-  }) async {
+  Future<Map<String, dynamic>> bindSettlement({required String submissionId, required String orderId}) async {
     await ensureClaimantIdentity();
-    final res = await _post(
-      '/api/v1/customer/submissions/${Uri.encodeComponent(submissionId)}/checkout',
-      {'order_id': orderId},
-    );
-    if (res.statusCode != 200 && res.statusCode != 201) _throw(res, 'Could not finalize submission');
+    final res = await _post('/api/v1/customer/submissions/${Uri.encodeComponent(submissionId)}/checkout', {'order_id': orderId});
+    if (res.statusCode != 200) _throw(res, 'Could not bind settlement to PV result');
     final json = _json(res);
     return (json['data'] as Map<String, dynamic>?) ?? json;
   }
