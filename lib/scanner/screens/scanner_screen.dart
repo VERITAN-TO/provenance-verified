@@ -60,7 +60,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'Reliance receipts',
-            onPressed: () => context.push('/receipts'),
+            onPressed: () => context.push('/my-pv/receipts'),
           ),
         ],
       ),

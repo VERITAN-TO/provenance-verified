@@ -12,6 +12,14 @@ import '../providers/activity_provider.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
+// Statuses where server determination is complete (or in progress and
+// worth showing the re-query button).
+const _determinationStatuses = {
+  SubmissionStatus.determination,
+  SubmissionStatus.issuancePending,
+  SubmissionStatus.issued,
+};
+
 class SubmissionDetailScreen extends ConsumerWidget {
   final String submissionId;
 
@@ -56,6 +64,22 @@ class SubmissionDetailScreen extends ConsumerWidget {
                   detail.evidenceRequestInstructions != null) ...[
                 _EvidenceRequestSection(
                   instructions: detail.evidenceRequestInstructions!,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Determination result ─────────────────────────────────────
+              if (detail.determination != null) ...[
+                _DeterminationSection(
+                  det: detail.determination!,
+                  submissionId: detail.submissionId,
+                  ref: ref,
+                ),
+                const SizedBox(height: 16),
+              ] else if (_determinationStatuses.contains(detail.status)) ...[
+                _RequerySection(
+                  submissionId: detail.submissionId,
+                  ref: ref,
                 ),
                 const SizedBox(height: 16),
               ],
@@ -204,6 +228,178 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         status.displayLabel.toUpperCase(),
         style: PvTypography.label.copyWith(color: color, fontSize: 9),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Determination section — shown when server has returned a determination.
+// CUSTOMER_SELECTS_TIER = FALSE: tier is always displayed as determined by
+// the server, never asserted by the client.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _DeterminationSection extends StatelessWidget {
+  final DeterminationResult det;
+  final String submissionId;
+  final WidgetRef ref;
+  const _DeterminationSection(
+      {required this.det, required this.submissionId, required this.ref});
+
+  Color _tierColor(String tier) {
+    switch (tier.toUpperCase()) {
+      case 'T1': return PvColors.tier1;
+      case 'T2': return PvColors.tier2;
+      case 'T3': return PvColors.tier3;
+      case 'T4': return PvColors.tier4;
+      default:   return PvColors.muted;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tierColor = _tierColor(det.tier);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: tierColor.withAlpha(15),
+        border: Border.all(color: tierColor),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.verified_outlined, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'DETERMINATION RESULT',
+                style: PvTypography.label.copyWith(color: tierColor),
+              ),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed: () =>
+                    ref.invalidate(submissionDetailProvider(submissionId)),
+                icon: const Icon(Icons.refresh, size: 14),
+                label: const Text('Re-query', style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: tierColor,
+                  side: BorderSide(color: tierColor),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Tier badge
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: tierColor.withAlpha(30),
+              border: Border.all(color: tierColor),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              'Tier: ${det.tier}',
+              style: PvTypography.label.copyWith(
+                  color: tierColor, letterSpacing: 1.2),
+            ),
+          ),
+          if (det.whyThisTier != null &&
+              det.whyThisTier!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('WHY THIS TIER',
+                style: PvTypography.label.copyWith(color: PvColors.muted)),
+            const SizedBox(height: 4),
+            Text(det.whyThisTier!, style: PvTypography.body),
+          ],
+          if (det.whyNotNextTier != null &&
+              det.whyNotNextTier!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('WHY NOT HIGHER',
+                style: PvTypography.label.copyWith(color: PvColors.muted)),
+            const SizedBox(height: 4),
+            Text(det.whyNotNextTier!, style: PvTypography.body),
+          ],
+          if (det.limitations.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('LIMITATIONS',
+                style:
+                    PvTypography.label.copyWith(color: PvColors.limitation)),
+            const SizedBox(height: 4),
+            ...det.limitations.map(
+              (l) => Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline,
+                        size: 14, color: PvColors.limitation),
+                    const SizedBox(width: 6),
+                    Expanded(
+                        child: Text(l,
+                            style: PvTypography.bodySmall.copyWith(
+                                color: PvColors.onSurface))),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Re-query section — shown when determination is in progress but no result
+// has been returned yet (e.g. status == DETERMINATION).
+// ────────────────────────────────────────────────────────────────────────────
+
+class _RequerySection extends StatelessWidget {
+  final String submissionId;
+  final WidgetRef ref;
+  const _RequerySection({required this.submissionId, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: PvColors.surface,
+        border: Border.all(color: PvColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.hourglass_top_rounded,
+              color: PvColors.cyan, size: 18),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Determination in progress. Tap Re-query to check for results.',
+              style: PvTypography.body,
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
+            onPressed: () =>
+                ref.invalidate(submissionDetailProvider(submissionId)),
+            icon: const Icon(Icons.refresh, size: 14),
+            label: const Text('Re-query', style: TextStyle(fontSize: 12)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PvColors.cyan,
+              side: const BorderSide(color: PvColors.cyan),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ],
       ),
     );
   }

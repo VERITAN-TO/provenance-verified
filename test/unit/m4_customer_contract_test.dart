@@ -64,13 +64,13 @@ void main() {
       expect(quote.paymentRequired, isFalse);
     });
 
-    test('native start and settlement carry no client tier or price authority', () {
+    test('native evaluation and settlement carry no client tier or price authority', () {
       final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
       final payment = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
 
       expect(submit, contains("_postJson('/api/v1/customer/submissions/start', const {})"));
-      expect(submit, contains('submitForEvaluation'));
-      expect(submit, contains('/submit'));
+      expect(submit, contains("/api/v1/customer/submissions/\$submissionId/evaluate"));
+      expect(submit, isNot(contains("/api/v1/customer/submissions/\$submissionId/submit")));
       expect(submit, isNot(contains("'requested_service_tier'")));
 
       expect(payment, contains("'submissionId': submissionId"));
@@ -78,6 +78,13 @@ void main() {
       expect(payment, isNot(contains("'amount_cents'")));
       expect(payment, isNot(contains("'stripe_price_id'")));
       expect(payment, isNot(contains("'payment_intent_id'")));
+    });
+
+    test('both free and paid determinations bind canonical settlement explicitly', () {
+      final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      expect(submit, contains('Both FREE and PAID orders must be explicitly bound after determination.'));
+      expect(submit, contains('_payment.bindSettlement'));
+      expect(submit, isNot(contains('T1 free order is bound server-side when it is created.')));
     });
 
     test('tier cards are informational, not customer-selection controls', () {
@@ -95,6 +102,40 @@ void main() {
       expect(submit, contains('authProvider.notifier).refresh()'));
       expect(activity, contains('authProvider.notifier).refresh()'));
       expect(myPv, contains('authProvider.notifier).refresh()'));
+    });
+
+    test('submit screen is educational trust ladder with no customer tier authority', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+
+      // Trust ladder education must be present
+      expect(screen, contains('PV TRUST LADDER'));
+      expect(screen, contains('DETERMINATION & PRICING'));
+      expect(screen, contains('SETTLEMENT'));
+
+      // Stale storefront strings must be absent
+      expect(screen, isNot(contains('Please select a service tier')));
+      expect(screen, isNot(contains('Select Requested Service')));
+      expect(screen, isNot(contains('requested service tier')));
+      expect(screen, isNot(contains('selectTier(')));
+
+      // Source order: saveDeclarations before submitForEvaluation before fetchQuote
+      final savePos     = screen.indexOf('saveDeclarations()');
+      final evalPos     = screen.indexOf('submitForEvaluation()');
+      final quotePos    = screen.indexOf('fetchQuote()');
+      expect(savePos,  greaterThan(-1), reason: 'saveDeclarations() must be present');
+      expect(evalPos,  greaterThan(-1), reason: 'submitForEvaluation() must be present');
+      expect(quotePos, greaterThan(-1), reason: 'fetchQuote() must be present');
+      expect(savePos,  lessThan(evalPos),  reason: 'saveDeclarations must precede submitForEvaluation');
+      expect(evalPos,  lessThan(quotePos), reason: 'submitForEvaluation must precede fetchQuote');
+    });
+
+    test('settlement cannot precede canonical determination', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // settleDeterminedResult is only in case 5 (after fetchQuote in case 3)
+      final quotePos    = screen.indexOf('fetchQuote()');
+      final settlePos   = screen.indexOf('settleDeterminedResult()');
+      expect(settlePos, greaterThan(-1), reason: 'settleDeterminedResult() must be present');
+      expect(quotePos,  lessThan(settlePos), reason: 'fetchQuote must precede settleDeterminedResult');
     });
   });
 }

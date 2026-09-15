@@ -102,10 +102,10 @@ class SubmissionApiClient {
   }
 
   Future<Map<String, dynamic>> submitForEvaluation(String submissionId) async {
-    final res = await _postJson('/api/v1/customer/submissions/$submissionId/submit', const {});
-    if (res.statusCode == 200 || res.statusCode == 201) return jsonDecode(res.body) as Map<String, dynamic>;
+    final res = await _postJson('/api/v1/customer/submissions/$submissionId/evaluate', const {});
+    if (res.statusCode == 200 || res.statusCode == 202) return jsonDecode(res.body) as Map<String, dynamic>;
     final err = _parseError(res);
-    throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'PV evaluation submission failed');
+    throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'PV evaluation failed');
   }
 
   Future<Map<String, dynamic>> getQuote(String submissionId) async {
@@ -228,11 +228,10 @@ class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
     if (quote.paymentRequired) {
       final paymentStatus = await _payment.paymentStatus(orderId);
       if (paymentStatus != 'PAID') throw SubmitApiException(202, 'Payment status is $paymentStatus. Complete payment, then try again.');
-      return _payment.bindSettlement(submissionId: current.submissionId!, orderId: orderId);
     }
 
-    // T1 free order is bound server-side when it is created.
-    return {'order_id': orderId, 'determined_tier': quote.tier, 'payment_status': 'FREE', 'settlement_bound': true};
+    // Both FREE and PAID orders must be explicitly bound after determination.
+    return _payment.bindSettlement(submissionId: current.submissionId!, orderId: orderId);
   }
 
   @Deprecated('Use settleDeterminedResult after submitForEvaluation and canonical determination.')
