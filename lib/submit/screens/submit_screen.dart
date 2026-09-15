@@ -19,7 +19,7 @@ import '../../design/pv_typography.dart';
 // Total wizard steps
 // ---------------------------------------------------------------------------
 
-const int _kTotalSteps = 6; // 0-5
+const int _kTotalSteps = 7; // 0-6
 
 class SubmitScreen extends ConsumerStatefulWidget {
   const SubmitScreen({super.key});
@@ -31,6 +31,7 @@ class SubmitScreen extends ConsumerStatefulWidget {
 class _SubmitScreenState extends ConsumerState<SubmitScreen> {
   bool _loading  = false;
   String? _error;
+  SubmissionQuote? _quote;
 
   @override
   void initState() {
@@ -80,19 +81,26 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
           notifier.goToStep(3);
           break;
 
-        case 3: // Declarations → save to backend
+        case 3: // Declarations → save, evaluate, fetch canonical determination → goto 4
           final d = ref.read(submitProvider);
           if (d == null || !d.declarationsComplete) {
             _setError('Please complete all declarations before continuing.');
             return;
           }
           await notifier.saveDeclarations();
+          await notifier.submitForEvaluation();
+          final q = await notifier.fetchQuote();
+          setState(() => _quote = q);
           notifier.goToStep(4);
           break;
 
-        case 4: // Review → submit for evaluation
-          await notifier.submitForEvaluation();
+        case 4: // Determination result reviewed → proceed to settlement
           notifier.goToStep(5);
+          break;
+
+        case 5: // Settlement → bind order (FREE/PAID) → goto confirmation
+          await notifier.settleDeterminedResult();
+          notifier.goToStep(6);
           break;
 
         default:
@@ -166,19 +174,21 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       case 1: return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
       case 2: return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
       case 3: return _Step3Declarations(draft: draft, onNext: _next, loading: _loading);
-      case 4: return _Step4ReviewSubmit(draft: draft, onNext: _next, loading: _loading);
-      case 5: return _Step5Confirmation(draft: draft);
+      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading);
+      case 5: return _Step5Settlement(quote: _quote, onNext: _next, loading: _loading);
+      case 6: return _Step6Confirmation(draft: draft);
       default: return const SizedBox.shrink();
     }
   }
 
   String _stepTitle(int step) {
     const titles = [
-      'TRUST LADDER',
+      'PV TRUST LADDER',
       'ASSET INFORMATION',
       'EVIDENCE UPLOAD',
       'DECLARATIONS',
-      'REVIEW & SUBMIT',
+      'DETERMINATION & PRICING',
+      'SETTLEMENT',
       'SUBMISSION CONFIRMED',
     ];
     if (step < titles.length) return titles[step];
@@ -921,43 +931,104 @@ class _DeclarationCheckbox extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Step 4 — Review & Submit
+// Step 4 — Determination & Pricing
 // ────────────────────────────────────────────────────────────────────────────
 
-class _Step4ReviewSubmit extends StatelessWidget {
-  final SubmissionDraft? draft;
+class _Step4DeterminationPricing extends StatelessWidget {
+  final SubmissionQuote? quote;
   final Future<void> Function() onNext;
   final bool loading;
 
-  const _Step4ReviewSubmit({
-    required this.draft,
+  const _Step4DeterminationPricing({
+    required this.quote,
     required this.onNext,
     required this.loading,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (quote == null) {
+      return const Center(
+        child: Text(
+          'Determination result not available.',
+          style: TextStyle(color: PvColors.muted),
+        ),
+      );
+    }
+
+    final q = quote!;
+    final tierColor = _tierColor(q.tier);
+    final priceText = q.paymentRequired
+        ? '\$${q.price.toStringAsFixed(2)}'
+        : 'No charge — T1 record';
+
     return Column(
       children: [
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Review & Submit',
+              Text('Determination Result',
                   style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
               const SizedBox(height: 16),
 
-              if (draft != null) ...[
-                _ReviewRow('Asset', draft!.assetName.isEmpty ? '—' : draft!.assetName),
-                _ReviewRow('Type', draft!.assetType.isEmpty ? '—' : draft!.assetType),
-                if (draft!.gemstoneAttributes.species.isNotEmpty)
-                  _ReviewRow('Species', draft!.gemstoneAttributes.species),
-                if (draft!.gemstoneAttributes.variety.isNotEmpty)
-                  _ReviewRow('Variety', draft!.gemstoneAttributes.variety),
-                _ReviewRow('Evidence documents', '${draft!.documents.length}'),
-                const Divider(color: PvColors.border, height: 24),
+              // Tier badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: tierColor.withAlpha(30),
+                  border: Border.all(color: tierColor),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.verified_outlined, color: tierColor, size: 20),
+                    const SizedBox(width: 10),
+                    Text(
+                      q.tier.isEmpty ? 'DETERMINED' : q.tier,
+                      style: PvTypography.label.copyWith(color: tierColor),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (q.whyThisTier != null && q.whyThisTier!.isNotEmpty) ...[
+                _SectionLabel('WHY THIS TIER'),
+                const SizedBox(height: 6),
+                Text(q.whyThisTier!,
+                    style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                const SizedBox(height: 14),
               ],
 
+              if (q.whyNotNextTier != null && q.whyNotNextTier!.isNotEmpty) ...[
+                _SectionLabel('WHY NOT HIGHER'),
+                const SizedBox(height: 6),
+                Text(q.whyNotNextTier!,
+                    style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                const SizedBox(height: 14),
+              ],
+
+              if (q.limitations.isNotEmpty) ...[
+                _SectionLabel('LIMITATIONS'),
+                const SizedBox(height: 6),
+                ...q.limitations.map((l) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('• ', style: PvTypography.body.copyWith(color: PvColors.muted)),
+                          Expanded(
+                            child: Text(l.toString(),
+                                style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 14),
+              ],
+
+              // Server-derived price
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -965,19 +1036,129 @@ class _Step4ReviewSubmit extends StatelessWidget {
                   border: Border.all(color: PvColors.border),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  'Submitting opens your case for evaluation. '
-                  'The trust tier is determined by our review team based on your evidence. '
-                  'If payment is required, you will be notified after the determination is made.',
-                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('DETERMINATION FEE',
+                        style: PvTypography.label.copyWith(color: PvColors.muted)),
+                    Text(priceText,
+                        style: PvTypography.label.copyWith(color: PvColors.onBackground)),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 12),
+
+              // Settlement-cannot-change-trust notice
+              Text(
+                'Settlement pays for the service but cannot change or strengthen '
+                'this trust determination.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               ),
             ],
           ),
         ),
         _BottomBar(
           onNext: onNext,
-          nextLabel: 'Submit for Evaluation',
+          nextLabel: 'Continue to Settlement',
+          loading: loading,
+        ),
+      ],
+    );
+  }
+
+  static Color _tierColor(String tier) {
+    switch (tier) {
+      case 'T4': return const Color(0xFFFFD700);
+      case 'T3': return PvColors.cyan;
+      case 'T2': return PvColors.silver;
+      default:   return PvColors.muted;
+    }
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Step 5 — Settlement
+// ────────────────────────────────────────────────────────────────────────────
+
+class _Step5Settlement extends StatelessWidget {
+  final SubmissionQuote? quote;
+  final Future<void> Function() onNext;
+  final bool loading;
+
+  const _Step5Settlement({
+    required this.quote,
+    required this.onNext,
+    required this.loading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final q = quote;
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text('Settlement',
+                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              const SizedBox(height: 8),
+              Text(
+                'Settlement occurs after determination and cannot change or strengthen '
+                'the trust tier assigned to your submission.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+              const SizedBox(height: 20),
+
+              if (q != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PvColors.surface,
+                    border: Border.all(color: PvColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ReviewRow('Determined Tier', q.tier.isEmpty ? '—' : q.tier),
+                      _ReviewRow('Fee',
+                          q.paymentRequired
+                              ? '\$${q.price.toStringAsFixed(2)}'
+                              : 'No charge'),
+                      if (!q.paymentRequired) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'T1 registration is free. Tapping "Finalize" binds the record '
+                          'without any payment.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tapping "Proceed to Payment" opens a secure checkout. '
+                          'Return to this screen after payment to finalize your record.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+              Text(
+                'T4 determination does not itself issue a Gold Seal, credential, '
+                'signing authority, registry activation, or certification mark.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+            ],
+          ),
+        ),
+        _BottomBar(
+          onNext: onNext,
+          nextLabel: (q?.paymentRequired == true) ? 'Proceed to Payment' : 'Finalize Record',
           loading: loading,
         ),
       ],
@@ -1014,12 +1195,12 @@ class _ReviewRow extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Step 5 — Confirmation
+// Step 6 — Confirmation
 // ────────────────────────────────────────────────────────────────────────────
 
-class _Step5Confirmation extends ConsumerWidget {
+class _Step6Confirmation extends ConsumerWidget {
   final SubmissionDraft? draft;
-  const _Step5Confirmation({required this.draft});
+  const _Step6Confirmation({required this.draft});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
