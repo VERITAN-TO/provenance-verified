@@ -136,7 +136,17 @@ class _SubmissionRow extends StatelessWidget {
                       _relativeTime(item.updatedAt),
                       style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                     ),
-                    if (item.requestedServiceTier.isNotEmpty) ...[
+                    if (item.determinedTier != null &&
+                        item.determinedTier!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      // Server-authored determination result — never client-claimed.
+                      Text(
+                        'Determined: ${item.determinedTier}',
+                        style: PvTypography.bodySmall.copyWith(
+                            color: PvColors.onBackground,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ] else if (item.requestedServiceTier.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         'Requested: ${item.requestedServiceTier}',

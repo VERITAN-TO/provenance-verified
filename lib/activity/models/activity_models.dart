@@ -93,6 +93,9 @@ class SubmissionStatusItem {
   final SubmissionStatus status;
   final String assetName;
   final String requestedServiceTier; // what the customer requested
+  /// The tier that the server determined — null until determination is complete.
+  /// CUSTOMER_SELECTS_TIER = FALSE: this value comes exclusively from the server.
+  final String? determinedTier;
   final DateTime updatedAt;
   final bool hasEvidenceRequest;
 
@@ -101,6 +104,7 @@ class SubmissionStatusItem {
     required this.status,
     required this.assetName,
     required this.requestedServiceTier,
+    this.determinedTier,
     required this.updatedAt,
     required this.hasEvidenceRequest,
   });
@@ -112,6 +116,7 @@ class SubmissionStatusItem {
                              json['status'] as String? ?? ''),
       assetName:           json['asset_name'] as String? ?? 'Unnamed',
       requestedServiceTier: json['requested_service_tier'] as String? ?? '',
+      determinedTier:      json['determined_tier'] as String?,
       updatedAt:           DateTime.tryParse(
                              json['updated_at'] as String? ?? '') ??
                            DateTime.now(),
@@ -149,6 +154,44 @@ class CustodyEvent {
 // SubmissionDetail — full detail returned by GET .../status
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// DeterminationResult — server-authored determination data embedded in detail
+// ---------------------------------------------------------------------------
+
+class DeterminationResult {
+  /// Tier assigned by the server. CUSTOMER_SELECTS_TIER = FALSE.
+  final String tier;
+  final String? serviceCode;
+  final String? whyThisTier;
+  final String? whyNotNextTier;
+  final List<String> limitations;
+
+  const DeterminationResult({
+    required this.tier,
+    this.serviceCode,
+    this.whyThisTier,
+    this.whyNotNextTier,
+    this.limitations = const [],
+  });
+
+  factory DeterminationResult.fromJson(Map<String, dynamic> j) {
+    return DeterminationResult(
+      tier:          j['determined_tier'] as String? ?? j['tier'] as String? ?? '',
+      serviceCode:   j['service_code'] as String?,
+      whyThisTier:   j['why_this_tier'] as String?,
+      whyNotNextTier: j['why_not_next_tier'] as String?,
+      limitations: (j['limitations'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SubmissionDetail — full detail returned by GET .../status
+// ---------------------------------------------------------------------------
+
 class SubmissionDetail {
   final String submissionId;
   final SubmissionStatus status;
@@ -158,6 +201,9 @@ class SubmissionDetail {
   final String? issuedAssetId;     // set when status == ISSUED
   final List<CustodyEvent> custodyEvents;
   final DateTime updatedAt;
+  /// Server-authored determination. Populated after the determination step.
+  /// Null when determination has not yet been completed.
+  final DeterminationResult? determination;
 
   const SubmissionDetail({
     required this.submissionId,
@@ -168,10 +214,20 @@ class SubmissionDetail {
     this.issuedAssetId,
     required this.custodyEvents,
     required this.updatedAt,
+    this.determination,
   });
 
   factory SubmissionDetail.fromJson(Map<String, dynamic> json) {
     final rawEvents = json['custody_events'] as List<dynamic>? ?? [];
+    // Determination may be nested under 'determination' key or at top level
+    // when the backend inlines it.
+    DeterminationResult? det;
+    final detRaw = json['determination'];
+    if (detRaw is Map<String, dynamic> && detRaw.isNotEmpty) {
+      det = DeterminationResult.fromJson(detRaw);
+    } else if (json['determined_tier'] != null) {
+      det = DeterminationResult.fromJson(json);
+    }
     return SubmissionDetail(
       submissionId:                json['submission_id'] as String? ?? '',
       status:                      SubmissionStatus.fromApiString(
@@ -186,6 +242,7 @@ class SubmissionDetail {
                                      .toList(),
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? '') ??
                  DateTime.now(),
+      determination: det,
     );
   }
 }
