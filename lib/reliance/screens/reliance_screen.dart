@@ -245,13 +245,20 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
 
   Future<void> _saveReceipt(dynamic result, dynamic record) async {
     if (record == null) {
-      debugPrint('PV_RECEIPT_SAVE_ERROR: record is null (trustAsync not loaded)');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trust record not yet loaded. Please wait and try again.'),
+            backgroundColor: PvColors.error,
+          ),
+        );
+      }
       return;
     }
     setState(() => _saving = true);
     try {
       final notifier = ref.read(receiptNotifierProvider.notifier);
-      await notifier.saveReceipt(
+      final receipt = await notifier.saveReceipt(
         publicId: widget.publicId,
         physicalSubjectId: record.subject.physicalSubjectId,
         trustStateDigest: record.trustStateDigest,
@@ -261,12 +268,11 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
         prohibitedInferences: result.prohibitedInferences,
         policyVersion: result.policyVersion,
       );
-      setState(() => _savedReceiptId = 'saved');
+      if (mounted) setState(() => _savedReceiptId = receipt.receiptId);
     } catch (e) {
-      debugPrint('PV_RECEIPT_SAVE_ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e'), backgroundColor: PvColors.error),
+          SnackBar(content: Text('Failed to save receipt: $e'), backgroundColor: PvColors.error),
         );
       }
     } finally {

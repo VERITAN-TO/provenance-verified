@@ -59,7 +59,7 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => context.push('/scan'),
+                    onPressed: () => context.push('/verify/scan'),
                     icon: const Icon(Icons.qr_code_scanner, size: 20),
                     label: const Text('Scan PV Code'),
                     style: FilledButton.styleFrom(
@@ -72,7 +72,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => context.push('/manual'),
+                    onPressed: () => context.push('/verify/manual'),
                     icon: const Icon(Icons.search, size: 20),
                     label: const Text('Look Up ID'),
                     style: OutlinedButton.styleFrom(
@@ -265,11 +265,21 @@ class _SubmissionTile extends StatelessWidget {
   const _SubmissionTile({required this.submission});
 
   Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending': return PvColors.warning;
-      case 'approved': return PvColors.success;
-      case 'rejected': return PvColors.error;
-      case 'in_review': return PvColors.cyan;
+    switch (status.toUpperCase()) {
+      case 'ISSUED': return PvColors.success;
+      case 'MORE_INFORMATION_REQUIRED':
+      case 'ADDITIONAL_INFO_REQUESTED': return PvColors.warning;
+      case 'CLOSED': return PvColors.muted;
+      case 'SUBMITTED':
+      case 'PAYMENT_CONFIRMED': return PvColors.silver;
+      case 'AWAITING_SHIPMENT':
+      case 'IN_TRANSIT':
+      case 'RETURN_IN_TRANSIT':
+      case 'RECEIVED':
+      case 'INTAKE_COMPLETE':
+      case 'EVIDENCE_REVIEW':
+      case 'DETERMINATION':
+      case 'ISSUANCE_PENDING': return PvColors.cyan;
       default: return PvColors.muted;
     }
   }
@@ -277,30 +287,35 @@ class _SubmissionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _statusColor(submission.status);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: PvColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: PvColors.border),
-      ),
-      child: ListTile(
-        dense: true,
-        title: Text(submission.assetName, style: PvTypography.body),
-        subtitle: Text(
-          'Updated ${_relativeTime(submission.updatedAt)}',
-          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+    return Semantics(
+      label: '${submission.assetName}, ${submission.status.replaceAll('_', ' ').toLowerCase()}, updated ${_relativeTime(submission.updatedAt)}. Tap to view activity.',
+      button: true,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: PvColors.border),
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: color.withAlpha(30),
-            border: Border.all(color: color),
-            borderRadius: BorderRadius.circular(4),
+        child: ListTile(
+          dense: true,
+          onTap: () => context.go('/activity'),
+          title: Text(submission.assetName, style: PvTypography.body),
+          subtitle: Text(
+            'Updated ${_relativeTime(submission.updatedAt)}',
+            style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
           ),
-          child: Text(
-            submission.status.toUpperCase().replaceAll('_', ' '),
-            style: PvTypography.label.copyWith(color: color, fontSize: 9),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withAlpha(30),
+              border: Border.all(color: color),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              submission.status.toUpperCase().replaceAll('_', ' '),
+              style: PvTypography.label.copyWith(color: color, fontSize: 9),
+            ),
           ),
         ),
       ),
@@ -378,7 +393,11 @@ class _RecentScanTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: PvColors.border),
       ),
-      child: ListTile(
+      child: Semantics(
+        label: '${scan.publicId}, ${scan.trustTier != null ? "T${scan.trustTier}" : "unqualified"}, scanned ${_relativeTime(scan.scannedAt)}. Tap to view.',
+        button: true,
+        excludeSemantics: true,
+        child: ListTile(
         dense: true,
         onTap: () => context.push('/verify/${scan.publicId}'),
         title: Text(scan.publicId, style: PvTypography.mono.copyWith(color: PvColors.onBackground)),
@@ -432,7 +451,7 @@ class _AuthenticatedLinks extends StatelessWidget {
         _QuickLinkChip(
           icon: Icons.receipt_long_outlined,
           label: 'Receipts',
-          onTap: () => context.push('/receipts'),
+          onTap: () => context.push('/my-pv/receipts'),
         ),
       ],
     );
