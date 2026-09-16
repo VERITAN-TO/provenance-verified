@@ -37,7 +37,7 @@ class SubmissionDetailScreen extends ConsumerWidget {
         title: const Text('SUBMISSION DETAIL', style: PvTypography.label),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
         ),
       ),
       body: detailAsync.when(

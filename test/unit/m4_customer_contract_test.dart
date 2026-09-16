@@ -818,5 +818,43 @@ void main() {
       // Must say "separate authority chain" for T4 case
       expect(submit, contains('separate authority chain'));
     });
+
+    // ── R24 NAVIGATOR 1.0 ERADICATION LOCKS ──────────────────────────────────
+    // Two Navigator 1.0 usages were found and eradicated in R24:
+    //   1. submission_detail_screen.dart AppBar back button
+    //   2. activity_screen.dart row tap → SubmissionDetailScreen
+    // go_router (context.pop / context.push) must be used exclusively.
+
+    test('C25-1: SubmissionDetailScreen AppBar back uses go_router — no Navigator.of(context).pop()', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // go_router import must be present
+      expect(detail, contains("import 'package:go_router/go_router.dart'"));
+      // Navigator 1.0 pop must be absent from back button
+      expect(detail, isNot(contains('Navigator.of(context).pop()')));
+      // go_router pop must be used instead
+      expect(detail, contains('context.pop()'));
+    });
+
+    test('C25-2: ActivityScreen row tap uses go_router — no MaterialPageRoute or Navigator.push', () {
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // go_router import must be present
+      expect(activity, contains("import 'package:go_router/go_router.dart'"));
+      // Navigator 1.0 imperative push must be absent
+      expect(activity, isNot(contains('Navigator.of(context).push(')));
+      expect(activity, isNot(contains('MaterialPageRoute(')));
+      // go_router context.push must navigate to the /activity/:id route
+      expect(activity, contains("context.push("));
+      expect(activity, contains("'/activity/\${items[i].submissionId}'"));
+    });
+
+    test('C25-3: App router registers /activity/:submissionId route — SubmissionDetailScreen reachable via URL', () {
+      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
+      // SubmissionDetailScreen import must be present in router
+      expect(router, contains("import '../../activity/screens/submission_detail_screen.dart'"));
+      // Named route submission-detail must be present
+      expect(router, contains("name: 'submission-detail'"));
+      // pathParameters['submissionId'] must be used for the ID
+      expect(router, contains("pathParameters['submissionId']"));
+    });
   });
 }

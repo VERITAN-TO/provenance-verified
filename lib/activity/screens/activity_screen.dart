@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/activity_models.dart';
 import '../providers/activity_provider.dart';
-import 'submission_detail_screen.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
@@ -44,15 +43,8 @@ class ActivityScreen extends ConsumerWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, i) => _SubmissionRow(
                     item: items[i],
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => SubmissionDetailScreen(
-                            submissionId: items[i].submissionId,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => context.push(
+                        '/activity/${items[i].submissionId}'),
                   ),
                 ),
         ),

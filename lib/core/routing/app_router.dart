@@ -32,6 +32,7 @@ import '../../submit/screens/submit_screen.dart';
 
 // Branch 4 — Activity (auth required)
 import '../../activity/screens/activity_screen.dart';
+import '../../activity/screens/submission_detail_screen.dart';
 
 // Auth screens (no auth required)
 import '../../auth/screens/sign_in_screen.dart';
@@ -226,6 +227,17 @@ final GoRouter appRouter = GoRouter(
               path: '/activity',
               name: 'activity',
               builder: (context, state) => const ActivityScreen(),
+              routes: [
+                GoRoute(
+                  path: ':submissionId',
+                  name: 'submission-detail',
+                  builder: (context, state) {
+                    final submissionId =
+                        state.pathParameters['submissionId'] ?? '';
+                    return SubmissionDetailScreen(submissionId: submissionId);
+                  },
+                ),
+              ],
             ),
           ],
         ),
