@@ -172,9 +172,6 @@ class SubmissionDraft {
   final String? submissionId;
   final String? orderId;
   final int step;
-  // Deprecated compatibility field. It is never sent to the server and cannot
-  // affect determination, quote, order, payment, credential, or mark authority.
-  final ServiceTier? selectedTier;
   final String assetName;
   final String assetType;
   final GemstoneAttributes gemstoneAttributes;
@@ -188,7 +185,6 @@ class SubmissionDraft {
     this.submissionId,
     this.orderId,
     this.step = 0,
-    this.selectedTier,
     this.assetName = '',
     this.assetType = '',
     this.gemstoneAttributes = const GemstoneAttributes(),
@@ -199,11 +195,10 @@ class SubmissionDraft {
     this.declaredTermsAgreed = false,
   });
 
-  SubmissionDraft copyWith({String? submissionId, String? orderId, int? step, ServiceTier? selectedTier, String? assetName, String? assetType, GemstoneAttributes? gemstoneAttributes, List<String>? photoPaths, List<EvidenceDocument>? documents, bool? declaredAccurate, bool? declaredTierMayDiffer, bool? declaredTermsAgreed}) => SubmissionDraft(
+  SubmissionDraft copyWith({String? submissionId, String? orderId, int? step, String? assetName, String? assetType, GemstoneAttributes? gemstoneAttributes, List<String>? photoPaths, List<EvidenceDocument>? documents, bool? declaredAccurate, bool? declaredTierMayDiffer, bool? declaredTermsAgreed}) => SubmissionDraft(
     submissionId: submissionId ?? this.submissionId,
     orderId: orderId ?? this.orderId,
     step: step ?? this.step,
-    selectedTier: selectedTier ?? this.selectedTier,
     assetName: assetName ?? this.assetName,
     assetType: assetType ?? this.assetType,
     gemstoneAttributes: gemstoneAttributes ?? this.gemstoneAttributes,

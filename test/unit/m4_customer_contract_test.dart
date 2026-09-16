@@ -381,6 +381,59 @@ void main() {
       expect(activity, isNot(contains("'T4 GOLD SEAL'")));
     });
 
+    // R19 semantic regression locks — added by PV-M2-LEAD-C-PEACP-R19
+    test('no funded/payment-grants-tier language in native activity — BILLING_FOLLOWS_DETERMINATION', () {
+      // B a5eee55a fixed web portal legacy-order label "Your verification is funded"
+      // (BILLING_FOLLOWS_DETERMINATION=TRUE violation). Native has no equivalent
+      // legacy-order state display (PARITY_NO_NATIVE_MUTATION). Lock permanence.
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      expect(activity, isNot(contains('verification is funded')));
+      expect(activity, isNot(contains('Your verification is')));
+      expect(activity, isNot(contains('payment grants')));
+      expect(activity, isNot(contains('PAYMENT_GRANTS')));
+      // Submission detail must not say payment grants tier
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, isNot(contains('verification is funded')));
+      expect(detail, isNot(contains('payment grants')));
+    });
+
+    test('no native pricing page or PricingTierCTA — CUSTOMER_SELECTS_TIER=FALSE on pricing surface', () {
+      // A af7d4aa8 added CUSTOMER_SELECTS_TIER=FALSE enforcement to web pricing page
+      // and ported analytics event rename (pricing_tier_selected → pricing_tier_cta_clicked).
+      // Native has no pricing page or PricingTierCTA component (PARITY_NO_NATIVE_MUTATION).
+      // Lock that no customer-selects-tier pricing surface is ever introduced.
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      expect(submit, isNot(contains('pricing_tier_selected')));
+      expect(submit, isNot(contains('PricingTierCTA')));
+      expect(submit, isNot(contains('/checkout?service=')));
+      // Educational trust ladder must not present tiers as purchasable products
+      expect(submit, isNot(contains('Get T2')));
+      expect(submit, isNot(contains('Get T3')));
+      expect(submit, isNot(contains('Get T4')));
+    });
+
+    test('ServiceTierCard has no selection params — CUSTOMER_SELECTS_TIER=FALSE on tier display widget', () {
+      // R19 cleanup: removed vestigial isSelected/onSelect from ServiceTierCard
+      // that were "kept for source compatibility while selection authority is being removed."
+      // The card is an educational display only; selection authority fully removed.
+      final card = File('lib/submit/widgets/service_tier_card.dart').readAsStringSync();
+      expect(card, isNot(contains('isSelected')));
+      expect(card, isNot(contains('onSelect')));
+      expect(card, isNot(contains('VoidCallback')));
+      expect(card, contains('Your evidence determines whether this state is earned.'));
+    });
+
+    test('SubmissionDraft has no selectedTier field — CUSTOMER_SELECTS_TIER=FALSE in submit model', () {
+      // R19 cleanup: removed SubmissionDraft.selectedTier dead field and
+      // SubmitNotifier.selectTier() dead method. Neither was ever sent to the server.
+      final models = File('lib/submit/models/submit_models.dart').readAsStringSync();
+      expect(models, isNot(contains('selectedTier')));
+      expect(models, isNot(contains('Deprecated compatibility field')));
+      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      expect(provider, isNot(contains('selectTier')));
+      expect(provider, isNot(contains('@Deprecated')));
+    });
+
     // R18 semantic regression locks — added by PV-M2-LEAD-C-PEACP-R18
     test('no customer-selectable checkout path — CUSTOMER_SELECTS_TIER=FALSE on settlement surface', () {
       // B 3aba088c removed the web /checkout?service= customer-tier-select route

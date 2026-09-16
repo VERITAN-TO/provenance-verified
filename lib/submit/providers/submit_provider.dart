@@ -140,9 +140,6 @@ class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
   void reset() => state = null;
   void beginNew() => state = const SubmissionDraft(step: 0);
 
-  @Deprecated('Tiers are educational/result states; customers do not select them.')
-  void selectTier(ServiceTier tier) {}
-
   void updateAssetName(String name) { final c = state ?? const SubmissionDraft(step: 0); state = c.copyWith(assetName: name); }
   void updateAssetType(String type) { final c = state ?? const SubmissionDraft(step: 0); state = c.copyWith(assetType: type); }
   void updateGemstoneAttributes(GemstoneAttributes attrs) { final c = state ?? const SubmissionDraft(step: 0); state = c.copyWith(gemstoneAttributes: attrs); }
