@@ -353,5 +353,32 @@ void main() {
       expect(screen, contains('Semantics('));
       expect(screen, contains('excludeSemantics: true'));
     });
+
+    // R17 semantic regression locks — added by PV-M2-LEAD-C-NATIVE-CONTINUE-F628961-R17
+    test('determination section surface law: server-determined tier, CUSTOMER_SELECTS_TIER=FALSE, no Gold Seal', () {
+      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // CUSTOMER_SELECTS_TIER=FALSE annotation must be present on the determination section
+      expect(screen, contains('CUSTOMER_SELECTS_TIER = FALSE'));
+      // Section must display DETERMINATION RESULT header, not a Gold Seal assertion
+      expect(screen, contains('DETERMINATION RESULT'));
+      // Tier must be server-authored dynamic value (det.tier), not a hardcoded Gold Seal string
+      expect(screen, contains('det.tier'));
+      expect(screen, isNot(contains("'T4 — PV GOLD SEAL'")));
+      expect(screen, isNot(contains("'T4 GOLD SEAL'")));
+      // Determination explanations must be present (server-authored, not client-selected)
+      expect(screen, contains('WHY THIS TIER'));
+      expect(screen, contains('WHY NOT HIGHER'));
+      expect(screen, contains('LIMITATIONS'));
+    });
+
+    test('activity list projects server determination only, BILLING_FOLLOWS_DETERMINATION surface', () {
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // determinedTier display must be bounded to server-authored result
+      expect(activity, contains('Server-authored determination result'));
+      expect(activity, contains("'Determined: \${item.determinedTier}'"));
+      // Must not project determinedTier as Gold Seal or payment-purchased product
+      expect(activity, isNot(contains("'Determined: T4 GOLD'")));
+      expect(activity, isNot(contains("'T4 GOLD SEAL'")));
+    });
   });
 }
