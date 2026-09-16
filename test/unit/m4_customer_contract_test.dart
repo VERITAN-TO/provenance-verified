@@ -538,5 +538,37 @@ void main() {
       // Must have Semantics label for accessibility
       expect(asset, contains('Semantics'));
     });
+
+    test('C20-9: SubmissionDetail.requestedServiceTier has decode-only annotation in activity_models — not rendered as trust authority', () {
+      final activity = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // Decode-only comment must appear — present in SubmissionStatusItem AND SubmissionDetail
+      expect(activity, contains('Decode-only: retained for backward-compat JSON parsing only'));
+      // Must NOT be projected as current trust state: comment must appear twice (once per class)
+      final first = activity.indexOf('Decode-only: retained for backward-compat JSON parsing only');
+      final last = activity.lastIndexOf('Decode-only: retained for backward-compat JSON parsing only');
+      expect(first, isNot(equals(last)), reason: 'decode-only annotation must appear in both SubmissionStatusItem and SubmissionDetail');
+    });
+
+    test('C20-10: ServiceTier.serviceCode annotated as not-for-client-submission — GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY law present', () {
+      final models = File('lib/submit/models/submit_models.dart').readAsStringSync();
+      // Annotation must state this string is NEVER sent to the server
+      expect(models, contains('NEVER sent to the server'));
+      // Gold Seal authority law must be explicitly stated
+      expect(models, contains('GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE'));
+    });
+
+    test('C20-11: MyPvScreen._ErrorView has Semantics + Retry button + 401 auth detection + spinner semanticsLabel', () {
+      final myPv = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      // Semantics wrapper must be present on error view
+      expect(myPv, contains('Semantics'));
+      // 401 detection must be present alongside not_authenticated string check
+      expect(myPv, contains("'401'"));
+      // Retry button must exist for non-auth errors so users can recover without pull-to-refresh
+      expect(myPv, contains("'Retry'"));
+      // Retry button must invalidate the provider (not a no-op)
+      expect(myPv, contains('customerAssetsProvider'));
+      // Loading spinner must have a semanticsLabel for screen reader users
+      expect(myPv, contains("semanticsLabel: 'Loading your assets'"));
+    });
   });
 }

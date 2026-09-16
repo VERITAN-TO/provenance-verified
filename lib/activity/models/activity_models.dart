@@ -204,6 +204,8 @@ class SubmissionDetail {
   final String submissionId;
   final SubmissionStatus status;
   final String assetName;
+  // Decode-only: retained for backward-compat JSON parsing only.
+  // Must not be projected as current trust authority or displayed as tier state.
   final String requestedServiceTier;
   final String? evidenceRequestInstructions;
   final String? issuedAssetId;     // set when status == ISSUED

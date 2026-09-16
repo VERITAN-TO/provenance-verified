@@ -99,7 +99,7 @@ class _AssetGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assetsAsync = ref.watch(customerAssetsProvider);
     return assetsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: CircularProgressIndicator(semanticsLabel: 'Loading your assets')),
       error: (err, _) => _ErrorView(error: err),
       data: (assets) {
         if (assets.isEmpty) {
@@ -300,50 +300,62 @@ class _EmptyAssetsView extends StatelessWidget {
   }
 }
 
-class _ErrorView extends StatelessWidget {
+class _ErrorView extends ConsumerWidget {
   final Object error;
   const _ErrorView({required this.error});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final msg = error.toString();
-    final isAuth = msg.contains('not_authenticated');
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isAuth ? Icons.lock_outline : Icons.error_outline,
-              color: isAuth ? PvColors.silver : PvColors.error,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isAuth ? 'Session expired' : 'Could not load assets',
-              style: PvTypography.title,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isAuth
-                  ? 'Please sign in again.'
-                  : 'Check your connection and pull down to retry.',
-              style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-              textAlign: TextAlign.center,
-            ),
-            if (isAuth) ...[
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => context.push('/sign-in'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: PvColors.cyan,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Sign In'),
+    final isAuth = msg.contains('not_authenticated') || msg.contains('401');
+    return Semantics(
+      label: isAuth ? 'Session expired. Sign in to view your assets.' : 'Could not load assets. Retry.',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isAuth ? Icons.lock_outline : Icons.error_outline,
+                color: isAuth ? PvColors.silver : PvColors.error,
+                size: 48,
               ),
+              const SizedBox(height: 16),
+              Text(
+                isAuth ? 'Session expired' : 'Could not load assets',
+                style: PvTypography.title,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isAuth
+                    ? 'Please sign in again.'
+                    : 'Check your connection and retry.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              if (isAuth)
+                FilledButton(
+                  onPressed: () => context.push('/sign-in'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PvColors.cyan,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Sign In'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(customerAssetsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: PvColors.onBackground,
+                    side: const BorderSide(color: PvColors.border),
+                  ),
+                ),
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -29,6 +29,10 @@ enum ServiceTier {
     }
   }
 
+  // Educational reference only — this string is NEVER sent to the server.
+  // The server derives service_code from its own canonical determination.
+  // T4_PV_GOLD_SEAL is a historic internal label; T4 determination does not
+  // confer Gold Seal authority (GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE).
   String get serviceCode {
     switch (this) {
       case ServiceTier.t1Free: return 'T1_FREE_ASSET_FINGERPRINT';
