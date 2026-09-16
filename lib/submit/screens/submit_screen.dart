@@ -144,6 +144,8 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     }
   }
 
+  Future<void> _refetchQuote() async { await _reloadDetermination(); }
+
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -196,7 +198,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       case 1: return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
       case 2: return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
       case 3: return _Step3Declarations(draft: draft, onNext: _next, loading: _loading);
-      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _reloadDetermination);
+      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _refetchQuote);
       case 5: return _Step5Settlement(quote: _quote, onNext: _next, loading: _loading);
       case 6: return _Step6Confirmation(draft: draft);
       default: return const SizedBox.shrink();
