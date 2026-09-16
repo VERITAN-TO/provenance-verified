@@ -252,7 +252,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Submit a gemstone for certification to start tracking it here.',
+              'Submit a gemstone for PROVENANCE VERIFIED™ evaluation to start tracking it here.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               textAlign: TextAlign.center,
             ),

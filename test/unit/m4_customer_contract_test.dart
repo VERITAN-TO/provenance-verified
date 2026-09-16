@@ -622,5 +622,92 @@ void main() {
         expect(src, contains('semanticsLabel:'), reason: '$path must have spinner semanticsLabel');
       }
     });
+
+    // ── R11 REGRESSION LOCKS ─────────────────────────────────────────────────
+    // These tests lock out semantic/authority leaks identified in R11 cleanup.
+    // CUSTOMER_SELECTS_TIER=FALSE  REVIEWER_SELECTS_TIER=FALSE
+    // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE  GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE
+
+    test('C21-1: SubmitScreen — no "review team" as tier selector; canonical T1-T4 names present', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // No "review team" as tier authority (REVIEWER_SELECTS_TIER=FALSE)
+      expect(submit, isNot(contains('review team')));
+      // Canonical T1 name must be present
+      expect(submit, contains('T1 — Accountable Existence'));
+      // Canonical T2 name must be present
+      expect(submit, contains('T2 — Accountable Declaration'));
+      // Canonical T3 name must be present
+      expect(submit, contains('T3 — Evidence-Established Trust'));
+      // Canonical T4 name must be present
+      expect(submit, contains('T4 — Highest Governed Provenance Authority'));
+    });
+
+    test('C21-2: SubmitScreen — no T4 Gold Seal label; Gold Seal requires separate authority', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Must not display "PV GOLD SEAL" as a tier name or product label in the UI
+      expect(submit, isNot(contains('PV GOLD SEAL')));
+      // T4 description must reference separate authority chain
+      expect(submit, contains('Gold Seal'));
+      // Must carry T4_DETERMINATION_IS_OFFICIAL_T4=FALSE signal in source
+      expect(submit, contains('T4_DETERMINATION_IS_OFFICIAL_T4=FALSE'));
+    });
+
+    test('C21-3: SubmitScreen — no provenance fingerprint language; no SELF-REPORTED label', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // No "provenance fingerprint" — that is not an official tier concept
+      expect(submit, isNot(contains('provenance fingerprint')));
+      // No SELF-REPORTED label — customer input is not a trust authority
+      expect(submit, isNot(contains('SELF-REPORTED')));
+    });
+
+    test('C21-4: SubmitScreen — determination-first control flow; evaluation precedes payment', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // saveDeclarations must appear before submitForEvaluation
+      final saveIdx = submit.indexOf('saveDeclarations');
+      final evalIdx = submit.indexOf('submitForEvaluation');
+      final quoteIdx = submit.indexOf('fetchQuote');
+      expect(saveIdx, isNot(-1), reason: 'saveDeclarations must be present');
+      expect(evalIdx, isNot(-1), reason: 'submitForEvaluation must be present');
+      expect(quoteIdx, isNot(-1), reason: 'fetchQuote must be present');
+      // Control flow: save → eval → quote (never quote then eval)
+      expect(saveIdx, lessThan(evalIdx), reason: 'saveDeclarations must precede submitForEvaluation');
+      expect(evalIdx, lessThan(quoteIdx), reason: 'submitForEvaluation must precede fetchQuote');
+    });
+
+    test('C21-5: ActivityScreen — no "certification" language for empty-state CTA; must use evaluation framing', () {
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // Empty-state CTA must not say "certification" — implies pre-authority-chain issuance
+      // GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE; evaluation is the right framing
+      expect(activity, isNot(contains('Submit a gemstone for certification')));
+      // Must use PROVENANCE VERIFIED evaluation framing instead
+      expect(activity, contains('PROVENANCE VERIFIED'));
+    });
+
+    test('C21-6: ActivityScreen — no customer-facing "Requested:" tier fallback', () {
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // Must not display customer-selected tier as a trust authority fallback
+      // CUSTOMER_SELECTS_TIER=FALSE — the displayed tier comes from server determination only
+      expect(activity, isNot(contains("'Requested: \${item.requestedServiceTier}'")));
+      expect(activity, isNot(contains('"Requested: ')));
+    });
+
+    test('C21-7: SubmissionDetailScreen — no "Requested Service" tier displayed as trust authority', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // Must not render customer-submitted tier as a trust-authority field
+      expect(detail, isNot(contains("'Requested Service'")));
+      expect(detail, isNot(contains('"Requested Service"')));
+      // Must not display requestedServiceTier as current trust state
+      expect(detail, isNot(contains('requestedServiceTier')));
+    });
+
+    test('C21-8: No selectTier / selectedTier in submit or activity screens — CUSTOMER_SELECTS_TIER=FALSE', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // Customer tier selection must be entirely absent from these surfaces
+      expect(submit, isNot(contains('selectTier')));
+      expect(submit, isNot(contains('selectedTier')));
+      expect(activity, isNot(contains('selectTier')));
+      expect(activity, isNot(contains('selectedTier')));
+    });
   });
 }
