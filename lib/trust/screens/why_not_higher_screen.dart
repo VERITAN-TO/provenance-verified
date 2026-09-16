@@ -14,8 +14,31 @@ class WhyNotHigherScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Why Not Higher?')),
       body: trustAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading tier requirements'),
+        ),
+        error: (e, _) => Semantics(
+          label: 'Could not load tier requirements.',
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: PvColors.error, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('Could not load tier requirements', style: PvTypography.title),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         data: (record) {
           final unmet = record.determination?.notMetRequirements ?? [];
           final tier = record.safeTier ?? 0;
@@ -35,9 +58,11 @@ class WhyNotHigherScreen extends ConsumerWidget {
                       const Icon(Icons.emoji_events, color: PvColors.tier4),
                       const SizedBox(width: 12),
                       const Expanded(
+                        // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE; GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE
                         child: Text(
-                          'This record has achieved the Gold Standard (Tier 4). '
-                          'No further tier advancement is possible.',
+                          'This record has achieved T4 — Highest Governed Provenance Authority. '
+                          'No further tier advancement is possible. '
+                          'T4 determination is separate from Gold Seal issuance.',
                           style: TextStyle(color: PvColors.onBackground),
                         ),
                       ),

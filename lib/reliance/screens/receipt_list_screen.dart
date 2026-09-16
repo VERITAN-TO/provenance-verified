@@ -15,14 +15,16 @@ class ReceiptListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Reliance Receipts')),
       body: receiptsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading reliance receipts'),
+        ),
+        error: (e, _) => _ErrorView(error: e, ref: ref),
         data: (receipts) {
           if (receipts.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No receipts saved yet.',
-                style: TextStyle(color: PvColors.muted),
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               ),
             );
           }
@@ -74,6 +76,48 @@ class _ReceiptTile extends StatelessWidget {
           child: Text(
             receipt.validityState.name.toUpperCase(),
             style: PvTypography.label.copyWith(color: color, fontSize: 9),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  final Object error;
+  final WidgetRef ref;
+  const _ErrorView({required this.error, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Could not load receipts. Retry.',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: PvColors.error, size: 48),
+              const SizedBox(height: 16),
+              const Text('Could not load receipts', style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(
+                'Check your connection and retry.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => ref.invalidate(receiptListProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: PvColors.onBackground,
+                  side: const BorderSide(color: PvColors.border),
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -30,9 +30,11 @@ class WhyThisTierScreen extends ConsumerWidget {
         return 'Tier 3 — Evidence-Verified: Independent third-party evidence supports '
             'the declared claims. The evidence has been verified for integrity.';
       case 4:
-        return 'Tier 4 — Gold Standard: All claims are supported by independent, '
-            'integrity-verified evidence. Continuous custody is established with '
-            'no material gaps.';
+        // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE; GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE
+        return 'T4 — Highest Governed Provenance Authority: All claims are supported '
+            'by independent, integrity-verified evidence. Continuous custody is '
+            'established with no material gaps. T4 determination alone does not '
+            'issue a Gold Seal; separate signing, registry, and mark gates apply.';
       default:
         return 'Tier information not available.';
     }
@@ -44,8 +46,31 @@ class WhyThisTierScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Why This Tier?')),
       body: trustAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading tier explanation'),
+        ),
+        error: (e, _) => Semantics(
+          label: 'Could not load tier explanation.',
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: PvColors.error, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('Could not load tier explanation', style: PvTypography.title),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         data: (record) => ListView(
           padding: const EdgeInsets.all(24),
           children: [

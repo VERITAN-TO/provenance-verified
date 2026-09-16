@@ -570,5 +570,57 @@ void main() {
       // Loading spinner must have a semanticsLabel for screen reader users
       expect(myPv, contains("semanticsLabel: 'Loading your assets'"));
     });
+
+    test('C20-12: WhyThisTierScreen — T4 description must not say "Gold Standard"; must reference governed authority and separate issuance', () {
+      final why = File('lib/trust/screens/why_this_tier_screen.dart').readAsStringSync();
+      // Must not use "Gold Standard" — that is a product law violation
+      expect(why, isNot(contains('Gold Standard')));
+      // Must use T4 governed authority framing
+      expect(why, contains('Governed Provenance Authority'));
+      // Must state T4 determination alone does not issue a Gold Seal
+      expect(why, contains('Gold Seal'));
+    });
+
+    test('C20-13: WhyNotHigherScreen — T4 banner must not say "Gold Standard"; must reference governed authority', () {
+      final why = File('lib/trust/screens/why_not_higher_screen.dart').readAsStringSync();
+      // Must not use "Gold Standard"
+      expect(why, isNot(contains('Gold Standard')));
+      // Must use T4 governed authority framing
+      expect(why, contains('Governed Provenance Authority'));
+      // Must state T4 determination is separate from Gold Seal issuance
+      expect(why, contains('Gold Seal'));
+    });
+
+    test('C20-14: ReceiptListScreen has styled error view with Semantics + Retry + spinner semanticsLabel', () {
+      final receipts = File('lib/reliance/screens/receipt_list_screen.dart').readAsStringSync();
+      // Loading spinner must have semanticsLabel
+      expect(receipts, contains("semanticsLabel: 'Loading reliance receipts'"));
+      // Error view must have Semantics (no raw Text(e.toString()))
+      expect(receipts, contains('Semantics'));
+      // Must have Retry button (not just a naked error text)
+      expect(receipts, contains("'Retry'"));
+      // Must invalidate provider for the retry to work
+      expect(receipts, contains('receiptListProvider'));
+      // Must NOT have raw unstyled error: Center(child: Text(e.toString()))
+      expect(receipts, isNot(contains('Center(child: Text(e.toString()))')));
+    });
+
+    test('C20-15: Trust detail sub-screens (WhyThis, WhyNotHigher, Authority) have styled error + spinner semanticsLabel', () {
+      for (final path in [
+        'lib/trust/screens/why_this_tier_screen.dart',
+        'lib/trust/screens/why_not_higher_screen.dart',
+        'lib/trust/screens/authority_screen.dart',
+      ]) {
+        final src = File(path).readAsStringSync();
+        // Must not have raw unstyled error
+        expect(src, isNot(contains('Center(child: Text(e.toString()))')), reason: '$path must not have raw error display');
+        // Must have Semantics on error
+        expect(src, contains('Semantics'), reason: '$path must have Semantics on error state');
+        // Must have Retry
+        expect(src, contains("'Retry'"), reason: '$path must have Retry button');
+        // Must have spinner semanticsLabel
+        expect(src, contains('semanticsLabel:'), reason: '$path must have spinner semanticsLabel');
+      }
+    });
   });
 }
