@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../design/pv_colors.dart';
+import '../../design/pv_typography.dart';
+
 // Shell
 import 'main_shell.dart';
 
@@ -248,11 +251,37 @@ final GoRouter appRouter = GoRouter(
   ],
 
   errorBuilder: (context, state) => Scaffold(
-    backgroundColor: Colors.transparent,
+    appBar: AppBar(title: const Text('Not Found')),
     body: Center(
-      child: Text(
-        'Page not found: ${state.uri}',
-        style: const TextStyle(color: Colors.white70),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off, color: PvColors.muted, size: 48),
+            const SizedBox(height: 16),
+            const Text('Page not found', style: PvTypography.title),
+            const SizedBox(height: 8),
+            Semantics(
+              label: 'Unknown route: ${state.uri}',
+              child: Text(
+                '${state.uri}',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.go('/verify'),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Go to Verify'),
+              style: FilledButton.styleFrom(
+                backgroundColor: PvColors.cyan,
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   ),

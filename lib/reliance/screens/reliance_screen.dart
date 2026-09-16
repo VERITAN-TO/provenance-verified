@@ -30,11 +30,69 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
     final actionAsync = ref.watch(simpleActionabilityProvider(args));
     final trustAsync = ref.watch(trustRecordProvider(widget.publicId));
 
+    // Stale-state law: REVOKED/SUSPENDED records block reliance entirely.
+    // LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY — always use fresh server data.
+    final lifecycleStatus = trustAsync.valueOrNull?.lifecycle?.status?.toUpperCase();
+    const _blockedLifecycles = {'REVOKED', 'SUSPENDED'};
+    final lifecycleBlocked = _blockedLifecycles.contains(lifecycleStatus);
+    final lifecycleWarning = lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Reliance Assessment')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (lifecycleBlocked)
+            Semantics(
+              label: 'Reliance blocked: record is $lifecycleStatus. Do not rely.',
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: PvColors.error.withAlpha(30),
+                  border: Border.all(color: PvColors.error),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.block, color: PvColors.error, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'RELIANCE BLOCKED — This record is $lifecycleStatus. '
+                        'Do not use it as a basis for any reliance decision.',
+                        style: PvTypography.body.copyWith(color: PvColors.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (lifecycleWarning)
+            Semantics(
+              label: 'Warning: record is $lifecycleStatus. Requery before relying.',
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: PvColors.warning.withAlpha(30),
+                  border: Border.all(color: PvColors.warning),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.update, color: PvColors.warning, size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$lifecycleStatus — Requery this record before relying on it.',
+                        style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           DropdownButtonFormField<ActionabilityPurpose>(
             // ignore: deprecated_member_use
             value: _purpose,
@@ -60,7 +118,52 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
             loading: () => const Center(
               child: CircularProgressIndicator(semanticsLabel: 'Querying actionability from server'),
             ),
-            error: (e, _) => Text('Error: $e', style: const TextStyle(color: PvColors.error)),
+            error: (e, _) => Semantics(
+              label: 'Error querying actionability: ${e.toString()}',
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: PvColors.error.withAlpha(20),
+                  border: Border.all(color: PvColors.error),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: PvColors.error, size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Could not query actionability.',
+                            style: TextStyle(color: PvColors.error),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      e.toString(),
+                      style: PvTypography.bodySmall
+                          .copyWith(color: PvColors.muted),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        final args =
+                            (publicId: widget.publicId, purpose: _purpose.toJson());
+                        ref.invalidate(simpleActionabilityProvider(args));
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             data: (result) {
               final isUnknown = result.decision == ActionabilityDecision.unknown;
               return Column(
@@ -109,7 +212,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                     )
                   else
                     FilledButton.icon(
-                      onPressed: isUnknown || _saving
+                      onPressed: isUnknown || _saving || lifecycleBlocked
                           ? null
                           : () => _saveReceipt(result, trustAsync.value),
                       icon: _saving

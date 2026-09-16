@@ -448,5 +448,95 @@ void main() {
       // Settlement surface must be determination-anchored, not tier-selection-anchored
       expect(submit, contains('DETERMINATION'));
     });
+
+    // R20 resilience regression locks — added by PV-M2-LEAD-C-PEACP-R20
+    test('C20-1: router errorBuilder has bounded not-found recovery — no raw URI dump', () {
+      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
+      // Router must not dump raw URI as the only content (was: 'Page not found: ${state.uri}')
+      expect(router, isNot(contains("'Page not found: \${state.uri}'")));
+      // Must have a recovery action to Verify tab
+      expect(router, contains("context.go('/verify')"));
+      // Must have Semantics label for screen readers
+      expect(router, contains('Semantics'));
+      // Must import PvColors and PvTypography for design-system consistency
+      expect(router, contains("import '../../design/pv_colors.dart'"));
+    });
+
+    test('C20-2: TrustResultScreen._ErrorView distinguishes not-found from generic errors', () {
+      final trust = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      // Must have not-found detection beyond generic error
+      expect(trust, contains('isNotFound'));
+      // Must have Semantics on error view
+      expect(trust, contains('Semantics'));
+      // Must have a "Go Back" recovery for not-found (not just Retry which is wrong for 404)
+      expect(trust, contains("'Go Back'"));
+      // Retry remains for network/generic errors
+      expect(trust, contains("'Retry'"));
+    });
+
+    test('C20-3: ReceiptDetailScreen has bounded error and not-found states — no naked Text(e.toString())', () {
+      final receipt = File('lib/reliance/screens/receipt_detail_screen.dart').readAsStringSync();
+      // Must not have naked error text (was: Center(child: Text(e.toString())))
+      expect(receipt, isNot(contains('Center(child: Text(e.toString()))')));
+      // Must not have unstyled not-found (was: Center(child: Text(\'Receipt not found\')))
+      expect(receipt, isNot(contains("const Center(child: Text('Receipt not found'))")));
+      // Must have Semantics on error states
+      expect(receipt, contains('Semantics'));
+      // Must have recovery actions (back or retry buttons)
+      expect(receipt, contains("'Go Back'"));
+    });
+
+    test('C20-4: RelianceScreen blocks reliance for REVOKED/SUSPENDED lifecycle states', () {
+      final reliance = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      // Must check lifecycle status before allowing reliance
+      expect(reliance, contains('lifecycleBlocked'));
+      // Must have the blocked lifecycle set
+      expect(reliance, contains('REVOKED'));
+      expect(reliance, contains('SUSPENDED'));
+      // Save button must be disabled when lifecycle is blocked
+      expect(reliance, contains('lifecycleBlocked'));
+      // Must include "LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY" law comment
+      expect(reliance, contains('LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY'));
+    });
+
+    test('C20-5: submit wizard has auth recovery redirect on 401 — terminal auth failure sends to sign-in', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Must detect terminal 401 (refresh path exhausted in API client) and redirect
+      expect(submit, contains('e.statusCode == 401'));
+      // Must redirect to sign-in, not just show a generic error banner
+      expect(submit, contains("'/sign-in"));
+      // 401 handler must include a redirect (context.push), not just _setError
+      expect(submit, contains('context.push'));
+    });
+
+    test('C20-6: submit wizard re-fetches quote on re-entry at step 4+ — interruption recovery', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Must detect re-entry at step 4+ with null quote and refetch
+      expect(submit, contains('draft.step >= 4'));
+      expect(submit, contains('_refetchQuote'));
+      // Refetch method must exist
+      expect(submit, contains('Future<void> _refetchQuote()'));
+    });
+
+    test('C20-7: Android manifest has pv:// deep-link intent-filter — iOS/Android parity', () {
+      final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      // Android must declare the pv:// scheme to match iOS CFBundleURLSchemes
+      expect(manifest, contains('android:scheme="pv"'));
+      // Must have VIEW action (not just MAIN)
+      expect(manifest, contains('android.intent.action.VIEW'));
+      // Must have BROWSABLE category for external link handling
+      expect(manifest, contains('android.intent.category.BROWSABLE'));
+    });
+
+    test('C20-8: AssetDetailScreen._ErrorView has distinct not-found recovery — no misleading Pull down to retry for 404', () {
+      final asset = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // Must have distinct not-found detection beyond just not_found string
+      expect(asset, contains('isNotFound'));
+      // Must NOT show "Pull down to retry" for not-found (misleading action for 404)
+      // The not-found branch must lead to a back navigation, not pull-down
+      expect(asset, contains("'Return to My PV'"));
+      // Must have Semantics label for accessibility
+      expect(asset, contains('Semantics'));
+    });
   });
 }

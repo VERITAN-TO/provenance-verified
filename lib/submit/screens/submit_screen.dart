@@ -40,8 +40,24 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       final draft = ref.read(submitProvider);
       if (draft == null) {
         ref.read(submitProvider.notifier).beginNew();
+      } else if (draft.step >= 4 && _quote == null) {
+        _refetchQuote();
       }
     });
+  }
+
+  Future<void> _refetchQuote() async {
+    _setLoading(true);
+    try {
+      final q = await ref.read(submitProvider.notifier).fetchQuote();
+      if (mounted) setState(() => _quote = q);
+    } on SubmitApiException catch (e) {
+      if (mounted) _setError('Could not reload determination (${e.statusCode}): ${e.message}');
+    } catch (_) {
+      if (mounted) _setError('Could not reload determination result. Please retry.');
+    } finally {
+      if (mounted) _setLoading(false);
+    }
   }
 
   // ── Navigation helpers ────────────────────────────────────────────────────
@@ -107,7 +123,13 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
           break;
       }
     } on SubmitApiException catch (e) {
-      _setError('Server error (${e.statusCode}): ${e.message}');
+      if (e.statusCode == 401) {
+        // Terminal auth failure — refresh path exhausted in the API client.
+        // Redirect to sign-in with /submit as the return destination.
+        if (mounted) context.push('/sign-in?from=${Uri.encodeComponent('/submit')}');
+      } else {
+        _setError('Server error (${e.statusCode}): ${e.message}');
+      }
     } catch (e) {
       _setError('An unexpected error occurred. Please try again.');
     } finally {

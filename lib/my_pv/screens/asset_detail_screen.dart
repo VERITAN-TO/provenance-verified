@@ -681,56 +681,78 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final msg = error.toString();
-    final isNotFound = msg.contains('not_found');
-    final isAuth = msg.contains('not_authenticated');
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isAuth ? Icons.lock_outline : Icons.error_outline,
-              color: isAuth ? PvColors.silver : PvColors.error,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isNotFound
-                  ? 'Asset not found'
-                  : isAuth
-                      ? 'Session expired'
-                      : 'Could not load asset',
-              style: PvTypography.title,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isAuth
-                  ? 'Please sign in again.'
-                  : 'Pull down to retry.',
-              style:
-                  PvTypography.bodySmall.copyWith(color: PvColors.muted),
-              textAlign: TextAlign.center,
-            ),
-            if (isAuth) ...[
+    final isNotFound = msg.contains('not_found') || msg.contains('404') ||
+        msg.contains('not found') || assetId.trim().isEmpty;
+    final isAuth = msg.contains('not_authenticated') || msg.contains('401');
+    return Semantics(
+      label: isNotFound
+          ? 'Asset not found'
+          : isAuth
+              ? 'Session expired'
+              : 'Could not load asset',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isNotFound
+                    ? Icons.search_off
+                    : isAuth
+                        ? Icons.lock_outline
+                        : Icons.error_outline,
+                color: isNotFound
+                    ? PvColors.muted
+                    : isAuth
+                        ? PvColors.silver
+                        : PvColors.error,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isNotFound
+                    ? 'Asset not found'
+                    : isAuth
+                        ? 'Session expired'
+                        : 'Could not load asset',
+                style: PvTypography.title,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isNotFound
+                    ? 'This asset was not found or you do not have access.'
+                    : isAuth
+                        ? 'Please sign in again.'
+                        : 'Pull down to retry.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => context.push('/sign-in'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: PvColors.cyan,
-                  foregroundColor: Colors.black,
+              if (isNotFound) ...[
+                OutlinedButton.icon(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Return to My PV'),
                 ),
-                child: const Text('Sign In'),
-              ),
-            ] else ...[
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () => ref.invalidate(assetDetailProvider(assetId)),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
+              ] else if (isAuth) ...[
+                FilledButton(
+                  onPressed: () => context.push('/sign-in'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PvColors.cyan,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Sign In'),
+                ),
+              ] else ...[
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(assetDetailProvider(assetId)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

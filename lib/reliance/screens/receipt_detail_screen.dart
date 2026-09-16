@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/reliance_provider.dart';
 import '../receipt_models.dart';
 import '../../design/pv_colors.dart';
@@ -15,12 +16,20 @@ class ReceiptDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Receipt Detail')),
       body: receiptsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        loading: () => const Center(
+            child: CircularProgressIndicator(semanticsLabel: 'Loading receipt')),
+        error: (e, _) => _BoundedErrorView(
+          title: 'Could not load receipts',
+          message: e.toString(),
+          onRetry: () => ref.invalidate(receiptListProvider),
+        ),
         data: (receipts) {
           final receipt = receipts.where((r) => r.receiptId == receiptId).firstOrNull;
           if (receipt == null) {
-            return const Center(child: Text('Receipt not found'));
+            return _BoundedNotFoundView(
+              label: 'Receipt not found',
+              message: 'No receipt found with ID "$receiptId".',
+            );
           }
           final isInvalidated = receipt.validityState != ReceiptValidityState.valid;
           return ListView(
@@ -68,6 +77,80 @@ class ReceiptDetailScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _BoundedErrorView extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+  const _BoundedErrorView(
+      {required this.title, required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$title. $message',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: PvColors.error, size: 48),
+              const SizedBox(height: 16),
+              Text(title, style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(message,
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BoundedNotFoundView extends StatelessWidget {
+  final String label;
+  final String message;
+  const _BoundedNotFoundView({required this.label, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label. $message',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.search_off, color: PvColors.muted, size: 48),
+              const SizedBox(height: 16),
+              Text(label, style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(message,
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

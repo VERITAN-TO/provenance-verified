@@ -224,24 +224,53 @@ class _ErrorView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: PvColors.error, size: 48),
-            const SizedBox(height: 16),
-            Text('Unable to load $publicId', style: PvTypography.title),
-            const SizedBox(height: 8),
-            Text(error.toString(), style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
+    final msg = error.toString().toLowerCase();
+    final isNotFound = msg.contains('not_found') || msg.contains('404') ||
+        msg.contains('not found') || publicId.trim().isEmpty;
+    final isNetwork = msg.contains('network') || msg.contains('timeout') ||
+        msg.contains('socket');
+
+    final (icon, iconColor, title, body) = isNotFound
+        ? (Icons.search_off, PvColors.muted, 'Record not found',
+            'No PV record exists for "$publicId". Check the ID and try again.')
+        : isNetwork
+            ? (Icons.signal_wifi_off, PvColors.warning, 'Connection error',
+                'Could not reach the PV server. Check your connection and retry.')
+            : (Icons.error_outline, PvColors.error, 'Unable to load record',
+                error.toString());
+
+    return Semantics(
+      label: '$title. $body',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: iconColor, size: 48),
+              const SizedBox(height: 16),
+              Text(title, style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(
+                body,
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              if (isNotFound)
+                OutlinedButton.icon(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go Back'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+            ],
+          ),
         ),
       ),
     );
