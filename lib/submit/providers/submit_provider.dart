@@ -78,6 +78,12 @@ class SubmissionApiClient {
       final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/evidence'))
         ..headers['Authorization'] = 'Bearer $token'
         ..fields['document_type'] = docType
+        // CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE; CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE;
+        // CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE — explicit trust-law classification;
+        // server determination engine must not infer independence from missing fields.
+        ..fields['independent'] = 'false'
+        ..fields['related_party'] = 'true'
+        ..fields['qualified_review_eligible'] = 'false'
         ..files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
       return http.Response.fromStream(await request.send().timeout(const Duration(seconds: 60)));
     }

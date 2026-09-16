@@ -709,5 +709,45 @@ void main() {
       expect(activity, isNot(contains('selectTier')));
       expect(activity, isNot(contains('selectedTier')));
     });
+
+    // ── R21 PARITY LOCKS ─────────────────────────────────────────────────────
+    // Locks for A/B deltas consumed in R21: be5b164 (upload trust-law) and
+    // e8cca3f (public_id / determined_at in submission detail).
+    // CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE  CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE
+
+    test('C22-1: Evidence upload multipart carries explicit trust-law classification — not inferred from missing fields', () {
+      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      // Explicit independent=false must be sent — server must not infer from absence
+      expect(provider, contains("'independent'"));
+      expect(provider, contains("'false'"));
+      // Explicit related_party=true
+      expect(provider, contains("'related_party'"));
+      expect(provider, contains("'true'"));
+      // Explicit qualified_review_eligible=false
+      expect(provider, contains("'qualified_review_eligible'"));
+      // Trust-law annotation must be present in source
+      expect(provider, contains('CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE'));
+      expect(provider, contains('CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE'));
+    });
+
+    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; detail screen shows verify action', () {
+      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // publicId field must be decoded from server response
+      expect(models, contains("json['public_id']"));
+      expect(models, contains('publicId'));
+      // determinedAt must be decoded
+      expect(models, contains("json['determined_at']"));
+      expect(models, contains('determinedAt'));
+      // MTA-1 law comment must be present — server determines, native displays
+      expect(models, contains('MTA-1: SERVER DETERMINES TRUST'));
+      // Detail screen must have the provenance record action
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('publicId'));
+      expect(detail, contains('_ProvenanceRecordAction'));
+      // Must route to verify (not assert trust state itself)
+      expect(detail, contains("'/verify/\$publicId'"));
+      // Must have Semantics for screen reader
+      expect(detail, contains('Semantics'));
+    });
   });
 }

@@ -99,6 +99,15 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
+              // ── Provenance record link (when publicId available) ─────────
+              if (detail.publicId != null) ...[
+                _ProvenanceRecordAction(
+                  publicId: detail.publicId!,
+                  determinedAt: detail.determinedAt,
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // ── Status timeline ──────────────────────────────────────────
               _SectionHeader('STATUS TIMELINE'),
               const SizedBox(height: 8),
@@ -656,6 +665,69 @@ class _SectionHeader extends StatelessWidget {
         text,
         style: PvTypography.label.copyWith(color: PvColors.muted),
       );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Provenance record link — shown when determination is complete and server
+// has assigned a public_id. MTA-1: native navigates to Verify; never asserts
+// trust state itself.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _ProvenanceRecordAction extends StatelessWidget {
+  final String publicId;
+  final DateTime? determinedAt;
+  const _ProvenanceRecordAction({required this.publicId, this.determinedAt});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'View public provenance record for $publicId',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          border: Border.all(color: PvColors.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'PROVENANCE RECORD AVAILABLE',
+              style: PvTypography.label.copyWith(color: PvColors.muted),
+            ),
+            const SizedBox(height: 6),
+            SelectableText(publicId, style: PvTypography.mono),
+            if (determinedAt != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Determined ${_formatDate(determinedAt!)}',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/verify/$publicId'),
+                icon: const Icon(Icons.verified_outlined, size: 18),
+                label: const Text('Verify Provenance Record'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: PvColors.onBackground,
+                  side: const BorderSide(color: PvColors.border),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _formatDate(DateTime dt) {
+    final l = dt.toLocal();
+    return '${l.year}-${l.month.toString().padLeft(2, '0')}-${l.day.toString().padLeft(2, '0')}';
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────

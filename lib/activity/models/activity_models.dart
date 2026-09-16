@@ -214,6 +214,12 @@ class SubmissionDetail {
   /// Server-authored determination. Populated after the determination step.
   /// Null when determination has not yet been completed.
   final DeterminationResult? determination;
+  /// Public provenance record ID, set when determination is complete and
+  /// a registry record exists. MTA-1: SERVER DETERMINES TRUST — this value
+  /// comes from the server; native only displays it.
+  final String? publicId;
+  /// Timestamp when the determination was computed by the server.
+  final DateTime? determinedAt;
 
   const SubmissionDetail({
     required this.submissionId,
@@ -225,6 +231,8 @@ class SubmissionDetail {
     required this.custodyEvents,
     required this.updatedAt,
     this.determination,
+    this.publicId,
+    this.determinedAt,
   });
 
   factory SubmissionDetail.fromJson(Map<String, dynamic> json) {
@@ -253,6 +261,8 @@ class SubmissionDetail {
       updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? '') ??
                  DateTime.now(),
       determination: det,
+      publicId:    json['public_id'] as String?,
+      determinedAt: DateTime.tryParse(json['determined_at'] as String? ?? ''),
     );
   }
 }
