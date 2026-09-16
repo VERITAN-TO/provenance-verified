@@ -749,5 +749,35 @@ void main() {
       // Must have Semantics for screen reader
       expect(detail, contains('Semantics'));
     });
+
+    test('C23-1: auth screens use go_router context.go — no Navigator.pushReplacementNamed', () {
+      final signIn = File('lib/auth/screens/sign_in_screen.dart').readAsStringSync();
+      final signUp = File('lib/auth/screens/sign_up_screen.dart').readAsStringSync();
+      // go_router must be imported
+      expect(signIn, contains("import 'package:go_router/go_router.dart'"));
+      expect(signUp, contains("import 'package:go_router/go_router.dart'"));
+      // Navigator 1.0 named routes must not be used (breaks deep-link recovery)
+      expect(signIn, isNot(contains('pushReplacementNamed')));
+      expect(signUp, isNot(contains('pushReplacementNamed')));
+      // go_router navigation must be present
+      expect(signIn, contains('context.go('));
+      expect(signUp, contains('context.go('));
+    });
+
+    test('C23-2: reliance provider fails closed on server error — SocketException/TimeoutException only for offline fallback', () {
+      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      // Must import dart:io and dart:async for offline-only exception types
+      expect(provider, contains("import 'dart:io'"));
+      expect(provider, contains("import 'dart:async'"));
+      // Must catch SocketException for offline fallback
+      expect(provider, contains('SocketException'));
+      // Must catch TimeoutException for offline fallback
+      expect(provider, contains('TimeoutException'));
+      // B delta annotation must be present: server fails closed
+      expect(provider, contains('B delta'));
+      // Must NOT have a bare catch (_) that silently swallows ApiException
+      // (a catch-all swallow would allow fabricated receipts on server 5xx)
+      expect(provider, isNot(contains('} catch (_) {\n        // Fallback to local receipt on server failure')));
+    });
   });
 }
