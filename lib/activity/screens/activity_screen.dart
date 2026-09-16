@@ -146,10 +146,10 @@ class _SubmissionRow extends StatelessWidget {
                             color: PvColors.onBackground,
                             fontWeight: FontWeight.w600),
                       ),
-                    ] else if (item.requestedServiceTier.isNotEmpty) ...[
+                    ] else ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Requested: ${item.requestedServiceTier}',
+                        'Awaiting determination',
                         style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                       ),
                     ],

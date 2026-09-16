@@ -92,7 +92,9 @@ class SubmissionStatusItem {
   final String submissionId;
   final SubmissionStatus status;
   final String assetName;
-  final String requestedServiceTier; // what the customer requested
+  // Decode-only: retained for backward-compat JSON parsing only.
+  // Must not be projected as current trust authority or displayed as tier state.
+  final String requestedServiceTier;
   /// The tier that the server determined — null until determination is complete.
   /// CUSTOMER_SELECTS_TIER = FALSE: this value comes exclusively from the server.
   final String? determinedTier;

@@ -4,8 +4,8 @@
 // CLIENT_CLAIMED_LAB_CONFIRMED = ZERO
 //
 // Determination-first: evidence is submitted and evaluated; tier is determined
-// by the review team; price is derived from the determined tier; payment, if
-// any, is collected only after determination via CustomerSubmissionDetail.
+// by evidence and policy; price is derived from the determined tier; payment,
+// if any, is collected only after determination via CustomerSubmissionDetail.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -280,34 +280,39 @@ class _Step0TrustLadder extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your trust tier is determined exclusively by the PROVENANCE VERIFIED™ '
-                'review team based on the evidence you submit. You do not select a tier — '
-                'we evaluate what your evidence supports.',
+                'Your trust tier is determined by the evidence you submit and '
+                'PROVENANCE VERIFIED™ policy. You do not select a tier — '
+                'evidence and policy determine the highest supported tier.',
                 style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               ),
               const SizedBox(height: 24),
               const _TrustTierRow(
-                label: 'T1 — SELF-REPORTED',
-                description: 'Asset declared by owner. No external verification. '
-                    'Establishes a provenance fingerprint at no cost.',
+                label: 'T1 — Accountable Existence',
+                description: 'A verified accountable person registers a specific '
+                    'physical subject. Does not prove origin, source, custody '
+                    'history, or provenance. No cost.',
               ),
               const SizedBox(height: 12),
               const _TrustTierRow(
-                label: 'T2 — DECLARED SOURCE',
-                description: 'Supported by declared provenance documentation '
-                    '(receipts, certificates of origin) reviewed by our team.',
+                label: 'T2 — Accountable Declaration',
+                description: 'A known accountable person makes a bounded '
+                    'declaration supported by documentation. Declaration is '
+                    'not independent verification.',
               ),
               const SizedBox(height: 12),
               const _TrustTierRow(
-                label: 'T3 — EVIDENCE VERIFIED',
-                description: 'Third-party laboratory reports reviewed and '
-                    'cross-referenced against physical inspection.',
+                label: 'T3 — Evidence-Established Trust',
+                description: 'Evidence, source authentication, corroboration, '
+                    'contradiction analysis, and qualified review produce a '
+                    'deterministic determination. Limitations are surfaced.',
               ),
               const SizedBox(height: 12),
               const _TrustTierRow(
-                label: 'T4 — PV GOLD SEAL',
-                description: 'Highest tier. Multi-source evidence convergence '
-                    'with physical custody review by our specialists.',
+                label: 'T4 — Highest Governed Provenance Authority',
+                description: 'Multi-source evidence convergence with physical '
+                    'custody review. Determination alone does not grant the '
+                    'official T4 credential, Gold Seal, certification mark, '
+                    'signing, issuance, or registry activation.',
               ),
               const SizedBox(height: 24),
               Container(
@@ -874,7 +879,7 @@ class _Step3Declarations extends ConsumerWidget {
                 // Core constraint: client cannot over-claim tier
                 text:      'I understand the determined trust tier may differ from my '
                            'requested service tier. The final determination is made '
-                           'exclusively by the PROVENANCE VERIFIED™ review team.',
+                           'by evidence and PROVENANCE VERIFIED™ policy.',
               ),
               const SizedBox(height: 12),
               _DeclarationCheckbox(

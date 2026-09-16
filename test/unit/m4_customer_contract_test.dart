@@ -137,5 +137,62 @@ void main() {
       expect(settlePos, greaterThan(-1), reason: 'settleDeterminedResult() must be present');
       expect(quotePos,  lessThan(settlePos), reason: 'fetchQuote must precede settleDeterminedResult');
     });
+
+    // R12 semantic regression locks — added by PV-M2-LEAD-C-NATIVE-SEMANTIC-EXEC-R12
+    test('submit screen uses canonical tier names and evidence-and-policy authority', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+
+      // REVIEWER_SELECTS_TIER=FALSE: "review team" must not appear as tier-selection authority
+      expect(screen, isNot(contains('determined by the review team')));
+      expect(screen, isNot(contains('exclusively by the PROVENANCE VERIFIED™ review team')));
+
+      // Canonical T1–T4 names must be present
+      expect(screen, contains('Accountable Existence'));
+      expect(screen, contains('Accountable Declaration'));
+      expect(screen, contains('Evidence-Established Trust'));
+      expect(screen, contains('Highest Governed Provenance Authority'));
+
+      // Stale tier names must be absent
+      expect(screen, isNot(contains('SELF-REPORTED')));
+      expect(screen, isNot(contains('DECLARED SOURCE')));
+      expect(screen, isNot(contains('EVIDENCE VERIFIED')));
+      expect(screen, isNot(contains('PV GOLD SEAL')));
+
+      // T1 must not claim provenance fingerprint
+      expect(screen, isNot(contains('provenance fingerprint')));
+
+      // T4 Gold Seal separation must be stated
+      expect(screen, contains('Determination alone does not grant'));
+      expect(screen, contains('Gold Seal'));
+
+      // Evidence and policy as authority
+      expect(screen, contains('evidence and policy'));
+    });
+
+    test('activity screen does not project requested tier as trust state', () {
+      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+
+      // Must not render customer-requested tier as a trust state before determination
+      expect(activity, isNot(contains("'Requested: \${item.requestedServiceTier}'")));
+      expect(activity, isNot(contains('"Requested: "')));
+
+      // Must show neutral bounded state before determination
+      expect(activity, contains('Awaiting determination'));
+    });
+
+    test('activity model marks requestedServiceTier as decode-only', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+
+      // Decode-only annotation must be present
+      expect(model, contains('Decode-only'));
+      expect(model, contains('Must not be projected as current trust authority'));
+    });
+
+    test('T4 determination does not grant Gold Seal or official credential', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Must explicitly state credential separation for T4
+      expect(screen, contains('signing, issuance, or registry activation'));
+      expect(screen, isNot(contains('T4 — PV GOLD SEAL')));
+    });
   });
 }
