@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/my_pv_models.dart';
+import '../../auth/auth_models.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../core/config/environment.dart';
 
