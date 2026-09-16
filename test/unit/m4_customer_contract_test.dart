@@ -380,5 +380,20 @@ void main() {
       expect(activity, isNot(contains("'Determined: T4 GOLD'")));
       expect(activity, isNot(contains("'T4 GOLD SEAL'")));
     });
+
+    // R18 semantic regression locks — added by PV-M2-LEAD-C-PEACP-R18
+    test('no customer-selectable checkout path — CUSTOMER_SELECTS_TIER=FALSE on settlement surface', () {
+      // B 3aba088c removed the web /checkout?service= customer-tier-select route
+      // (CUSTOMER_SELECTS_TIER=FALSE violation). Native never had this route
+      // (PARITY_NATIVE_AHEAD). This lock confirms the invariant is permanent.
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Native must not have a customer-tier-select checkout route
+      expect(submit, isNot(contains('/checkout?service=')));
+      // Native must not send customer-chosen serviceCode as Stripe payment authority
+      expect(submit, isNot(contains("serviceCode: draft.selectedTier")));
+      expect(submit, isNot(contains("'checkout?service='")));
+      // Settlement surface must be determination-anchored, not tier-selection-anchored
+      expect(submit, contains('DETERMINATION'));
+    });
   });
 }
