@@ -415,6 +415,7 @@ class _RecentScanTile extends StatelessWidget {
           child: Text(label, style: PvTypography.label.copyWith(color: color, fontSize: 9)),
         ),
       ),
+      ),
     );
   }
 

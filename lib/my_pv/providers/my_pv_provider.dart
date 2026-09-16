@@ -15,7 +15,7 @@ Map<String, String> _authHeaders(String accessToken) => {
 };
 
 Future<String> _validToken(Ref ref) async {
-  var session = ref.read(currentUserProvider);
+  CustomerSession? session = ref.read(currentUserProvider);
   if (session == null) throw Exception('not_authenticated');
   if (session.isExpired) {
     await ref.read(authProvider.notifier).refresh();

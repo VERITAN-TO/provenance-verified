@@ -549,7 +549,7 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
         _BottomBar(
           onNext: () async {
             _syncToProvider();
-            await onNext();
+            await widget.onNext();
           },
           nextLabel: 'Continue',
           loading: widget.loading,
@@ -1330,9 +1330,9 @@ class _Step6Confirmation extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const Semantics(
+        Semantics(
           label: 'Submission confirmed successfully',
-          child: Icon(Icons.check_circle, color: PvColors.success, size: 64),
+          child: const Icon(Icons.check_circle, color: PvColors.success, size: 64),
         ),
         const SizedBox(height: 20),
 

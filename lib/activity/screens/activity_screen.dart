@@ -168,8 +168,9 @@ class _SubmissionRow extends StatelessWidget {
   static Color _statusColor(SubmissionStatus status) {
     switch (status) {
       case SubmissionStatus.issued:                  return PvColors.success;
-      case SubmissionStatus.moreInformationRequired: return PvColors.warning;
-      case SubmissionStatus.closed:                  return PvColors.muted;
+      case SubmissionStatus.moreInformationRequired:
+      case SubmissionStatus.additionalInfoRequested:  return PvColors.warning;
+      case SubmissionStatus.closed:                   return PvColors.muted;
       case SubmissionStatus.submitted:
       case SubmissionStatus.paymentConfirmed:        return PvColors.silver;
       case SubmissionStatus.awaitingShipment:
