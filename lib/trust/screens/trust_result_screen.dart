@@ -55,6 +55,7 @@ class _RecordView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _LifecycleBanner(record: record),
         StaleBanner(
           freshness: record.freshness?.state ?? FreshnessState.unknown,
           onRequery: () => ref.invalidate(trustRecordProvider(record.publicId)),
@@ -129,17 +130,21 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 96,
-            child: Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-          ),
-          Expanded(child: Text(value, style: PvTypography.body)),
-        ],
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 96,
+              child: Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            ),
+            Expanded(child: Text(value, style: PvTypography.body)),
+          ],
+        ),
       ),
     );
   }
@@ -158,13 +163,62 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _ErrorView extends StatelessWidget {
+class _LifecycleBanner extends StatelessWidget {
+  final TrustRecord record;
+  const _LifecycleBanner({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = record.lifecycle?.status?.toUpperCase();
+    if (status == null || status.isEmpty) return const SizedBox.shrink();
+
+    final (color, icon, message) = switch (status) {
+      'SUSPENDED' => (PvColors.error, Icons.block_outlined,
+          'SUSPENDED — Do not rely on this record.'),
+      'REVOKED' => (PvColors.error, Icons.cancel_outlined,
+          'REVOKED — This record has been revoked. Do not rely on it.'),
+      'SUPERSEDED' => (PvColors.warning, Icons.swap_horiz_outlined,
+          record.lifecycle?.supersededBy != null
+              ? 'SUPERSEDED — See record ${record.lifecycle!.supersededBy}.'
+              : 'SUPERSEDED — This record has been superseded.'),
+      'EXPIRED' => (PvColors.warning, Icons.timer_off_outlined,
+          'EXPIRED — Verify currency before reliance.'),
+      'CORRECTED' => (PvColors.cyan, Icons.check_circle_outline,
+          'CORRECTED — This record has been updated.'),
+      'REINSTATED' => (PvColors.success, Icons.restore_outlined,
+          'REINSTATED — This record is active again.'),
+      _ => (PvColors.muted, Icons.info_outline, 'Status: $status'),
+    };
+
+    return Semantics(
+      label: message,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withAlpha(30),
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: PvTypography.bodySmall.copyWith(color: color))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends ConsumerWidget {
   final Object error;
   final String publicId;
   const _ErrorView({required this.error, required this.publicId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -176,6 +230,12 @@ class _ErrorView extends StatelessWidget {
             Text('Unable to load $publicId', style: PvTypography.title),
             const SizedBox(height: 8),
             Text(error.toString(), style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
           ],
         ),
       ),

@@ -66,9 +66,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
+          Semantics(
+            label: 'Camera viewfinder. Point at a PROVENANCE VERIFIED™ QR code to scan.',
+            child: MobileScanner(
+              controller: _controller,
+              onDetect: _onDetect,
+            ),
           ),
           Positioned(
             bottom: 48,

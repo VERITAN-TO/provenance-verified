@@ -244,5 +244,48 @@ void main() {
       expect(detail, isNot(contains('T4 GOLD')));
       expect(detail, contains('T4 — GOVERNED AUTHORITY'));
     });
+
+    // R13 C13-4/C13-5/C13-7 regression locks
+    test('trust badge does not assert Gold Standard or Gold Seal for T4', () {
+      final badge = File('lib/trust/widgets/trust_badge.dart').readAsStringSync();
+      expect(badge, isNot(contains('T4 GOLD STANDARD')));
+      expect(badge, isNot(contains('T4 GOLD SEAL')));
+      expect(badge, isNot(contains("'T4 GOLD'")));
+      expect(badge, contains('T4 — GOVERNED AUTHORITY'));
+    });
+
+    test('trust result screen surfaces lifecycle state before trust badge', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      // Lifecycle banner must appear before StaleBanner in source order
+      final lifecyclePos = screen.indexOf('_LifecycleBanner');
+      final stalePos     = screen.indexOf('StaleBanner');
+      expect(lifecyclePos, greaterThan(-1), reason: '_LifecycleBanner must be present');
+      expect(stalePos,     greaterThan(-1), reason: 'StaleBanner must be present');
+      expect(lifecyclePos, lessThan(stalePos), reason: 'lifecycle must precede stale banner');
+      // Must handle SUSPENDED and REVOKED as do-not-rely states
+      expect(screen, contains('SUSPENDED'));
+      expect(screen, contains('REVOKED'));
+      expect(screen, contains('SUPERSEDED'));
+    });
+
+    test('trust result screen error view has retry capability', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      // _ErrorView must be a ConsumerWidget with a retry mechanism
+      expect(screen, contains('ConsumerWidget'));
+      expect(screen, contains('ref.invalidate(trustRecordProvider(publicId))'));
+      expect(screen, contains("const Text('Retry')"));
+    });
+
+    test('scanner screen camera area has accessibility semantics label', () {
+      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
+      expect(scanner, contains('Camera viewfinder'));
+      expect(scanner, contains('Semantics('));
+    });
+
+    test('trust result info rows combine label and value for screen readers', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      // _InfoRow must use Semantics with combined label for accessibility
+      expect(screen, contains('excludeSemantics: true'));
+    });
   });
 }
