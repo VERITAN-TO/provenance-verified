@@ -16,6 +16,7 @@ enum SubmissionStatus {
   intakeComplete,
   evidenceReview,
   moreInformationRequired,
+  additionalInfoRequested,
   determination,
   issuancePending,
   issued,
@@ -34,6 +35,7 @@ enum SubmissionStatus {
       case 'INTAKE_COMPLETE':            return SubmissionStatus.intakeComplete;
       case 'EVIDENCE_REVIEW':            return SubmissionStatus.evidenceReview;
       case 'MORE_INFORMATION_REQUIRED':  return SubmissionStatus.moreInformationRequired;
+      case 'ADDITIONAL_INFO_REQUESTED':  return SubmissionStatus.additionalInfoRequested;
       case 'DETERMINATION':              return SubmissionStatus.determination;
       case 'ISSUANCE_PENDING':           return SubmissionStatus.issuancePending;
       case 'ISSUED':                     return SubmissionStatus.issued;
@@ -54,6 +56,7 @@ enum SubmissionStatus {
       case SubmissionStatus.intakeComplete:          return 'Intake Complete';
       case SubmissionStatus.evidenceReview:          return 'Evidence Review';
       case SubmissionStatus.moreInformationRequired: return 'More Information Required';
+      case SubmissionStatus.additionalInfoRequested: return 'Additional Info Requested';
       case SubmissionStatus.determination:           return 'Determination';
       case SubmissionStatus.issuancePending:         return 'Issuance Pending';
       case SubmissionStatus.issued:                  return 'Issued';
@@ -74,6 +77,7 @@ enum SubmissionStatus {
       case SubmissionStatus.intakeComplete:          return 'INTAKE_COMPLETE';
       case SubmissionStatus.evidenceReview:          return 'EVIDENCE_REVIEW';
       case SubmissionStatus.moreInformationRequired: return 'MORE_INFORMATION_REQUIRED';
+      case SubmissionStatus.additionalInfoRequested: return 'ADDITIONAL_INFO_REQUESTED';
       case SubmissionStatus.determination:           return 'DETERMINATION';
       case SubmissionStatus.issuancePending:         return 'ISSUANCE_PENDING';
       case SubmissionStatus.issued:                  return 'ISSUED';

@@ -60,7 +60,8 @@ class SubmissionDetailScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // ── Evidence request section ─────────────────────────────────
-              if (detail.status == SubmissionStatus.moreInformationRequired &&
+              if ((detail.status == SubmissionStatus.moreInformationRequired ||
+                      detail.status == SubmissionStatus.additionalInfoRequested) &&
                   detail.evidenceRequestInstructions != null) ...[
                 _EvidenceRequestSection(
                   instructions: detail.evidenceRequestInstructions!,
@@ -163,7 +164,8 @@ class _HeaderCard extends StatelessWidget {
   static Color _statusColor(SubmissionStatus status) {
     switch (status) {
       case SubmissionStatus.issued:                  return PvColors.success;
-      case SubmissionStatus.moreInformationRequired: return PvColors.warning;
+      case SubmissionStatus.moreInformationRequired:
+      case SubmissionStatus.additionalInfoRequested: return PvColors.warning;
       case SubmissionStatus.closed:                  return PvColors.muted;
       case SubmissionStatus.inTransit:
       case SubmissionStatus.returnInTransit:         return PvColors.cyan;
@@ -541,62 +543,66 @@ class _TimelineItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Timeline connector ────────────────────────────────────────
-          SizedBox(
-            width: 28,
-            child: Column(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: PvColors.cyan,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 1,
-                      color: PvColors.border,
+    return Semantics(
+      label: '${event.eventType.replaceAll('_', ' ')}: ${event.description}',
+      excludeSemantics: true,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Timeline connector ────────────────────────────────────────
+            SizedBox(
+              width: 28,
+              child: Column(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: PvColors.cyan,
+                      shape: BoxShape.circle,
                     ),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // ── Event content ─────────────────────────────────────────────
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.eventType
-                        .replaceAll('_', ' ')
-                        .toUpperCase(),
-                    style: PvTypography.label.copyWith(color: PvColors.silver),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    event.description,
-                    style: PvTypography.body.copyWith(color: PvColors.onSurface),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDate(event.timestamp),
-                    style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-                  ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 1,
+                        color: PvColors.border,
+                      ),
+                    ),
                 ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            // ── Event content ─────────────────────────────────────────────
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.eventType
+                          .replaceAll('_', ' ')
+                          .toUpperCase(),
+                      style: PvTypography.label.copyWith(color: PvColors.silver),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      event.description,
+                      style: PvTypography.body.copyWith(color: PvColors.onSurface),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatDate(event.timestamp),
+                      style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

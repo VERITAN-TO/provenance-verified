@@ -328,5 +328,30 @@ void main() {
       expect(switchPos, greaterThan(-1), reason: 'switch (status) must be present');
       expect(guardPos, lessThan(switchPos), reason: 'guard must precede the switch');
     });
+
+    // R16 semantic regression locks — added by PV-M2-LEAD-C-NATIVE-CONTINUE-FE01562-R16
+    test('ADDITIONAL_INFO_REQUESTED is a named status value, not decoded as unknown', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // Must be declared in the enum
+      expect(model, contains('additionalInfoRequested'));
+      // Must be mapped from the wire string
+      expect(model, contains("'ADDITIONAL_INFO_REQUESTED'"));
+      // Must not fall through to unknown
+      expect(model, isNot(contains("'ADDITIONAL_INFO_REQUESTED':  return SubmissionStatus.unknown")));
+    });
+
+    test('evidence request section shows for both MORE_INFORMATION_REQUIRED and ADDITIONAL_INFO_REQUESTED', () {
+      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // Both statuses must gate the evidence-request section
+      expect(screen, contains('moreInformationRequired'));
+      expect(screen, contains('additionalInfoRequested'));
+    });
+
+    test('custody timeline items have semantics labels for screen readers', () {
+      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // _TimelineItem must wrap with Semantics for accessibility
+      expect(screen, contains('Semantics('));
+      expect(screen, contains('excludeSemantics: true'));
+    });
   });
 }
