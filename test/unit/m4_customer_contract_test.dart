@@ -188,6 +188,14 @@ void main() {
       expect(model, contains('Must not be projected as current trust authority'));
     });
 
+    test('submission detail screen does not project requestedServiceTier as trust state', () {
+      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+
+      // Must not render customer-requested service tier as a trust state
+      expect(screen, isNot(contains("'Requested Service'")));
+      expect(screen, isNot(contains('requestedServiceTier')));
+    });
+
     test('T4 determination does not grant Gold Seal or official credential', () {
       final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
       // Must explicitly state credential separation for T4

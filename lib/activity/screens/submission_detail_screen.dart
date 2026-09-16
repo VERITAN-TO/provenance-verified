@@ -154,8 +154,6 @@ class _HeaderCard extends StatelessWidget {
           const SizedBox(height: 12),
           _DetailRow('Submission ID', detail.submissionId, mono: true),
           const SizedBox(height: 6),
-          _DetailRow('Requested Service', detail.requestedServiceTier),
-          const SizedBox(height: 6),
           _DetailRow('Last Updated', _formatDate(detail.updatedAt)),
         ],
       ),
