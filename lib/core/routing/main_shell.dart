@@ -53,7 +53,7 @@ class _PvNavigationBar extends StatelessWidget {
       data: Theme.of(context).copyWith(
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: PvColors.surface,
-          indicatorColor: PvColors.cyan.withOpacity(0.18),
+          indicatorColor: PvColors.cyan.withAlpha(46),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const IconThemeData(color: PvColors.cyan, size: 24);

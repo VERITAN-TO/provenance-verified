@@ -1288,8 +1288,7 @@ class _Step5Settlement extends StatelessWidget {
 class _ReviewRow extends StatelessWidget {
   final String label;
   final String value;
-  final TextStyle? valueStyle;
-  const _ReviewRow(this.label, this.value, {this.valueStyle});
+  const _ReviewRow(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
@@ -1306,7 +1305,7 @@ class _ReviewRow extends StatelessWidget {
             Flexible(
               child: Text(
                 value,
-                style: valueStyle ?? PvTypography.body.copyWith(color: PvColors.onBackground),
+                style: PvTypography.body.copyWith(color: PvColors.onBackground),
                 textAlign: TextAlign.right,
               ),
             ),

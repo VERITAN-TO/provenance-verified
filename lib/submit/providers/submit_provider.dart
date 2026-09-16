@@ -25,8 +25,8 @@ class SubmissionApiClient {
   SubmissionApiClient({http.Client? client, String? baseUrl, required String? Function() getToken, required Future<String?> Function() refreshToken})
       : _client = client ?? http.Client(),
         _baseUrl = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _getToken = getToken,
-        _refreshToken = refreshToken;
+        _getToken = getToken, // ignore: prefer_initializing_formals
+        _refreshToken = refreshToken; // ignore: prefer_initializing_formals
 
   Future<Map<String, String>> _authHeaders() async {
     final token = _getToken();

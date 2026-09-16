@@ -33,8 +33,8 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
     // Stale-state law: REVOKED/SUSPENDED records block reliance entirely.
     // LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY — always use fresh server data.
     final lifecycleStatus = trustAsync.valueOrNull?.lifecycle?.status?.toUpperCase();
-    const _blockedLifecycles = {'REVOKED', 'SUSPENDED'};
-    final lifecycleBlocked = _blockedLifecycles.contains(lifecycleStatus);
+    const blockedLifecycles = {'REVOKED', 'SUSPENDED'};
+    final lifecycleBlocked = blockedLifecycles.contains(lifecycleStatus);
     final lifecycleWarning = lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED';
 
     return Scaffold(
