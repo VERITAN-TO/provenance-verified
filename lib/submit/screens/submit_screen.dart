@@ -41,7 +41,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       if (draft == null) {
         ref.read(submitProvider.notifier).beginNew();
       } else if (draft.step >= 4 && _quote == null) {
-        _refetchQuote();
+        _reloadDetermination();
       }
     });
   }
@@ -130,7 +130,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     setState(() => _error = null);
   }
 
-  Future<void> _refetchQuote() async {
+  Future<void> _reloadDetermination() async {
     _setLoading(true);
     try {
       final q = await ref.read(submitProvider.notifier).fetchQuote();
@@ -196,7 +196,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       case 1: return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
       case 2: return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
       case 3: return _Step3Declarations(draft: draft, onNext: _next, loading: _loading);
-      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _refetchQuote);
+      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _reloadDetermination);
       case 5: return _Step5Settlement(quote: _quote, onNext: _next, loading: _loading);
       case 6: return _Step6Confirmation(draft: draft);
       default: return const SizedBox.shrink();
