@@ -202,5 +202,47 @@ void main() {
       expect(screen, contains('signing, issuance, or registry activation'));
       expect(screen, isNot(contains('T4 — PV GOLD SEAL')));
     });
+
+    // R13 semantic regression locks — added by PV-M2-LEAD-C-R13-NATIVE-OPERATIONAL
+    test('scanner navigates to canonical /verify/manual route, not bare /manual', () {
+      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
+      expect(scanner, contains("'/verify/manual'"));
+      expect(scanner, isNot(contains("'/manual'")));
+    });
+
+    test('trust result screen links to /my-pv/receipts, not bare /receipts', () {
+      final trust = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      expect(trust, contains("'/my-pv/receipts'"));
+      expect(trust, isNot(contains("'/receipts'")));
+    });
+
+    test('receipt list screen links to /my-pv/receipts/:id, not bare /receipts/:id', () {
+      final list = File('lib/reliance/screens/receipt_list_screen.dart').readAsStringSync();
+      expect(list, contains("'/my-pv/receipts/"));
+      expect(list, isNot(contains("'/receipts/")));
+    });
+
+    test('asset detail screen links to /my-pv/receipts/:id, not bare /receipts/:id', () {
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      expect(detail, contains("'/my-pv/receipts/"));
+      expect(detail, isNot(contains("'/receipts/")));
+    });
+
+    test('my PV screen tier labels do not use Gold or stale names', () {
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      // Must not use Gold or stale FINGERPRINT/DECLARED/VERIFIED abbreviations for T4
+      expect(screen, isNot(contains("'T4 GOLD'")));
+      expect(screen, isNot(contains("'T4 GOLD STANDARD'")));
+      // Must use canonical governed authority label for T4
+      expect(screen, contains('T4 GOVERNED AUTHORITY'));
+    });
+
+    test('asset detail tier badge does not assert Gold Standard for T4', () {
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // T4 GOLD STANDARD implies credential not earned by determination alone
+      expect(detail, isNot(contains('T4 GOLD STANDARD')));
+      expect(detail, isNot(contains('T4 GOLD')));
+      expect(detail, contains('T4 — GOVERNED AUTHORITY'));
+    });
   });
 }

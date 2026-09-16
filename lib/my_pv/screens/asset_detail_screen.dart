@@ -175,7 +175,7 @@ class _StaledReceiptsBanner extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'STALE RECEIPTS — One or more reliance receipts for this asset are stale and should be requerierd.',
+                'STALE RECEIPTS — One or more reliance receipts for this asset are stale and should be requeried.',
                 style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
               ),
             ),
@@ -209,10 +209,10 @@ class _TierBadge extends StatelessWidget {
     if (!asset.eligible) return 'NOT QUALIFIED';
     if (tier == null) return 'NOT QUALIFIED';
     switch (tier) {
-      case 1: return 'T1 ASSET FINGERPRINT';
-      case 2: return 'T2 DECLARED PROVENANCE';
-      case 3: return 'T3 EVIDENCE-VERIFIED';
-      case 4: return 'T4 GOLD STANDARD';
+      case 1: return 'T1 — ACCOUNTABLE EXISTENCE';
+      case 2: return 'T2 — ACCOUNTABLE DECLARATION';
+      case 3: return 'T3 — EVIDENCE-ESTABLISHED TRUST';
+      case 4: return 'T4 — GOVERNED AUTHORITY';
       default: return 'TIER $tier';
     }
   }
@@ -547,7 +547,7 @@ class _ReceiptRow extends StatelessWidget {
       child: ListTile(
         dense: true,
         onTap: receiptId.isNotEmpty
-            ? () => context.push('/receipts/$receiptId')
+            ? () => context.push('/my-pv/receipts/$receiptId')
             : null,
         title: Text(
           purpose.isNotEmpty ? purpose : 'Receipt',

@@ -138,10 +138,10 @@ class _AssetCard extends StatelessWidget {
   String _tierLabel(int? tier) {
     if (tier == null) return 'NOT QUALIFIED';
     switch (tier) {
-      case 1: return 'T1 FINGERPRINT';
-      case 2: return 'T2 DECLARED';
-      case 3: return 'T3 VERIFIED';
-      case 4: return 'T4 GOLD';
+      case 1: return 'T1 EXISTENCE';
+      case 2: return 'T2 DECLARATION';
+      case 3: return 'T3 EVIDENCE-ESTABLISHED';
+      case 4: return 'T4 GOVERNED AUTHORITY';
       default: return 'TIER $tier';
     }
   }

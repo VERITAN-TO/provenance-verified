@@ -28,7 +28,7 @@ class TrustResultScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.receipt_long_outlined),
             tooltip: 'Reliance receipts',
-            onPressed: () => context.push('/receipts'),
+            onPressed: () => context.push('/my-pv/receipts'),
           ),
         ],
       ),

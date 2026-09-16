@@ -56,7 +56,7 @@ class _ReceiptTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _validityColor(receipt.validityState);
     return ListTile(
-      onTap: () => context.push('/receipts/${receipt.receiptId}'),
+      onTap: () => context.push('/my-pv/receipts/${receipt.receiptId}'),
       title: Text(receipt.publicId, style: PvTypography.body),
       subtitle: Text(
         receipt.purpose.displayLabel,

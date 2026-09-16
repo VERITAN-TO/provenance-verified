@@ -55,7 +55,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           IconButton(
             icon: const Icon(Icons.keyboard_alt_outlined),
             tooltip: 'Enter ID manually',
-            onPressed: () => context.push('/manual'),
+            onPressed: () => context.push('/verify/manual'),
           ),
           IconButton(
             icon: const Icon(Icons.history),
