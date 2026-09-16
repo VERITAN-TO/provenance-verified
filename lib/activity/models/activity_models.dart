@@ -180,8 +180,10 @@ class DeterminationResult {
     return DeterminationResult(
       tier:          j['determined_tier'] as String? ?? j['tier'] as String? ?? '',
       serviceCode:   j['service_code'] as String?,
-      whyThisTier:   j['why_this_tier'] as String?,
-      whyNotNextTier: j['why_not_next_tier'] as String?,
+      whyThisTier:   j['why_this_tier'] is List
+          ? (j['why_this_tier'] as List).join(' ')
+          : j['why_this_tier']?.toString(),
+      whyNotNextTier: (j['why_not_higher'] ?? j['why_not_next_tier'])?.toString(),
       limitations: (j['limitations'] as List?)
               ?.map((e) => e.toString())
               .toList() ??

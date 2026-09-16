@@ -269,7 +269,7 @@ class SubmissionQuote {
       determinationId: data['determination_id']?.toString(),
       determinationDigest: data['determination_digest']?.toString(),
       whyThisTier: data['why_this_tier']?.toString(),
-      whyNotNextTier: data['why_not_next_tier']?.toString(),
+      whyNotNextTier: data['why_not_higher']?.toString() ?? data['why_not_next_tier']?.toString(),
       limitations: (data['limitations'] as List?) ?? const [],
     );
   }

@@ -287,5 +287,30 @@ void main() {
       // _InfoRow must use Semantics with combined label for accessibility
       expect(screen, contains('excludeSemantics: true'));
     });
+
+    // R14 semantic regression locks — added by PV-M2-LEAD-C-NATIVE-R14-CONTRACT-REBIND-RELEASE-CUSTODY
+    test('quote parser reads why_not_higher with fallback to why_not_next_tier', () {
+      // PR #47 backend sends why_not_higher; native must read that key first.
+      final model = File('lib/submit/models/submit_models.dart').readAsStringSync();
+      expect(model, contains("data['why_not_higher']"));
+      expect(model, contains("data['why_not_next_tier']"));
+    });
+
+    test('determination result parser reads why_not_higher and handles array why_this_tier', () {
+      // PR #47 server sends why_not_higher (not why_not_next_tier) and why_this_tier as array.
+      // DeterminationResult must not cast why_this_tier directly as String? — that throws on arrays.
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(model, contains("j['why_not_higher']"));
+      expect(model, contains("j['why_not_next_tier']"));
+      // Array guard must be present
+      expect(model, contains('is List'));
+      // Unsafe bare cast must be absent
+      expect(model, isNot(contains("j['why_this_tier'] as String?")));
+    });
+
+    test('determination result parser does not cast why_this_tier directly as String', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(model, isNot(contains("as String?\n      whyNotNextTier: j['why_not_next_tier']")));
+    });
   });
 }
