@@ -20,7 +20,7 @@ Future<String> _validToken(Ref ref) async {
   if (session == null) throw Exception('not_authenticated');
   if (session.isExpired) {
     await ref.read(authProvider.notifier).refresh();
-    session = ref.read(currentUserProvider);
+    session = ref.read<CustomerSession?>(currentUserProvider);
   }
   if (session == null || session.accessToken.isEmpty || session.isExpired) {
     throw Exception('not_authenticated');
