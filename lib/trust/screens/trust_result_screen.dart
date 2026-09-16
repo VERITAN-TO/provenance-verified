@@ -172,6 +172,11 @@ class _LifecycleBanner extends StatelessWidget {
     final status = record.lifecycle?.status?.toUpperCase();
     if (status == null || status.isEmpty) return const SizedBox.shrink();
 
+    const actionableStates = {
+      'SUSPENDED', 'REVOKED', 'SUPERSEDED', 'EXPIRED', 'CORRECTED', 'REINSTATED',
+    };
+    if (!actionableStates.contains(status)) return const SizedBox.shrink();
+
     final (color, icon, message) = switch (status) {
       'SUSPENDED' => (PvColors.error, Icons.block_outlined,
           'SUSPENDED — Do not rely on this record.'),

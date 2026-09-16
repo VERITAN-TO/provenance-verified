@@ -312,5 +312,21 @@ void main() {
       final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
       expect(model, isNot(contains("as String?\n      whyNotNextTier: j['why_not_next_tier']")));
     });
+
+    // R15 semantic regression locks — added by PV-M2-LEAD-C-NATIVE-CONTINUE-18DB1C2-R15
+    test('lifecycle banner suppresses non-actionable states such as UNKNOWN and ACTIVE', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      // actionableStates guard must be present — prevents "Status: UNKNOWN" banner on normal records
+      expect(screen, contains('actionableStates'));
+      expect(screen, contains("'SUSPENDED'"));
+      expect(screen, contains("'REVOKED'"));
+      expect(screen, contains("'SUPERSEDED'"));
+      // Guard must precede the switch
+      final guardPos  = screen.indexOf('actionableStates.contains(status)');
+      final switchPos = screen.indexOf('switch (status)');
+      expect(guardPos, greaterThan(-1), reason: 'actionableStates guard must be present');
+      expect(switchPos, greaterThan(-1), reason: 'switch (status) must be present');
+      expect(guardPos, lessThan(switchPos), reason: 'guard must precede the switch');
+    });
   });
 }
