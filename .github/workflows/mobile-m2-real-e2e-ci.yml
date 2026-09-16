@@ -3,12 +3,22 @@ name: M2 Real E2E CI
 on:
   workflow_dispatch:
   push:
-    branches: ['mobile/m2-real-e2e']
+    branches: ['mobile/m2-real-e2e', 'successor/m4-determination-first-r2']
 
 env:
   FLUTTER_VERSION: '3.47.2'
   FLUTTER_CHANNEL: 'stable'
   PV_API_BASE_URL: 'https://provenance-verified-private.vercel.app'
+  # EXPECTED_M2_UNIT_COUNT: fail-closed gate — must match actual executed test count.
+  # Last known executed count: 164 (prior candidate state, pre-R24/R25 additions).
+  # Static analysis at 07029e4 yields 232 tests across 6 files in test/unit/:
+  #   api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
+  #   m4_customer_contract_test.dart: 73 (includes C25-1/2/3 added at R24),
+  #   machine_trust_response_test.dart: 38, qr_handler_test.dart: 21,
+  #   trust_models_test.dart: 37.
+  # DO NOT update this value by hand. Update only after an executed GitHub Actions
+  # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
+  # Until then this gate is intentionally fail-closed on the current candidate.
   EXPECTED_M2_UNIT_COUNT: '164'
 
 jobs:
@@ -93,7 +103,7 @@ jobs:
             { echo "::error::flutter analyze found issues"; exit 1; }
           echo "FLUTTER_ANALYZE_LINUX=PASS"
 
-      - name: flutter test — unit tests (assert exactly 172)
+      - name: flutter test — unit tests (fail-closed gate; see EXPECTED_M2_UNIT_COUNT)
         id: flutter_test
         run: |
           flutter test test/unit/ --reporter expanded 2>&1 | tee flutter-test-linux.txt
@@ -258,7 +268,7 @@ jobs:
             { echo "::error::flutter analyze found issues"; exit 1; }
           echo "FLUTTER_ANALYZE_MACOS=PASS"
 
-      - name: flutter test — unit tests (assert exactly 172)
+      - name: flutter test — unit tests (fail-closed gate; see EXPECTED_M2_UNIT_COUNT)
         id: flutter_test
         run: |
           flutter test test/unit/ --reporter expanded 2>&1 | tee flutter-test-macos.txt
