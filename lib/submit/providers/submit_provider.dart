@@ -237,8 +237,6 @@ class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
     return _payment.bindSettlement(submissionId: current.submissionId!, orderId: orderId);
   }
 
-  @Deprecated('Use settleDeterminedResult after submitForEvaluation and canonical determination.')
-  Future<Map<String, dynamic>> checkout({bool testMode = false}) => settleDeterminedResult();
 }
 
 final submitProvider = StateNotifierProvider<SubmitNotifier, SubmissionDraft?>((ref) {

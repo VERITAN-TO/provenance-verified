@@ -46,20 +46,6 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     });
   }
 
-  Future<void> _refetchQuote() async {
-    _setLoading(true);
-    try {
-      final q = await ref.read(submitProvider.notifier).fetchQuote();
-      if (mounted) setState(() => _quote = q);
-    } on SubmitApiException catch (e) {
-      if (mounted) _setError('Could not reload determination (${e.statusCode}): ${e.message}');
-    } catch (_) {
-      if (mounted) _setError('Could not reload determination result. Please retry.');
-    } finally {
-      if (mounted) _setLoading(false);
-    }
-  }
-
   // ── Navigation helpers ────────────────────────────────────────────────────
 
   void _setError(String? msg) => setState(() => _error = msg);
@@ -142,6 +128,20 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     if (draft == null || draft.step == 0) return;
     ref.read(submitProvider.notifier).goToStep(draft.step - 1);
     setState(() => _error = null);
+  }
+
+  Future<void> _refetchQuote() async {
+    _setLoading(true);
+    try {
+      final q = await ref.read(submitProvider.notifier).fetchQuote();
+      if (mounted) setState(() => _quote = q);
+    } on SubmitApiException catch (e) {
+      if (mounted) _setError('Could not reload determination (${e.statusCode}): ${e.message}');
+    } catch (_) {
+      if (mounted) _setError('Could not reload determination result. Please retry.');
+    } finally {
+      if (mounted) _setLoading(false);
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -329,6 +329,7 @@ class _Step0TrustLadder extends StatelessWidget {
                     'deterministic determination. Limitations are surfaced.',
               ),
               const SizedBox(height: 12),
+              // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE
               const _TrustTierRow(
                 label: 'T4 — Highest Governed Provenance Authority',
                 description: 'Multi-source evidence convergence with physical '
@@ -934,7 +935,7 @@ class _Step3Declarations extends ConsumerWidget {
                 onChanged: notifier.setDeclaredTierMayDiffer,
                 // Core constraint: client cannot over-claim tier
                 text:      'I understand the determined trust tier may differ from my '
-                           'requested service tier. The final determination is made '
+                           'submitted information. The final determination is made '
                            'by evidence and PROVENANCE VERIFIED™ policy.',
               ),
               const SizedBox(height: 12),
