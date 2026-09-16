@@ -196,7 +196,7 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       case 1: return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
       case 2: return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
       case 3: return _Step3Declarations(draft: draft, onNext: _next, loading: _loading);
-      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading);
+      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _refetchQuote);
       case 5: return _Step5Settlement(quote: _quote, onNext: _next, loading: _loading);
       case 6: return _Step6Confirmation(draft: draft);
       default: return const SizedBox.shrink();
@@ -366,20 +366,23 @@ class _TrustTierRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: PvColors.surface,
-        border: Border.all(color: PvColors.border),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: PvTypography.label.copyWith(color: PvColors.cyan)),
-          const SizedBox(height: 4),
-          Text(description, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-        ],
+    return Semantics(
+      label: '$label. $description',
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          border: Border.all(color: PvColors.border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: PvTypography.label.copyWith(color: PvColors.cyan)),
+            const SizedBox(height: 4),
+            Text(description, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+          ],
+        ),
       ),
     );
   }
@@ -691,28 +694,59 @@ class _Step2Evidence extends ConsumerWidget {
               const SizedBox(height: 6),
 
               // Trust-neutrality notice — evidence review is server-authoritative
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: PvColors.surface,
-                  border: Border.all(color: PvColors.border),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Uploaded documents are reviewed by our team. '
-                        'Uploading a document does not guarantee any specific trust tier. '
-                        'Trust determination is made exclusively by PROVENANCE VERIFIED™ '
-                        'after review.',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              Semantics(
+                label: 'Evidence upload policy notice.',
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PvColors.surface,
+                    border: Border.all(color: PvColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Uploaded documents are reviewed by our team. '
+                          'Uploading a document does not guarantee any specific trust tier. '
+                          'Trust determination is made exclusively by PROVENANCE VERIFIED™ '
+                          'after review.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // B delta: SHA-256 identity binding + CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE
+              Semantics(
+                label: 'SHA-256 binding and evidence credit notice.',
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PvColors.surface,
+                    border: Border.all(color: PvColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.fingerprint, color: PvColors.silver, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Documents are SHA-256 fingerprinted at upload. '
+                          'Upload does not automatically credit any trust tier — '
+                          'PROVENANCE VERIFIED™ governs evidence credit independently.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -930,28 +964,33 @@ class _DeclarationCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Checkbox(
-            value: value,
-            onChanged: (v) => onChanged(v ?? false),
-            activeColor: PvColors.cyan,
-            side: const BorderSide(color: PvColors.border),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                text,
-                style: PvTypography.body.copyWith(color: PvColors.onSurface),
+    return Semantics(
+      label: text,
+      checked: value,
+      button: true,
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: PvColors.cyan,
+              side: const BorderSide(color: PvColors.border),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  text,
+                  style: PvTypography.body.copyWith(color: PvColors.onSurface),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -965,20 +1004,41 @@ class _Step4DeterminationPricing extends StatelessWidget {
   final SubmissionQuote? quote;
   final Future<void> Function() onNext;
   final bool loading;
+  final VoidCallback? onRetry;
 
   const _Step4DeterminationPricing({
     required this.quote,
     required this.onNext,
     required this.loading,
+    this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
     if (quote == null) {
-      return const Center(
-        child: Text(
-          'Determination result not available.',
-          style: TextStyle(color: PvColors.muted),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.hourglass_empty, color: PvColors.muted, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Determination result not available.',
+                style: TextStyle(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }
@@ -1000,24 +1060,56 @@ class _Step4DeterminationPricing extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Tier badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: tierColor.withAlpha(30),
-                  border: Border.all(color: tierColor),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.verified_outlined, color: tierColor, size: 20),
-                    const SizedBox(width: 10),
-                    Text(
-                      q.tier.isEmpty ? 'DETERMINED' : q.tier,
-                      style: PvTypography.label.copyWith(color: tierColor),
-                    ),
-                  ],
+              Semantics(
+                label: 'Determined tier: ${q.tier.isEmpty ? 'DETERMINED' : q.tier}',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: tierColor.withAlpha(30),
+                    border: Border.all(color: tierColor),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.verified_outlined, color: tierColor, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        q.tier.isEmpty ? 'DETERMINED' : q.tier,
+                        style: PvTypography.label.copyWith(color: tierColor),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              if (q.tier == 'T4') ...[
+                const SizedBox(height: 10),
+                Semantics(
+                  label: 'T4 authority notice: T4 determination does not issue a Gold Seal or credential.',
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: PvColors.surface,
+                      border: Border.all(color: PvColors.border),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'T4 determination does not itself issue a Gold Seal, '
+                            'signing authority, credential, or registry activation. '
+                            'Gold Seal requires a separate authority chain.',
+                            style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
 
               if (q.whyThisTier != null && q.whyThisTier!.isNotEmpty) ...[
@@ -1201,21 +1293,25 @@ class _ReviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-          const SizedBox(width: 16),
-          Flexible(
-            child: Text(
-              value,
-              style: valueStyle ?? PvTypography.body.copyWith(color: PvColors.onBackground),
-              textAlign: TextAlign.right,
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            const SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                value,
+                style: valueStyle ?? PvTypography.body.copyWith(color: PvColors.onBackground),
+                textAlign: TextAlign.right,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1234,7 +1330,10 @@ class _Step6Confirmation extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const Icon(Icons.check_circle, color: PvColors.success, size: 64),
+        const Semantics(
+          label: 'Submission confirmed successfully',
+          child: Icon(Icons.check_circle, color: PvColors.success, size: 64),
+        ),
         const SizedBox(height: 20),
 
         Text(
@@ -1317,7 +1416,7 @@ class _Step6Confirmation extends ConsumerWidget {
           child: OutlinedButton.icon(
             onPressed: () {
               ref.read(submitProvider.notifier).reset();
-              context.go('/home');
+              context.go('/my-pv');
             },
             icon: const Icon(Icons.home_outlined),
             label: const Text('Back to Home'),

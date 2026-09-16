@@ -779,5 +779,44 @@ void main() {
       // (a catch-all swallow would allow fabricated receipts on server 5xx)
       expect(provider, isNot(contains('} catch (_) {\n        // Fallback to local receipt on server failure')));
     });
+
+    // ── R23 VISUAL/INTERACTION FINISH LOCKS ──────────────────────────────────
+    // B delta: SHA-256 identity binding (4e676e1, 88d8c19) + auto-claim-credit
+    // law (1df35fa) require native Step 2 to surface evidence credit policy.
+    // CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE  CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE
+
+    test('C24-1: Step 2 evidence upload surfaces SHA-256 binding and auto-claim-credit prohibition', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // SHA-256 binding notice must be present (B delta 4e676e1)
+      expect(submit, contains('SHA-256'));
+      // Auto-claim-credit prohibition must be visible to users (1df35fa)
+      // "governs evidence credit independently" covers CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE
+      expect(submit, contains('governs evidence credit independently'));
+    });
+
+    test('C24-2: Step 6 confirmation back button routes to /my-pv not /home', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // /home is not a registered route — must use /my-pv
+      expect(submit, isNot(contains("context.go('/home')")));
+      // Correct route: /my-pv
+      expect(submit, contains("context.go('/my-pv')"));
+    });
+
+    test('C24-3: Step 4 determination result has retry path when quote is unavailable', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Retry callback parameter must be present on Step 4 widget
+      expect(submit, contains('onRetry'));
+      // Retry must be passed from parent state (_refetchQuote)
+      expect(submit, contains('_refetchQuote'));
+    });
+
+    test('C24-4: Step 4 surfaces T4 Gold Seal separation notice for T4 tier', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // T4 case in Step 4 must reference Gold Seal separation
+      // GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE; GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY_CHAIN=TRUE
+      expect(submit, contains("q.tier == 'T4'"));
+      // Must say "separate authority chain" for T4 case
+      expect(submit, contains('separate authority chain'));
+    });
   });
 }

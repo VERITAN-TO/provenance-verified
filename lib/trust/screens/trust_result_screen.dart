@@ -92,33 +92,36 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        OutlinedButton.icon(
-          onPressed: () => context.push('/verify/${record.publicId}/why-this-tier'),
-          icon: const Icon(Icons.info_outline, size: 18),
-          label: const Text('Why this tier?'),
-        ),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/verify/${record.publicId}/why-not-higher'),
-          icon: const Icon(Icons.arrow_upward, size: 18),
-          label: const Text('Why not higher?'),
-        ),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/verify/${record.publicId}/authority'),
-          icon: const Icon(Icons.account_balance_outlined, size: 18),
-          label: const Text('Authority'),
-        ),
-        if (record.isQualified)
-          FilledButton.icon(
-            onPressed: () => context.push('/verify/${record.publicId}/actionability'),
-            icon: const Icon(Icons.gavel, size: 18),
-            label: const Text('Assess Reliance'),
-            style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),
+    return Semantics(
+      label: 'Record actions',
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () => context.push('/verify/${record.publicId}/why-this-tier'),
+            icon: const Icon(Icons.info_outline, size: 18),
+            label: const Text('Why this tier?'),
           ),
-      ],
+          OutlinedButton.icon(
+            onPressed: () => context.push('/verify/${record.publicId}/why-not-higher'),
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            label: const Text('Why not higher?'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/verify/${record.publicId}/authority'),
+            icon: const Icon(Icons.account_balance_outlined, size: 18),
+            label: const Text('Authority'),
+          ),
+          if (record.isQualified)
+            FilledButton.icon(
+              onPressed: () => context.push('/verify/${record.publicId}/actionability'),
+              icon: const Icon(Icons.gavel, size: 18),
+              label: const Text('Assess Reliance'),
+              style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),
+            ),
+        ],
+      ),
     );
   }
 }
