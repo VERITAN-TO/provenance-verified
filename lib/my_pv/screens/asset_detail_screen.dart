@@ -4,10 +4,12 @@
 // Trust display follows the same conservative pattern as trust_result_screen.dart.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/my_pv_models.dart';
 import '../providers/my_pv_provider.dart';
+import '../../core/config/environment.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
@@ -22,18 +24,6 @@ class AssetDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asset Detail'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Share',
-            onPressed: () {
-              // Share the public ID — no private data surfaced via share.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share coming soon')),
-              );
-            },
-          ),
-        ],
       ),
       body: detailAsync.when(
         loading: () => const Center(
@@ -615,12 +605,20 @@ class _ActionButtons extends StatelessWidget {
             side: const BorderSide(color: PvColors.border),
           ),
         ),
+        // Share: copies public verify URL to clipboard.
+        // Only the public ID and server base URL are shared — no private data.
         OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Share coming soon')),
-            );
-          },
+          onPressed: asset.publicId.isEmpty
+              ? null
+              : () async {
+                  final url = '${Env.pvApiBaseUrl}/verify/${asset.publicId}';
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Copied to clipboard')),
+                    );
+                  }
+                },
           icon: const Icon(Icons.share_outlined, size: 18),
           label: const Text('Share'),
           style: OutlinedButton.styleFrom(

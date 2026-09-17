@@ -1520,5 +1520,29 @@ void main() {
       expect(pubspec, isNot(contains('file_picker: ^8.0')));
       expect(pubspec, isNot(contains('file_picker: ^7.')));
     });
+
+    // ── R47: NATIVE SHARE — CLIPBOARD VERIFY URL ─────────────────────────────
+    // asset_detail_screen.dart Share button copies the public verify URL to
+    // the system clipboard. No SnackBar stub. No private data in the URL.
+    // No sharing/export authority for local snapshots — public record only.
+
+    test('C47-1: Share button copies public verify URL to clipboard — no stub; no private data', () {
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // Must import flutter/services for Clipboard
+      expect(detail, contains("import 'package:flutter/services.dart'"));
+      // Must import environment for base URL construction
+      expect(detail, contains("import '../../core/config/environment.dart'"));
+      // Clipboard.setData must be called with the verify URL
+      expect(detail, contains('Clipboard.setData(ClipboardData(text: url))'));
+      // URL must include Env.pvApiBaseUrl and asset.publicId
+      expect(detail, contains('Env.pvApiBaseUrl'));
+      expect(detail, contains('asset.publicId'));
+      // Stub removed — 'Share coming soon' must not appear
+      expect(detail, isNot(contains("'Share coming soon'")));
+      // Confirmation to user
+      expect(detail, contains("'Copied to clipboard'"));
+      // Button disabled when publicId is empty (guard against empty-ID assets)
+      expect(detail, contains('asset.publicId.isEmpty'));
+    });
   });
 }

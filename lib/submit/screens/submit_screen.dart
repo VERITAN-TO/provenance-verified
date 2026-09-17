@@ -566,7 +566,7 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Photo section (file-based; image_picker not in pubspec — placeholder UI)
+// Photo section — image_picker wired; uses ImagePicker.pickImage(gallery)
 // ────────────────────────────────────────────────────────────────────────────
 
 class _PhotoSection extends ConsumerWidget {

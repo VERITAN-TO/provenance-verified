@@ -42,18 +42,20 @@ env:
   # R46 adds 5 tests: C46-1..C46-5 (native photo+evidence picker wiring regression locks;
   #   image_picker/file_picker wired into submit_screen.dart; file_picker >=8.1.4 version gate).
   # Anticipated count after R46: 287 + 5 = 292. PENDING CI CONFIRMATION.
+  # R47 adds 1 test: C47-1 (Share button copies public verify URL to clipboard — stub removed).
+  # Anticipated count after R47: 292 + 1 = 293. PENDING CI CONFIRMATION.
   # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
   #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5) +5 new R29 tests (C29-1..5)
   #     +5 new R30 tests (C30-1..5) +5 new R31 tests (C31-1..5) +5 new R32 tests (C32-1..5)
   #     +4 new R33 tests (C33-1..4) +2 new R34 tests (C34-1..2) +1 new R35 test (C35-1)
   #     +6 new R42 tests (C42-1..C42-6) +5 new R44 tests (C44-1..C44-5)
   #     +7 new R45 tests (C45-proof-1..C45-proof-2 + C45-1..C45-5)
-  #     +5 new R46 tests (C46-1..C46-5),
+  #     +5 new R46 tests (C46-1..C46-5) +1 new R47 test (C47-1),
   #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
   #   trust_models_test.dart: 37.
   # DO NOT update this value by hand. Update only after an executed GitHub Actions
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
-  EXPECTED_M2_UNIT_COUNT: '292'
+  EXPECTED_M2_UNIT_COUNT: '293'
 
 jobs:
   linux-android:
