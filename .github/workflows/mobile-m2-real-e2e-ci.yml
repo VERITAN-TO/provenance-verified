@@ -73,6 +73,7 @@ env:
   # Confirmed executed count: 316 — from CI run 35285581356 / artifact 10523134227 at commit d3a5263
   #   (C51-2 harness repair only; no product change; C51-2 count gate was sole failure at 322).
   # M2-50-07/08 (commit cb51b11) adds 6 C52/C53 tests (C52-1, C52-2, C53-1..C53-4).
-  # Projected count: 316 + 6 = 322. Awaiting CI execution on cb51b11 to confirm.
-  # DO NOT change EXPECTED_M2_UNIT_COUNT from projection until executed all-pass result is in hand.
+  # Confirmed executed count: 322 — from CI run 35286047761 on commit cb51b11 — Linux PASS, macOS PASS; all 322 pass.
+  #   android_aab_sha256: dc8e0a2675beb93d89334cee6b7bef2c2097f38e496276ba528834ff3ef6749e (UNSIGNED_QUALIFICATION)
+  #   ios_archive_sha256: 250e362001928fc0072d9103d89c2a3a0dac22cf5f899a150e9d0613d7786b07 (no-codesign)
   EXPECTED_M2_UNIT_COUNT: '322'
