@@ -417,11 +417,13 @@ jobs:
           echo "M2_INT_GATE=PASS"
 
       - name: Upload integration test output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-test-output-integration
           path: flutter-test-integration.txt
           retention-days: 30
+          if-no-files-found: warn
 
   evidence:
     name: 'Evidence Assembly'
