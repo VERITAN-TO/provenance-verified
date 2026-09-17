@@ -1385,8 +1385,12 @@ void main() {
 
       // Consumer teardown — autoDispose: state IS disposed
       sub1.close();
-      // Riverpod 2 schedules autoDispose disposal via microtask; yield to let it run.
-      await Future.value();
+      // Riverpod 2 autoDispose is microtask-scheduled (multiple levels: didRemoveListener →
+      // scheduleMicrotask → _checkShouldDispose → dispose). Future.delayed(Duration.zero)
+      // yields to the event loop only after ALL pending microtasks have drained, ensuring
+      // the full disposal chain — including any .future sub-provider cleanup — completes
+      // before we resume. A single Future.value() only drains one microtask level.
+      await Future<void>.delayed(Duration.zero);
       // Prove disposal actually occurred via onDispose callback — not merely inferred from timing
       expect(disposeCount, 1, reason: 'onDispose ran — provider was actually disposed after all listeners removed');
 
