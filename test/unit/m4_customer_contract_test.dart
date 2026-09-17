@@ -730,7 +730,7 @@ void main() {
       expect(provider, contains('CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE'));
     });
 
-    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; settlement seam wired in R29', () {
+    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; R32: payment-gated Public Verify removed', () {
       final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
       // publicId field must be decoded from server response
       expect(models, contains("json['public_id']"));
@@ -746,14 +746,18 @@ void main() {
       expect(models, contains("json.containsKey('settlement')"));
       // Settlement authority seam wired in detail screen
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
-      // publicId reference must exist in detail screen (model decode retained)
-      expect(detail, contains('publicId'));
-      // _ProvenanceRecordAction widget class must be present and wired
-      expect(detail, contains('_ProvenanceRecordAction'));
-      // publicId-alone gate must be absent (settlement.isSettled is the authority)
+      // publicId reference must exist in model decode (retained)
+      expect(models, contains('publicId'));
+      // R32: _ProvenanceRecordAction removed — payment-gated Public Verify is dead code
+      expect(detail, isNot(contains('class _ProvenanceRecordAction')));
+      expect(detail, contains('_ProvenanceRecordAction removed in R32'));
+      // publicId-alone gate must be absent (never a registry authority)
       expect(detail, isNot(contains('if (detail.publicId != null)')));
-      // R29: settlement.isSettled is the authority gate for the public record link
-      expect(detail, contains('isSettled'));
+      // R32: isSettled is NOT used as a Verify gate — MONEY_CONTROLS_TRUST = FALSE
+      expect(detail, isNot(contains('settlementData!.isSettled')));
+      // R32: CROSS_LANE_HANDOFF_REQUIRED annotation present
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // hasSettlementSeam still present (for settlement CTA gate)
       expect(detail, contains('hasSettlementSeam'));
       // Must have Semantics for screen reader (custody timeline)
       expect(detail, contains('Semantics'));
@@ -873,26 +877,32 @@ void main() {
     // ambiguous. Both actions suppressed until explicit server seam is added.
     // CUSTOMER_SELECTS_TIER=FALSE  MONEY_CONTROLS_TRUST=FALSE
 
-    test('C28-1: publicId alone must not unlock a public-reliance Verify action — R29 settlement gate required', () {
+    test('C28-1: publicId alone must not unlock a public-reliance Verify action — R32: payment gate removed, CROSS_LANE_HANDOFF_REQUIRED', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
       // publicId-alone gate must be absent (not a registry authority by itself)
       expect(detail, isNot(contains('if (detail.publicId != null)')));
-      // R29: settlement.isSettled is the gate for the record link
-      expect(detail, contains('isSettled'));
-      // Gate must require settlementData (server object), not just publicId
-      expect(detail, contains('settlementData != null'));
+      // R32: _ProvenanceRecordAction removed — payment-gated Verify widget is gone
+      expect(detail, isNot(contains('class _ProvenanceRecordAction')));
+      // R32: isSettled is NOT used as a Verify gate — MONEY_CONTROLS_TRUST = FALSE
+      expect(detail, isNot(contains('settlementData!.isSettled')));
+      // R32: CROSS_LANE_HANDOFF_REQUIRED annotation must be present
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // MONEY_CONTROLS_TRUST annotation must remain
+      expect(detail, contains('MONEY_CONTROLS_TRUST'));
     });
 
-    test('C28-2: payment state alone does not unlock public-reliance Verify — R29 requires full settlement seam', () {
+    test('C28-2: payment state alone does not unlock public-reliance Verify — R32: gate removed entirely, CROSS_LANE_HANDOFF_REQUIRED', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
       // Settlement status display (informational badge) must still be present
       expect(detail, contains('_SettlementStatusSection'));
       // My-PV navigation for FREE/PAID settlement must still be present
       expect(detail, contains('_MyPvNavigationSection'));
-      // R29: full gate requires settlementData (server object) + isSettled + publicId
-      expect(detail, contains('settlementData!.isSettled'));
+      // R32: payment-gated isSettled Verify gate removed — MONEY_CONTROLS_TRUST = FALSE strengthened
+      expect(detail, isNot(contains('settlementData!.isSettled')));
       // MONEY_CONTROLS_TRUST=FALSE annotation must be present
       expect(detail, contains('MONEY_CONTROLS_TRUST'));
+      // R32: CROSS_LANE_HANDOFF_REQUIRED annotation must be present
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
     });
 
     test('C28-3: settlement CTA wired in R29 — hasSettlementSeam gate replaces null-ambiguous suppression', () {
@@ -919,7 +929,7 @@ void main() {
       expect(detail, contains('detail.settlementData == null'));
     });
 
-    test('C28-5: public record authority uses settlement.isSettled — not registry_active; seam wired in R29', () {
+    test('C28-5: public record authority must not use isSettled — R32: gate removed, CROSS_LANE_HANDOFF_REQUIRED', () {
       final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
       // Model must not introduce a registry_active field
@@ -928,10 +938,10 @@ void main() {
       // Detail screen must not gate any action on an invented authority field
       expect(detail, isNot(contains("'registry_active'")));
       expect(detail, isNot(contains('registryActive')));
-      // R29: settlement.isSettled IS the authority seam (from PR #47 data.settlement)
-      expect(detail, contains('isSettled'));
-      // Settlement data must be non-null to gate the link
-      expect(detail, contains('settlementData != null'));
+      // R32: isSettled is NOT the authority gate — payment cannot unlock Public Verify
+      expect(detail, isNot(contains('settlementData!.isSettled')));
+      // R32: CROSS_LANE_HANDOFF_REQUIRED — no explicit public-record authority in current server contract
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
     });
 
     // ── R29 SETTLEMENT AUTHORITY SEAM LOCKS ──────────────────────────────────────────────────
@@ -964,16 +974,17 @@ void main() {
       expect(model, contains('hasSettlementSeam'));
     });
 
-    test('C29-3: _ProvenanceRecordAction renders only when settlementData.isSettled — publicId alone insufficient', () {
+    test('C29-3: _ProvenanceRecordAction removed in R32 — isSettled gate gone, CROSS_LANE_HANDOFF_REQUIRED active', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
-      // Gate must require isSettled (settlement authority from server)
-      expect(detail, contains('isSettled'));
+      // R32: _ProvenanceRecordAction widget class removed — payment-gated Public Verify is dead code
+      expect(detail, isNot(contains('class _ProvenanceRecordAction')));
+      expect(detail, contains('_ProvenanceRecordAction removed in R32'));
       // publicId-alone gate must be absent
       expect(detail, isNot(contains('if (detail.publicId != null)')));
-      // Gate must require settlementData.isSettled
-      expect(detail, contains('settlementData!.isSettled'));
-      // Gate must also require publicId not null
-      expect(detail, contains('detail.publicId != null'));
+      // R32: isSettled Verify gate removed — MONEY_CONTROLS_TRUST = FALSE
+      expect(detail, isNot(contains('settlementData!.isSettled')));
+      // R32: CROSS_LANE_HANDOFF_REQUIRED annotation must be present
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
     });
 
     test('C29-4: Settlement CTA shown when hasSettlementSeam + no order linked + determination present', () {
