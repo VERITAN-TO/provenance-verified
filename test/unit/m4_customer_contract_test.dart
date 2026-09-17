@@ -1325,7 +1325,7 @@ void main() {
       // No professional mode surface
       expect(myPvScreen, isNot(contains('/professional')));
       expect(detailScreen, isNot(contains('/professional')));
-      // Action buttons: only Verify Now, Submit Update, Share — no Transfer button
+      // Action buttons: Verify Now, Submit Update — Share suppressed (CROSS_LANE_HANDOFF_REQUIRED)
       expect(detailScreen, contains('Verify Now'));
       expect(detailScreen, contains('Submit Update'));
       expect(detailScreen, isNot(contains('Transfer')));
@@ -1521,28 +1521,64 @@ void main() {
       expect(pubspec, isNot(contains('file_picker: ^7.')));
     });
 
-    // ── R47: NATIVE SHARE — CLIPBOARD VERIFY URL ─────────────────────────────
-    // asset_detail_screen.dart Share button copies the public verify URL to
-    // the system clipboard. No SnackBar stub. No private data in the URL.
-    // No sharing/export authority for local snapshots — public record only.
+    // ── R47/R48: NATIVE SHARE — PUBLIC-AUTHORITY FAIL-CLOSED ────────────────
+    // R47 wired Share as a clipboard URL copy using publicId + pvApiBaseUrl.
+    // R48 CTO correction: publicId alone is not public-record publication
+    // authority; pvApiBaseUrl is the API origin, not the canonical public
+    // Verify URL. No server-authored public-record seam exists in the native
+    // asset-detail contract. Share must be suppressed fail-closed.
+    // CROSS_LANE_HANDOFF_REQUIRED: do not fabricate a public-record link.
 
-    test('C47-1: Share button copies public verify URL to clipboard — no stub; no private data', () {
+    test('C47-1: publicId alone must not activate clipboard Share — Clipboard.setData suppressed', () {
       final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
-      // Must import flutter/services for Clipboard
-      expect(detail, contains("import 'package:flutter/services.dart'"));
-      // Must import environment for base URL construction
-      expect(detail, contains("import '../../core/config/environment.dart'"));
-      // Clipboard.setData must be called with the verify URL
-      expect(detail, contains('Clipboard.setData(ClipboardData(text: url))'));
-      // URL must include Env.pvApiBaseUrl and asset.publicId
-      expect(detail, contains('Env.pvApiBaseUrl'));
-      expect(detail, contains('asset.publicId'));
-      // Stub removed — 'Share coming soon' must not appear
+      // No unconditional clipboard copy — Share is suppressed, not deferred
+      expect(detail, isNot(contains('Clipboard.setData')));
+      // pvApiBaseUrl must not be used as canonical public Verify URL in Share path
+      expect(detail, isNot(contains("Env.pvApiBaseUrl}/verify/")));
+      // No deferred stub message either
       expect(detail, isNot(contains("'Share coming soon'")));
-      // Confirmation to user
-      expect(detail, contains("'Copied to clipboard'"));
-      // Button disabled when publicId is empty (guard against empty-ID assets)
-      expect(detail, contains('asset.publicId.isEmpty'));
+      // No 'Copied to clipboard' confirmation (Share not activated)
+      expect(detail, isNot(contains("'Copied to clipboard'")));
+    });
+
+    test('C47-2: Share suppressed — CROSS_LANE_HANDOFF_REQUIRED coded in detail screen', () {
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // Suppression marker must be present — Share is explicitly suppressed, not silently absent
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // No Clipboard or services.dart import in the detail screen
+      expect(detail, isNot(contains("import 'package:flutter/services.dart'")));
+    });
+
+    // ── R48: ANDROID MEDIA PERMISSION AUDIT ─────────────────────────────────
+    // image_picker 1.x uses the system PhotoPicker (API 33+) and ACTION_PICK
+    // (API ≤ 32) — neither path requires READ_MEDIA_IMAGES or READ_EXTERNAL_STORAGE
+    // declared in the app manifest; the plugin injects what it needs via manifest
+    // merger. Broad media declarations in the app manifest are unnecessary and
+    // contradict the bounded-picker custody model.
+
+    test('C48-1: AndroidManifest declares no broad-media storage permissions — system picker boundary', () {
+      final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      // READ_MEDIA_IMAGES not required for PhotoPicker on API 33+
+      expect(manifest, isNot(contains('READ_MEDIA_IMAGES')));
+      // READ_EXTERNAL_STORAGE not required for SAF-based file picker
+      expect(manifest, isNot(contains('READ_EXTERNAL_STORAGE')));
+      // CAMERA retained for mobile_scanner QR code scanning
+      expect(manifest, contains('android.permission.CAMERA'));
+    });
+
+    // ── R48: GRADLE compileSdk OVERRIDE — UPGRADE-ONLY GUARD ─────────────────
+    // gradle.afterProject overrides compileSdk on all Android library plugins
+    // after their own build.gradle runs. The guard ensures we only UPGRADE
+    // (never downgrade) plugins that already declare compileSdk >= 36.
+
+    test('C48-2: gradle.afterProject upgrades compileSdk to 36 — upgrade-only guard present', () {
+      final gradle = File('android/build.gradle.kts').readAsStringSync();
+      // Must use gradle.afterProject (fires after each project's config completes)
+      expect(gradle, contains('gradle.afterProject'));
+      // Must only upgrade — never blindly overwrite a higher compileSdk
+      expect(gradle, contains('< 36'));
+      // Must target com.android.library plugins
+      expect(gradle, contains('"com.android.library"'));
     });
   });
 }

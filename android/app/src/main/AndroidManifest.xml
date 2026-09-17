@@ -2,10 +2,10 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-    <!-- image_picker: Android 13+ media access -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <!-- image_picker: Android 12 and below fallback -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <!-- image_picker uses system PhotoPicker (API 33+) and ACTION_PICK (API ≤ 32):
+         no READ_MEDIA_IMAGES or READ_EXTERNAL_STORAGE required in app manifest.
+         file_picker uses Storage Access Framework: no READ permission required.
+         Plugins inject their own manifest entries via merger if needed. -->
     <application
         android:label="PROVENANCE VERIFIED"
         android:name="${applicationName}"

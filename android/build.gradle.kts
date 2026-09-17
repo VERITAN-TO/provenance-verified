@@ -27,7 +27,8 @@ subprojects {
 gradle.afterProject {
     if (plugins.hasPlugin("com.android.library")) {
         val ext = extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)
-        if (ext != null) {
+        // Upgrade-only: never downgrade a plugin that already declares compileSdk >= 36.
+        if (ext != null && (ext.compileSdk ?: 0) < 36) {
             ext.compileSdk = 36
         }
     }
