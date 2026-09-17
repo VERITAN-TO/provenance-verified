@@ -623,7 +623,7 @@ void main() {
       }
     });
 
-    // ── R11 REGRESSION LOCKS ─────────────────────────────────────────────────
+    // ── R11 REGRESSION LOCKS ───────────────────────────────────────────────────────────────────────────
     // These tests lock out semantic/authority leaks identified in R11 cleanup.
     // CUSTOMER_SELECTS_TIER=FALSE  REVIEWER_SELECTS_TIER=FALSE
     // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE  GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE
@@ -710,7 +710,7 @@ void main() {
       expect(activity, isNot(contains('selectedTier')));
     });
 
-    // ── R21 PARITY LOCKS ─────────────────────────────────────────────────────
+    // ── R21 PARITY LOCKS ───────────────────────────────────────────────────────────────────────────
     // Locks for A/B deltas consumed in R21: be5b164 (upload trust-law) and
     // e8cca3f (public_id / determined_at in submission detail).
     // CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE  CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE
@@ -789,7 +789,7 @@ void main() {
       expect(provider, isNot(contains('} catch (_) {\n        // Fallback to local receipt on server failure')));
     });
 
-    // ── R23 VISUAL/INTERACTION FINISH LOCKS ──────────────────────────────────
+    // ── R23 VISUAL/INTERACTION FINISH LOCKS ────────────────────────────────────────────
     // B delta: SHA-256 identity binding (4e676e1, 88d8c19) + auto-claim-credit
     // law (1df35fa) require native Step 2 to surface evidence credit policy.
     // CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE  CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE
@@ -828,7 +828,7 @@ void main() {
       expect(submit, contains('separate authority chain'));
     });
 
-    // ── R24 NAVIGATOR 1.0 ERADICATION LOCKS ──────────────────────────────────
+    // ── R24 NAVIGATOR 1.0 ERADICATION LOCKS ──────────────────────────────────────────
     // Two Navigator 1.0 usages were found and eradicated in R24:
     //   1. submission_detail_screen.dart AppBar back button
     //   2. activity_screen.dart row tap → SubmissionDetailScreen
@@ -866,7 +866,7 @@ void main() {
       expect(router, contains("pathParameters['submissionId']"));
     });
 
-    // ── R28 PUBLIC RELIANCE FAILSAFE LOCKS ────────────────────────────────────
+    // ── R28 PUBLIC RELIANCE FAILSAFE LOCKS ───────────────────────────────────────────────
     // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R28-PUBLIC-RELIANCE-FAILSAFE-32B3
     // publicId alone (or any combination of determination/payment state) is NOT
     // a canonical registry/lifecycle-active authority signal. Settlement null is
@@ -934,7 +934,7 @@ void main() {
       expect(detail, contains('settlementData != null'));
     });
 
-    // ── R29 SETTLEMENT AUTHORITY SEAM LOCKS ───────────────────────────────────
+    // ── R29 SETTLEMENT AUTHORITY SEAM LOCKS ──────────────────────────────────────────────────
     // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R29-NATIVE-CAPABILITY-CLOSURE
     // PR #47 data.settlement is the explicit server seam for both the settlement
     // CTA and the public provenance record link. Key-presence gate (hasSettlementSeam)
@@ -995,6 +995,56 @@ void main() {
       // Both fields must appear in the constructor call
       expect(model, contains('hasSettlementSeam:'));
       expect(model, contains('settlementData:'));
+    });
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // C30 — R30: credential lifecycle rebind
+    // data.credential_lifecycle from PR #48 / pv_review_cases.
+    // REGISTRY_STATE_ONLY = TRUE: lifecycle is a separate authority plane.
+    // NOT_ISSUED ≠ trust failure.  MTA-1: SERVER DETERMINES TRUST.
+    // ───────────────────────────────────────────────────────────────────────────
+
+    test('C30-1: CredentialLifecycleStatus enum present with all six values and displayLabel', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(model, contains('enum CredentialLifecycleStatus'));
+      expect(model, contains('active'));
+      expect(model, contains('suspended'));
+      expect(model, contains('revoked'));
+      expect(model, contains('expired'));
+      expect(model, contains('superseded'));
+      expect(model, contains('notIssued'));
+      expect(model, contains('displayLabel'));
+    });
+
+    test('C30-2: fromApiString is null-safe and fail-closed — null → null, unknown → notIssued', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // Null input returns null (determination not yet available)
+      expect(model, contains('if (raw == null) return null'));
+      // NOT_ISSUED mapping must be present
+      expect(model, contains("case 'NOT_ISSUED'"));
+      // Default must fail-closed to notIssued (not active)
+      expect(model, contains('return CredentialLifecycleStatus.notIssued'));
+    });
+
+    test('C30-3: REGISTRY_STATE_ONLY annotation present — lifecycle plane separate from trust and settlement', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(model, contains('REGISTRY_STATE_ONLY = TRUE'));
+    });
+
+    test('C30-4: SubmissionDetail.credentialLifecycle field decoded from credential_lifecycle JSON key', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(model, contains('credentialLifecycle'));
+      expect(model, contains("json['credential_lifecycle']"));
+      expect(model, contains('CredentialLifecycleStatus.fromApiString'));
+    });
+
+    test('C30-5: _CredentialLifecycleSection widget present; shown only when credentialLifecycle non-null', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('_CredentialLifecycleSection'));
+      // Guard: only rendered when credentialLifecycle is non-null
+      expect(detail, contains('detail.credentialLifecycle != null'));
+      // Widget receives status from the field (not inlined trust claim)
+      expect(detail, contains('status: detail.credentialLifecycle!'));
     });
   });
 }
