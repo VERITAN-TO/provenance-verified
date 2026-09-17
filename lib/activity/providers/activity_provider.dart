@@ -78,6 +78,11 @@ class _ActivityApiClient {
       final data = (raw['data'] as Map<String, dynamic>?) ?? raw;
       return SubmissionDetail.fromJson(data);
     }
+    if (res.statusCode == 503) {
+      // Determination authority is temporarily unavailable. Must not silently
+      // downgrade to a null/unknown determination — surface the exact state.
+      throw const SubmitApiException(503, 'DETERMINATION_AUTHORITY_UNAVAILABLE: The trust determination authority is temporarily unavailable. Prior determination data has not changed. Please retry.');
+    }
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Could not load submission');
   }

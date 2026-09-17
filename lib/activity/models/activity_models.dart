@@ -4,6 +4,38 @@
 // The client displays what the backend reports; it makes no trust claims.
 
 // ---------------------------------------------------------------------------
+// Settlement payment status — server-reported payment lifecycle state.
+// MONEY_CONTROLS_TRUST = FALSE: this field is informational only.
+// Scoped to the authenticated customer; never projected as trust state.
+// ---------------------------------------------------------------------------
+
+enum SettlementPaymentStatus {
+  free,
+  paid,
+  pending,
+  unknown;
+
+  static SettlementPaymentStatus? fromApiString(String? raw) {
+    if (raw == null) return null;
+    switch (raw.toUpperCase()) {
+      case 'FREE':    return SettlementPaymentStatus.free;
+      case 'PAID':    return SettlementPaymentStatus.paid;
+      case 'PENDING': return SettlementPaymentStatus.pending;
+      default:        return SettlementPaymentStatus.unknown;
+    }
+  }
+
+  String get displayLabel {
+    switch (this) {
+      case SettlementPaymentStatus.free:    return 'Settled (Free)';
+      case SettlementPaymentStatus.paid:    return 'Settled (Paid)';
+      case SettlementPaymentStatus.pending: return 'Awaiting Settlement';
+      case SettlementPaymentStatus.unknown: return 'Unknown';
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Status codes
 // ---------------------------------------------------------------------------
 
@@ -104,6 +136,9 @@ class SubmissionStatusItem {
   final String? determinedTier;
   final DateTime updatedAt;
   final bool hasEvidenceRequest;
+  /// Settlement payment status — null when settlement has not occurred.
+  /// MONEY_CONTROLS_TRUST = FALSE: this is billing state only.
+  final SettlementPaymentStatus? settlementPaymentStatus;
 
   const SubmissionStatusItem({
     required this.submissionId,
@@ -113,6 +148,7 @@ class SubmissionStatusItem {
     this.determinedTier,
     required this.updatedAt,
     required this.hasEvidenceRequest,
+    this.settlementPaymentStatus,
   });
 
   factory SubmissionStatusItem.fromJson(Map<String, dynamic> json) {
@@ -127,6 +163,8 @@ class SubmissionStatusItem {
                              json['updated_at'] as String? ?? '') ??
                            DateTime.now(),
       hasEvidenceRequest:  json['has_evidence_request'] as bool? ?? false,
+      settlementPaymentStatus: SettlementPaymentStatus.fromApiString(
+                             json['settlement_payment_status'] as String?),
     );
   }
 }
@@ -220,6 +258,9 @@ class SubmissionDetail {
   final String? publicId;
   /// Timestamp when the determination was computed by the server.
   final DateTime? determinedAt;
+  /// Settlement payment status — null when settlement has not occurred.
+  /// MONEY_CONTROLS_TRUST = FALSE: this is billing state only.
+  final SettlementPaymentStatus? settlementPaymentStatus;
 
   const SubmissionDetail({
     required this.submissionId,
@@ -233,6 +274,7 @@ class SubmissionDetail {
     this.determination,
     this.publicId,
     this.determinedAt,
+    this.settlementPaymentStatus,
   });
 
   factory SubmissionDetail.fromJson(Map<String, dynamic> json) {
@@ -263,6 +305,8 @@ class SubmissionDetail {
       determination: det,
       publicId:    json['public_id'] as String?,
       determinedAt: DateTime.tryParse(json['determined_at'] as String? ?? ''),
+      settlementPaymentStatus: SettlementPaymentStatus.fromApiString(
+                               json['settlement_payment_status'] as String?),
     );
   }
 }

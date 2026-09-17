@@ -85,6 +85,32 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
+              // ── Settlement CTA — determination complete, not yet settled ──
+              if (detail.determination != null &&
+                  detail.settlementPaymentStatus == null) ...[
+                _SettlementCtaSection(
+                  submissionId: detail.submissionId,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Settlement status — FREE or PAID ─────────────────────────
+              if (detail.settlementPaymentStatus != null &&
+                  detail.settlementPaymentStatus !=
+                      SettlementPaymentStatus.unknown) ...[
+                _SettlementStatusSection(
+                  status: detail.settlementPaymentStatus!,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Post-settlement My PV navigation ─────────────────────────
+              if (detail.settlementPaymentStatus == SettlementPaymentStatus.free ||
+                  detail.settlementPaymentStatus == SettlementPaymentStatus.paid) ...[
+                _MyPvNavigationSection(),
+                const SizedBox(height: 16),
+              ],
+
               // ── Issued: view in My PV ────────────────────────────────────
               if (detail.status == SubmissionStatus.issued) ...[
                 _IssuedAction(
@@ -466,6 +492,122 @@ class _EvidenceRequestSection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Settlement CTA — determination is complete but settlement has not occurred.
+// MONEY_CONTROLS_TRUST = FALSE: this CTA opens the settlement flow only;
+// settlement does not change the trust determination.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _SettlementCtaSection extends StatelessWidget {
+  final String submissionId;
+  const _SettlementCtaSection({required this.submissionId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: PvColors.cyan.withAlpha(15),
+        border: Border.all(color: PvColors.cyan),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_outlined,
+                  color: PvColors.cyan, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'AWAITING SETTLEMENT',
+                style: PvTypography.label.copyWith(color: PvColors.cyan),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Determination is complete. Settlement finalises the record. '
+            'The determined tier does not change at settlement.',
+            style: PvTypography.body,
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/submit'),
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              label: const Text('Complete Settlement'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PvColors.cyan,
+                side: const BorderSide(color: PvColors.cyan),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Settlement status — shows FREE or PAID settlement state.
+// Informational only; MONEY_CONTROLS_TRUST = FALSE.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _SettlementStatusSection extends StatelessWidget {
+  final SettlementPaymentStatus status;
+  const _SettlementStatusSection({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = status == SettlementPaymentStatus.free ||
+            status == SettlementPaymentStatus.paid
+        ? PvColors.success
+        : PvColors.muted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle_outline, color: color, size: 18),
+          const SizedBox(width: 10),
+          Text(
+            status.displayLabel.toUpperCase(),
+            style: PvTypography.label.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Post-settlement My PV navigation — shown after FREE or PAID settlement.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _MyPvNavigationSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => context.go('/my-pv'),
+        icon: const Icon(Icons.verified_user_outlined, size: 16),
+        label: const Text('View in My PV'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: PvColors.onBackground,
+          side: const BorderSide(color: PvColors.border),
+        ),
       ),
     );
   }

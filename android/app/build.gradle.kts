@@ -24,7 +24,7 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keyProperties["keyAlias"] as String
+            keyAlias = keyProperties["keyAlias"] as? String ?: ""
             storeFile = keyProperties["storeFile"]?.let { file(it as String) }
             val signingPass = System.getenv("ANDROID_SIGNING_PASSWORD") ?: ""
             storePassword = signingPass
