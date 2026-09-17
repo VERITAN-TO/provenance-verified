@@ -138,10 +138,10 @@ class _AssetCard extends StatelessWidget {
   String _tierLabel(int? tier) {
     if (tier == null) return 'NOT QUALIFIED';
     switch (tier) {
-      case 1: return 'T1 EXISTENCE';
-      case 2: return 'T2 DECLARATION';
-      case 3: return 'T3 EVIDENCE-ESTABLISHED';
-      case 4: return 'T4 GOVERNED AUTHORITY';
+      case 1: return 'T1 — Accountable Existence';
+      case 2: return 'T2 — Accountable Declaration';
+      case 3: return 'T3 — Evidence-Established Trust';
+      case 4: return 'T4 — Highest Governed Provenance Authority';
       default: return 'TIER $tier';
     }
   }
