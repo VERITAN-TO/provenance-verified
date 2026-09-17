@@ -499,6 +499,7 @@ class _EvidenceRequestSection extends StatelessWidget {
 // settlement does not change the trust determination.
 // ────────────────────────────────────────────────────────────────────────────
 
+// ignore: unused_element
 class _SettlementCtaSection extends StatelessWidget {
   final String submissionId;
   const _SettlementCtaSection({required this.submissionId});
@@ -814,9 +815,12 @@ class _SectionHeader extends StatelessWidget {
 // LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
 // ────────────────────────────────────────────────────────────────────────────
 
+// ignore: unused_element
 class _ProvenanceRecordAction extends StatelessWidget {
   final String publicId;
+  // ignore: unused_field
   final DateTime? determinedAt;
+  // ignore: unused_element_parameter
   const _ProvenanceRecordAction({required this.publicId, this.determinedAt});
 
   @override
