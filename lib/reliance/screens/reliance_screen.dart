@@ -280,10 +280,12 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
         prohibitedInferences: result.prohibitedInferences,
         policyVersion: result.policyVersion,
       );
-      if (mounted) setState(() {
-        _savedReceiptId = receipt.receiptId;
-        _savedReceiptIsServerIssued = receipt.isServerIssued;
-      });
+      if (mounted) {
+        setState(() {
+          _savedReceiptId = receipt.receiptId;
+          _savedReceiptIsServerIssued = receipt.isServerIssued;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
