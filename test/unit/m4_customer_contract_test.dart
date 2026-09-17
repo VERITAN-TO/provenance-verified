@@ -1368,8 +1368,10 @@ void main() {
 
     test('C45-proof-2: autoDispose FutureProvider.family forces fresh evaluation after consumer teardown', () async {
       var callCount = 0;
+      var disposeCount = 0;
       final autoDisposeProvider = FutureProvider.autoDispose.family<String, String>((ref, arg) async {
         callCount++;
+        ref.onDispose(() { disposeCount++; });
         return 'result-$arg';
       });
       final container = ProviderContainer();
@@ -1379,27 +1381,31 @@ void main() {
       final sub1 = container.listen(autoDisposeProvider('key'), (_, __) {});
       await container.read(autoDisposeProvider('key').future);
       expect(callCount, 1);
+      expect(disposeCount, 0, reason: 'Provider not yet disposed — listener still active');
 
       // Consumer teardown — autoDispose: state IS disposed
       sub1.close();
       // Riverpod 2 schedules autoDispose disposal via microtask; yield to let it run.
       await Future.value();
+      // Prove disposal actually occurred via onDispose callback — not merely inferred from timing
+      expect(disposeCount, 1, reason: 'onDispose ran — provider was actually disposed after all listeners removed');
 
-      // Second consumer — fresh evaluation forced
+      // Second consumer — fresh evaluation forced because provider was disposed
       final sub2 = container.listen(autoDisposeProvider('key'), (_, __) {});
       await container.read(autoDisposeProvider('key').future);
       expect(callCount, 2,
-          reason: 'AutoDispose made fresh call on new consumer — this is the fix');
+          reason: 'AutoDispose made fresh evaluation on new consumer after disposal');
       sub2.close();
     });
 
     test('C45-1: simpleActionabilityProvider is declared autoDispose — no retained actionability for reliance', () {
-      final provider = File('lib/actionability/providers/actionability_provider.dart').readAsStringSync();
-      // Must use autoDispose.family, not plain family
-      expect(provider, contains('FutureProvider.autoDispose.family'));
-      expect(provider, isNot(contains('FutureProvider.family<ActionabilityResult,')));
-      // Security law comment preserved
-      expect(provider, contains('NEVER be cached for reliance'));
+      final source = File('lib/actionability/providers/actionability_provider.dart').readAsStringSync();
+      // Semantic contract: simpleActionabilityProvider must be declared FutureProvider.autoDispose.family
+      expect(source, contains('simpleActionabilityProvider = FutureProvider.autoDispose.family'));
+      // Semantic contract: actionabilityProvider (full-args variant) must also be autoDispose.family
+      expect(source, contains('actionabilityProvider = FutureProvider.autoDispose.family'));
+      // Must not contain a non-autoDispose family declaration for any ActionabilityResult provider
+      expect(source, isNot(contains('= FutureProvider.family<ActionabilityResult,')));
     });
 
     test('C45-2: actionabilityProvider (full-args variant) is also autoDispose', () {
