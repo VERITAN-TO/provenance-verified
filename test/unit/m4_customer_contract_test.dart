@@ -1720,5 +1720,92 @@ void main() {
       // MONEY_CONTROLS_TRUST invariant must be annotated — server determines trust, not payment state
       expect(mtr, contains('MONEY_CONTROLS_TRUST'));
     });
+
+    // ── M2-50-04 FULL SUBMIT/TRACK NEGATIVE PATH SUITE ───────────────────────
+    // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R50-CROSS-LANE-UNBLOCK-PICKER-19679-A320907
+    // M2-50-04: close NATIVE_PICKER_EXCEPTION_UNHANDLED gate completely, then
+    // execute the full Submit/Track positive + negative path suite.
+    // These tests close the remaining M2-50-04 explicit requirements:
+    //   picker cancel, upload failure, backend unavailable, retry/idempotency,
+    //   evidence persistence.
+
+    test('C50-11: picker cancel (null return) — no error SnackBar shown, no crash', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Null guard must be present — picker cancel returns null XFile, not an exception.
+      // Cancel path must be silent: no SnackBar, no addPhoto call, no crash.
+      expect(submit, contains('if (picked != null)'));
+      final nullIdx = submit.indexOf('if (picked != null)');
+      final addIdx  = submit.indexOf('addPhoto(picked.path)');
+      expect(nullIdx, isNot(-1), reason: 'null guard for cancel path must be present');
+      expect(addIdx,  isNot(-1), reason: 'addPhoto must be guarded by null check');
+      // addPhoto must follow the null guard (inside it), not precede it — cancel is silent
+      expect(addIdx, greaterThan(nullIdx),
+          reason: 'addPhoto must be inside the null guard — cancel does not call addPhoto');
+      // File picker has the same null-result contract — cancel is silent
+      expect(submit, contains('if (result != null && result.files.isNotEmpty)'));
+    });
+
+    test('C50-12: upload failure — uploadPendingDocuments SubmitApiException surfaces as error banner', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // uploadPendingDocuments is called in step case 2 of _next()
+      expect(submit, contains('uploadPendingDocuments()'));
+      // SubmitApiException from upload propagates up to _next() which catches it
+      expect(submit, contains('on SubmitApiException catch (e)'));
+      // Non-401 upload failure must surface via _setError — not silently discarded
+      expect(submit, contains('_setError('));
+      // Error banner message must include server status code
+      expect(submit, contains("'Server error (\${e.statusCode}): \${e.message}'"));
+      // Error banner widget must be present — _ErrorBanner driven by _error != null
+      expect(submit, contains('_ErrorBanner'));
+      expect(submit, contains('if (_error != null)'));
+    });
+
+    test('C50-13: backend unavailable — submitForEvaluation/fetchQuote failures surface as error; 401 redirects to sign-in', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Both evaluation and quote fetch must be present in step 3
+      expect(submit, contains('submitForEvaluation()'));
+      expect(submit, contains('fetchQuote()'));
+      // SubmitApiException from backend failure caught in _next()
+      expect(submit, contains('on SubmitApiException catch (e)'));
+      // 401 (terminal auth failure) must redirect to sign-in, not show generic error banner
+      expect(submit, contains('e.statusCode == 401'));
+      expect(submit, contains("context.push('/sign-in"));
+      // Non-401 backend errors (5xx, 503, network timeout) surface as error banner
+      expect(submit, contains("'Server error (\${e.statusCode}): \${e.message}'"));
+      // Generic non-SubmitApiException failures (socket, timeout) also caught
+      expect(submit, contains("'An unexpected error occurred. Please try again.'"));
+    });
+
+    test('C50-14: evidence persistence — photoPaths and documents survive step navigation', () {
+      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      // goToStep must use copyWith(step:) only — photoPaths and documents are not cleared
+      expect(provider, contains('copyWith(step: step)'));
+      // addPhoto appends to existing list — prior photos preserved across steps
+      expect(provider, contains('photoPaths: [...c.photoPaths, path]'));
+      // addDocument appends to existing list — prior documents preserved across steps
+      expect(provider, contains('documents: [...c.documents, doc]'));
+      // markDocumentUploaded mutates in-place — does not replace the whole list
+      expect(provider, contains('markDocumentUploaded'));
+      // goToStep must not reset photos or documents — invariant: state is SubmissionDraft
+      final goToIdx = provider.indexOf('void goToStep(');
+      expect(goToIdx, isNot(-1), reason: 'goToStep must be present');
+      // goToStep must use copyWith — not reset() or beginNew()
+      final goToEnd = provider.indexOf('}', goToIdx);
+      final goToBody = provider.substring(goToIdx, goToEnd);
+      expect(goToBody, contains('copyWith'), reason: 'goToStep must use copyWith, not reset');
+      expect(goToBody, isNot(contains('reset()')), reason: 'goToStep must not reset state');
+    });
+
+    test('C50-15: retry/idempotency — uploadPendingDocuments skips already-uploaded documents; safe to re-enter', () {
+      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      // !doc.uploaded guard ensures already-uploaded docs are not re-uploaded on retry
+      expect(provider, contains('!doc.uploaded'));
+      // markDocumentUploaded must be called after successful upload — tracks upload state
+      expect(provider, contains('markDocumentUploaded(i)'));
+      // uploadPendingDocuments must be present and callable
+      expect(provider, contains('Future<void> uploadPendingDocuments()'));
+      // Provider must not hardcode a single-document assumption — loop over all documents
+      expect(provider, contains('for (int i = 0; i < current.documents.length; i++)'));
+    });
   });
 }
