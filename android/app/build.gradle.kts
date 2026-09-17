@@ -20,7 +20,7 @@ if (hasSigningCredentials) {
 
 android {
     namespace = "to.veritan.pv.provenance_verified_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
 
     compileOptions {
@@ -61,7 +61,6 @@ android {
         applicationId = "to.veritan.pv"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        compileSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
