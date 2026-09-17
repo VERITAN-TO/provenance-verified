@@ -8,7 +8,13 @@ plugins {
 
 val keyPropertiesFile = rootProject.file("key.properties")
 val keyProperties = Properties()
-if (keyPropertiesFile.exists()) {
+val signingPass: String? = System.getenv("ANDROID_SIGNING_PASSWORD")
+// BUILD QUALIFICATION != SIGNING AUTHORITY.
+// qualificationRelease builds in CI are intentionally unsigned (SIGNING_STATE=UNSIGNED_QUALIFICATION).
+// Production signing requires key.properties + ANDROID_SIGNING_PASSWORD from a human authority.
+val hasSigningCredentials: Boolean = keyPropertiesFile.exists() && signingPass != null
+
+if (hasSigningCredentials) {
     keyProperties.load(FileInputStream(keyPropertiesFile))
 }
 
@@ -22,13 +28,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    signingConfigs {
-        create("release") {
-            keyAlias = keyProperties["keyAlias"] as? String ?: ""
-            storeFile = keyProperties["storeFile"]?.let { file(it as String) }
-            val signingPass = System.getenv("ANDROID_SIGNING_PASSWORD") ?: ""
-            storePassword = signingPass
-            keyPassword = signingPass
+    if (hasSigningCredentials) {
+        signingConfigs {
+            create("release") {
+                keyAlias = keyProperties["keyAlias"] as String
+                storeFile = file(keyProperties["storeFile"] as String)
+                storePassword = signingPass!!
+                keyPassword = signingPass!!
+            }
         }
     }
 
@@ -61,7 +68,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // Signing applied only when human signing authority credentials are present.
+            // CI qualification builds (no key.properties, no ANDROID_SIGNING_PASSWORD) produce
+            // an intentionally unsigned AAB: SIGNING_STATE=UNSIGNED_QUALIFICATION.
+            // ANDROID_RELEASE_CUSTODY_BLOCKED: never substitute debug signing for release authority.
+            signingConfig = if (hasSigningCredentials) signingConfigs.getByName("release") else null
             isMinifyEnabled = false
             isShrinkResources = false
         }

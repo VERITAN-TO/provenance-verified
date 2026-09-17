@@ -180,12 +180,25 @@ jobs:
           [ "$COUNT" -eq 0 ] || { echo "::error::Secrets found in source!"; exit 1; }
           echo "SECRETS_IN_SOURCE=ZERO"
 
-      - name: Build Android AAB (qualification release)
+      - name: Build Android AAB (qualification release — unsigned; SIGNING_STATE=UNSIGNED_QUALIFICATION)
         run: |
           flutter build appbundle --release \
             --flavor qualification \
             --dart-define=ENVIRONMENT=qualification \
             --dart-define=PV_API_BASE_URL=${{ env.PV_API_BASE_URL }}
+
+      - name: Assert SIGNING_STATE=UNSIGNED_QUALIFICATION
+        run: |
+          AAB=build/app/outputs/bundle/qualificationRelease/app-qualification-release.aab
+          mkdir -p /tmp/aab-sign-check
+          unzip -o "$AAB" -d /tmp/aab-sign-check 2>/dev/null
+          if find /tmp/aab-sign-check -name "*.RSA" -o -name "*.DSA" -o -name "*.EC" -o -name "*.SF" \
+               2>/dev/null | grep -q .; then
+            echo "::error::SIGNING_STATE assertion failed: qualification AAB contains signing evidence"
+            exit 1
+          fi
+          echo "SIGNING_STATE=UNSIGNED_QUALIFICATION"
+          rm -rf /tmp/aab-sign-check
 
       - name: Compute Android AAB SHA256
         id: aab_hash
@@ -244,11 +257,13 @@ jobs:
           retention-days: 30
 
       - name: Upload Linux test output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-test-output-linux
           path: flutter-test-linux.txt
           retention-days: 30
+          if-no-files-found: warn
 
   macos-ios:
     name: 'macOS — Analyze + Unit Tests + iOS Build'
