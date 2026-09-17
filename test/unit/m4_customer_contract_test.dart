@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provenance_verified_app/submit/models/submit_models.dart';
 
@@ -1328,6 +1329,110 @@ void main() {
       expect(detailScreen, contains('Verify Now'));
       expect(detailScreen, contains('Submit Update'));
       expect(detailScreen, isNot(contains('Transfer')));
+    });
+
+    // ── R45: VERIFY AND RELIANCE CURRENTNESS — NO RETAINED AUTHORITY ─────────
+    // actionabilityProvider, simpleActionabilityProvider, trustRecordProvider were
+    // non-autoDispose FutureProvider.family. Non-autoDispose providers retain their
+    // completed result in the ProviderContainer after all listeners are removed;
+    // a new consumer can receive the retained result without a fresh server call.
+    // For reliance/verify this is a currentness defect.
+    // Fix: autoDispose guarantees disposal on last-listener-removal → fresh server
+    // call on every new consumer/session. Proof tests below establish the behavioral
+    // contract; source assertions lock the declaration.
+
+    test('C45-proof-1: non-autoDispose FutureProvider.family retains result across consumer teardown', () async {
+      var callCount = 0;
+      final nonDisposeProvider = FutureProvider.family<String, String>((ref, arg) async {
+        callCount++;
+        return 'result-$arg';
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // First consumer subscribes and reads result
+      final sub1 = container.listen(nonDisposeProvider('key'), (_, __) {});
+      await container.read(nonDisposeProvider('key').future);
+      expect(callCount, 1);
+
+      // Consumer teardown — non-autoDispose: state NOT disposed
+      sub1.close();
+
+      // Second consumer — gets retained result, no new call
+      final sub2 = container.listen(nonDisposeProvider('key'), (_, __) {});
+      await container.read(nonDisposeProvider('key').future);
+      expect(callCount, 1,
+          reason: 'Non-autoDispose served retained result to new consumer — this is the defect');
+      sub2.close();
+    });
+
+    test('C45-proof-2: autoDispose FutureProvider.family forces fresh evaluation after consumer teardown', () async {
+      var callCount = 0;
+      final autoDisposeProvider = FutureProvider.autoDispose.family<String, String>((ref, arg) async {
+        callCount++;
+        return 'result-$arg';
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // First consumer subscribes and reads result
+      final sub1 = container.listen(autoDisposeProvider('key'), (_, __) {});
+      await container.read(autoDisposeProvider('key').future);
+      expect(callCount, 1);
+
+      // Consumer teardown — autoDispose: state IS disposed
+      sub1.close();
+
+      // Second consumer — fresh evaluation forced
+      final sub2 = container.listen(autoDisposeProvider('key'), (_, __) {});
+      await container.read(autoDisposeProvider('key').future);
+      expect(callCount, 2,
+          reason: 'AutoDispose made fresh call on new consumer — this is the fix');
+      sub2.close();
+    });
+
+    test('C45-1: simpleActionabilityProvider is declared autoDispose — no retained actionability for reliance', () {
+      final provider = File('lib/actionability/providers/actionability_provider.dart').readAsStringSync();
+      // Must use autoDispose.family, not plain family
+      expect(provider, contains('FutureProvider.autoDispose.family'));
+      expect(provider, isNot(contains('FutureProvider.family<ActionabilityResult,')));
+      // Security law comment preserved
+      expect(provider, contains('NEVER cached for reliance'));
+    });
+
+    test('C45-2: actionabilityProvider (full-args variant) is also autoDispose', () {
+      final provider = File('lib/actionability/providers/actionability_provider.dart').readAsStringSync();
+      // Both providers in the file must be autoDispose — count occurrences
+      final autoDisposeCount = 'FutureProvider.autoDispose.family'.allMatches(provider).length;
+      expect(autoDisposeCount, greaterThanOrEqualTo(2),
+          reason: 'Both actionabilityProvider and simpleActionabilityProvider must be autoDispose');
+      // No plain FutureProvider.family in this file
+      expect(provider, isNot(contains('= FutureProvider.family')));
+    });
+
+    test('C45-3: trustRecordProvider is declared autoDispose — no retained trust record for verify', () {
+      final provider = File('lib/trust/providers/trust_provider.dart').readAsStringSync();
+      // Must use autoDispose.family
+      expect(provider, contains('FutureProvider.autoDispose.family<TrustRecord'));
+      expect(provider, isNot(contains('FutureProvider.family<TrustRecord')));
+      // Currentness rationale comment preserved
+      expect(provider, contains('autoDispose'));
+    });
+
+    test('C45-4: RelianceScreen no-cache assertion preserved and aligned with autoDispose enforcement', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      // UI-level assert still guards the no-cache law
+      expect(screen, contains('actionabilityCacheForReliance'));
+      expect(screen, contains('Actionability must not be cached for reliance'));
+    });
+
+    test('C45-5: receipt B-delta preserved — SocketException/TimeoutException only; ApiException propagates', () {
+      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      // B delta: ApiException (4xx/5xx) must propagate — catches only network failures
+      expect(provider, contains('on SocketException catch'));
+      expect(provider, contains('on TimeoutException catch'));
+      expect(provider, isNot(contains('} catch (e) {\n        receipt = _buildLocalReceipt')));
+      expect(provider, isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')));
     });
 
     // ── R35 ──────────────────────────────────────────────────────────────────
