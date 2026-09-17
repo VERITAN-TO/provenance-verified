@@ -16,13 +16,16 @@ env:
   # R29 adds 5 tests: C29-1..C29-5 (settlement authority seam wired; PR #47 data.settlement).
   # R29 also updates C22-2 and C28-1..C28-5 (same test count, content updated).
   # Expected count after R29: 242 + 5 = 247.
+  # R30 adds 5 tests: C30-1..C30-5 (credential lifecycle rebind; PR #48 data.credential_lifecycle).
+  # Confirmed executed count: 252 — from CI run 35176530986 on commit f0915f69 (R30).
   # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
-  #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5) +5 new R29 tests (C29-1..5),
+  #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5) +5 new R29 tests (C29-1..5)
+  #     +5 new R30 tests (C30-1..5),
   #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
   #   trust_models_test.dart: 37.
   # DO NOT update this value by hand. Update only after an executed GitHub Actions
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
-  EXPECTED_M2_UNIT_COUNT: '247'
+  EXPECTED_M2_UNIT_COUNT: '252'
 
 jobs:
   linux-android:
