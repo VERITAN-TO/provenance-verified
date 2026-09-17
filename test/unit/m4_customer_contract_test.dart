@@ -1461,5 +1461,64 @@ void main() {
       expect(screen, isNot(contains("'T3 EVIDENCE-ESTABLISHED'")));
       expect(screen, isNot(contains("'T4 GOVERNED AUTHORITY'")));
     });
+
+    // ── R46: NATIVE PHOTO + EVIDENCE PICKER WIRING ───────────────────────────
+    // image_picker and file_picker are wired into submit_screen.dart (commit 3126823).
+    // These locks prevent regression to SnackBar stubs and lock the picker import,
+    // image rendering path, and evidence-picker state integration.
+
+    test('C46-1: submit_screen imports image_picker and file_picker — native packages wired', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Both native picker packages must be imported (not SnackBar stubs)
+      expect(screen, contains("import 'package:image_picker/image_picker.dart'"));
+      expect(screen, contains("import 'package:file_picker/file_picker.dart'"));
+      // dart:io must be imported for File() rendering
+      expect(screen, contains("import 'dart:io'"));
+    });
+
+    test('C46-2: _PhotoSection calls ImagePicker.pickImage with gallery source — no SnackBar stub', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Native gallery picker must be used (not a SnackBar placeholder)
+      expect(screen, contains('ImagePicker()'));
+      expect(screen, contains('pickImage(source: ImageSource.gallery'));
+      // Successful pick must call addPhoto with the picked path
+      expect(screen, contains('addPhoto(picked.path)'));
+      // SnackBar stub must be absent
+      expect(screen, isNot(contains("'Photo upload not yet implemented'")));
+    });
+
+    test('C46-3: _PhotoTile renders Image.file — not icon placeholder', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Real image rendering via Image.file (not an icon placeholder)
+      expect(screen, contains('Image.file('));
+      // File() constructor called with path — renders the picked image
+      expect(screen, contains('File(path)'));
+      // errorBuilder must be present — handles broken/missing files gracefully
+      expect(screen, contains('errorBuilder:'));
+      expect(screen, contains('broken_image'));
+    });
+
+    test('C46-4: Step 2 document section calls FilePicker.platform.pickFiles — no SnackBar stub', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Native file picker must be used
+      expect(screen, contains('FilePicker.platform.pickFiles('));
+      // Result must be checked before use
+      expect(screen, contains('result.files.isNotEmpty'));
+      // addDocument must be called with EvidenceDocument from picked file
+      expect(screen, contains('addDocument(EvidenceDocument('));
+      // SnackBar stub must be absent
+      expect(screen, isNot(contains("'File upload not yet implemented'")));
+    });
+
+    test('C46-5: file_picker version is >=8.1.4 — compileSdk 36 in plugin build.gradle (AAR parity fix)', () {
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      // file_picker 8.1.4 updated compileSdk to 36 in its own build.gradle,
+      // satisfying flutter_plugin_android_lifecycle minCompileSdk=36 requirement.
+      // Must not regress to <8.1.4 which compiled against android-34.
+      expect(pubspec, contains('file_picker: ^8.1.4'));
+      expect(pubspec, isNot(contains('file_picker: ^8.1.2')));
+      expect(pubspec, isNot(contains('file_picker: ^8.0')));
+      expect(pubspec, isNot(contains('file_picker: ^7.')));
+    });
   });
 }
