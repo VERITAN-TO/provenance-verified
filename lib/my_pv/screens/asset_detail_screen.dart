@@ -4,12 +4,14 @@
 // Trust display follows the same conservative pattern as trust_result_screen.dart.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/my_pv_models.dart';
 import '../providers/my_pv_provider.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
+import '../../trust/providers/trust_provider.dart';
 
 class AssetDetailScreen extends ConsumerWidget {
   final String assetId;
@@ -48,6 +50,14 @@ class _DetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Parse top-level asset fields
     final asset = CustomerAsset.fromJson(detail);
+
+    // Fetch public_record_url from machine trust response for Share seam.
+    // Bound to server-authored URL only — Native must not construct this locally.
+    // Only watch when publicId is non-empty (guard against unconfigured assets).
+    final trustAsync = asset.publicId.isNotEmpty
+        ? ref.watch(trustRecordProvider(asset.publicId))
+        : null;
+    final publicRecordUrl = trustAsync?.valueOrNull?.publicRecordUrl;
 
     // Parse custody events
     final custodyRaw = detail['custody_history'] as List? ?? [];
@@ -603,13 +613,27 @@ class _ActionButtons extends StatelessWidget {
             side: const BorderSide(color: PvColors.border),
           ),
         ),
-        // Share: CROSS_LANE_HANDOFF_REQUIRED.
-        // publicId alone is not public-record publication authority.
-        // Env.pvApiBaseUrl is the API origin, not the canonical public Verify URL.
-        // No server-authored public-record seam exists in the native asset-detail
-        // contract (no isPublicRecord, registryActive, or publicVerifyUrl field).
-        // Share is suppressed fail-closed until the server supplies an explicit
-        // public-record authority field and canonical public Verify URL contract.
+        // Share: server-authored public_record_url seam (R50 LEAD-A PR #48).
+        // Rendered only when server explicitly returns publicRecordUrl.
+        // Native must not construct a public verification URL from publicId.
+        // Fail-closed: button hidden when publicRecordUrl is null or empty.
+        if (publicRecordUrl != null && publicRecordUrl.isNotEmpty)
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: publicRecordUrl));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Verification link copied to clipboard.')),
+                );
+              }
+            },
+            icon: const Icon(Icons.share_outlined, size: 18),
+            label: const Text('Share Verification'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PvColors.onBackground,
+              side: const BorderSide(color: PvColors.border),
+            ),
+          ),
       ],
     );
   }

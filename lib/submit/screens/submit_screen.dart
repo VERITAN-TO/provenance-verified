@@ -607,11 +607,19 @@ class _PhotoSection extends ConsumerWidget {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () async {
-            final picker = ImagePicker();
-            final XFile? picked =
-                await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
-            if (picked != null) {
-              ref.read(submitProvider.notifier).addPhoto(picked.path);
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              final picker = ImagePicker();
+              final XFile? picked =
+                  await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+              if (picked != null) {
+                ref.read(submitProvider.notifier).addPhoto(picked.path);
+              }
+            } catch (_) {
+              // PlatformException or provider exception — resolve to error UI, not crash.
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Could not access photo library. Please try again.')),
+              );
             }
           },
           icon: const Icon(Icons.add_a_photo_outlined, size: 18),
@@ -795,20 +803,28 @@ class _Step2Evidence extends ConsumerWidget {
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () async {
-                  final result = await FilePicker.platform.pickFiles(
-                    allowMultiple: false,
-                    type: FileType.any,
-                  );
-                  if (result != null && result.files.isNotEmpty) {
-                    final file = result.files.first;
-                    final path = file.path;
-                    if (path != null) {
-                      ref.read(submitProvider.notifier).addDocument(EvidenceDocument(
-                        filePath: path,
-                        fileName: file.name,
-                        docType: EvidenceDocumentType.other,
-                      ));
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      allowMultiple: false,
+                      type: FileType.any,
+                    );
+                    if (result != null && result.files.isNotEmpty) {
+                      final file = result.files.first;
+                      final path = file.path;
+                      if (path != null) {
+                        ref.read(submitProvider.notifier).addDocument(EvidenceDocument(
+                          filePath: path,
+                          fileName: file.name,
+                          docType: EvidenceDocumentType.other,
+                        ));
+                      }
                     }
+                  } catch (_) {
+                    // PlatformException or provider exception — resolve to error UI, not crash.
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Could not access files. Please try again.')),
+                    );
                   }
                 },
                 icon: const Icon(Icons.attach_file, size: 18),

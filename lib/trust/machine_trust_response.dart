@@ -97,6 +97,12 @@ class MachineTrustResponse {
   // physical_subject_id comes from x-pv-physical-subject response header.
   final String physicalSubjectId;
   final Map<String, dynamic>? error;
+  // Server-authored public verification URL — safe for Native sharing.
+  // Constructed server-side from PV_SITE_URL env var; Native must NOT construct this from publicId.
+  final String? publicRecordUrl;
+  // Server-authored purchase qualification outcome. MONEY_CONTROLS_TRUST = FALSE.
+  // QUALIFIED | UNQUALIFIED — from server purchase.qualification_outcome.
+  final String? purchaseQualificationOutcome;
 
   const MachineTrustResponse({
     required this.schema,
@@ -135,6 +141,8 @@ class MachineTrustResponse {
     required this.trustStateDigest,
     required this.physicalSubjectId,
     this.error,
+    this.publicRecordUrl,
+    this.purchaseQualificationOutcome,
   });
 
   bool get hasError => error != null;
@@ -154,6 +162,7 @@ class MachineTrustResponse {
     final credential = j['credential'] as Map<String, dynamic>? ?? {};
     final continuity = j['continuity'] as Map<String, dynamic>? ?? {};
     final lifecycle = j['lifecycle'] as Map<String, dynamic>? ?? {};
+    final purchase = j['purchase'] as Map<String, dynamic>? ?? {};
 
     return MachineTrustResponse(
       schema: j['schema'] as String? ?? 'pv.machine-trust.v1',
@@ -205,6 +214,8 @@ class MachineTrustResponse {
           ? physicalSubjectHeader
           : subject['subject_id'] as String? ?? '',
       error: j['error'] as Map<String, dynamic>?,
+      publicRecordUrl: j['public_record_url'] as String?,
+      purchaseQualificationOutcome: purchase['qualification_outcome'] as String?,
     );
   }
 
@@ -253,6 +264,7 @@ class MachineTrustResponse {
       qualificationState: eligible ? QualificationState.qualified : QualificationState.unqualified,
       materialConflict: materialConflict,
       tierRationale: tierLabel.isNotEmpty ? tierLabel : null,
+      purchaseQualificationOutcome: purchaseQualificationOutcome,
     );
 
     // Map authority
@@ -275,6 +287,7 @@ class MachineTrustResponse {
     return TrustRecord(
       publicId: publicId,
       trustStateDigest: trustStateDigest,
+      publicRecordUrl: publicRecordUrl,
       subject: TrustSubject(
         subjectId: subjectId,
         physicalSubjectId: physicalSubjectId,

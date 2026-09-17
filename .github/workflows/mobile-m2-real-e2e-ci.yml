@@ -482,7 +482,7 @@ jobs:
             -H 'Accept: application/json' \
             --connect-timeout 10 --max-time 15 \
             "$PV_QUAL_API_BASE_URL/api/v1/mobile/token" \
-            -d '{"tenant_id":"ci-diagnostic-probe","device_id":"ci-probe-device","platform":"android","app_version":"0.0.0"}' \
+            -d '{"tenant_id":"ci-diagnostic-probe","device_id":"ci-probe-device","platform":"test","app_version":"0.0.0"}' \
             2>/dev/null || echo "000")
           echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
           CONTENT_TYPE=$(grep -i '^content-type:' /tmp/probe-headers.txt 2>/dev/null | \
@@ -514,6 +514,7 @@ jobs:
             --dart-define=PV_API_KEY=$PV_API_KEY \
             --dart-define=PV_TENANT_ID=$PV_TENANT_ID \
             --dart-define=PV_QUAL_SUBJECT_ID=$PV_QUAL_SUBJECT_ID \
+            --dart-define=PV_MOBILE_PLATFORM=test \
             2>&1 | tee flutter-test-integration.txt
           grep -q "All tests passed" flutter-test-integration.txt || \
             { echo "::error::Integration tests failed"; exit 1; }

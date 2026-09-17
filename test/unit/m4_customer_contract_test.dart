@@ -1521,32 +1521,41 @@ void main() {
       expect(pubspec, isNot(contains('file_picker: ^7.')));
     });
 
-    // ── R47/R48: NATIVE SHARE — PUBLIC-AUTHORITY FAIL-CLOSED ────────────────
-    // R47 wired Share as a clipboard URL copy using publicId + pvApiBaseUrl.
-    // R48 CTO correction: publicId alone is not public-record publication
-    // authority; pvApiBaseUrl is the API origin, not the canonical public
-    // Verify URL. No server-authored public-record seam exists in the native
-    // asset-detail contract. Share must be suppressed fail-closed.
-    // CROSS_LANE_HANDOFF_REQUIRED: do not fabricate a public-record link.
+    // ── R47/R48→R50: NATIVE SHARE — SERVER-GATED PUBLIC-RECORD URL ──────────
+    // R47 wired Share from publicId+pvApiBaseUrl (fabricated URL — rejected).
+    // R48 suppressed Share fail-closed (CROSS_LANE_HANDOFF_REQUIRED).
+    // R50 unblocks Share via server-authored public_record_url seam:
+    //   - A-side emits public_record_url in machine trust response (PR #48 SHA 3209074)
+    //   - Native consumes it from trustRecordProvider; fail-closed when absent/null
+    //   - Native must NOT construct a public verification URL from publicId
+    //   - Clipboard.setData is now used, gated strictly on server-supplied URL
 
-    test('C47-1: publicId alone must not activate clipboard Share — Clipboard.setData suppressed', () {
+    test('C47-1: Share is server-gated — Clipboard.setData present only under publicRecordUrl guard', () {
       final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
-      // No unconditional clipboard copy — Share is suppressed, not deferred
-      expect(detail, isNot(contains('Clipboard.setData')));
-      // pvApiBaseUrl must not be used as canonical public Verify URL in Share path
+      // R50: Clipboard.setData is now present — Share unblocked via server seam
+      expect(detail, contains('Clipboard.setData'));
+      // Must be guarded by server-supplied publicRecordUrl — fail-closed
+      expect(detail, contains('publicRecordUrl'));
+      // The guard must check both null and empty — fail-closed on absent server URL
+      expect(detail, contains('publicRecordUrl != null && publicRecordUrl.isNotEmpty'));
+      // pvApiBaseUrl must NOT be used as canonical public Verify URL — fabrication guard
       expect(detail, isNot(contains("Env.pvApiBaseUrl}/verify/")));
-      // No deferred stub message either
+      // No deferred stub message — Share is either active (server URL) or hidden
       expect(detail, isNot(contains("'Share coming soon'")));
-      // No 'Copied to clipboard' confirmation (Share not activated)
-      expect(detail, isNot(contains("'Copied to clipboard'")));
     });
 
-    test('C47-2: Share suppressed — CROSS_LANE_HANDOFF_REQUIRED coded in detail screen', () {
+    test('C47-2: Share wired from server-authored URL — trust provider seam present in detail screen', () {
       final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
-      // Suppression marker must be present — Share is explicitly suppressed, not silently absent
-      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
-      // No Clipboard or services.dart import in the detail screen
-      expect(detail, isNot(contains("import 'package:flutter/services.dart'")));
+      // R50: services.dart import now present — used for Clipboard.setData
+      expect(detail, contains("import 'package:flutter/services.dart'"));
+      // Trust provider import must be present — publicRecordUrl sourced from machine trust response
+      expect(detail, contains("import '../../trust/providers/trust_provider.dart'"));
+      // trustRecordProvider must be watched — Native must not construct the URL locally
+      expect(detail, contains('trustRecordProvider'));
+      // public_record_url seam comment must be present — R50 authority annotation
+      expect(detail, contains('public_record_url'));
+      // CROSS_LANE_HANDOFF_REQUIRED suppression removed — seam now active via server authority
+      expect(detail, isNot(contains('CROSS_LANE_HANDOFF_REQUIRED')));
     });
 
     // ── R48: ANDROID MEDIA PERMISSION AUDIT ─────────────────────────────────
@@ -1640,6 +1649,73 @@ void main() {
       expect(home, contains('ref.watch(homeAlertsProvider)'));
       // Must use .when() to handle async state — not a static literal list
       expect(home, contains('.when('));
+    });
+
+    // ── R50: PICKER EXCEPTION HANDLING + SEAM COMPLETENESS ───────────────────
+    // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R50-CROSS-LANE-UNBLOCK-PICKER-19679-A320907
+    // NATIVE_PICKER_EXCEPTION_UNHANDLED: both picker call sites must wrap
+    // PlatformException and provider exceptions in try/catch, resolving to
+    // explicit error UI — never crash, never silently continue, never fabricate
+    // upload success. Share, custody, and professional-mode seams complete.
+
+    test('C50-6: photo picker (_PhotoSection) wraps pickImage in try/catch — PlatformException fail-safe', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // try block must wrap the pickImage call site
+      expect(submit, contains('picker.pickImage'));
+      // catch must be present after pickImage site
+      final pickIdx = submit.indexOf('picker.pickImage');
+      final catchIdx = submit.indexOf('} catch (_) {', pickIdx);
+      expect(pickIdx, isNot(-1), reason: 'pickImage call must be present');
+      expect(catchIdx, isNot(-1), reason: 'catch block must follow pickImage');
+      // Error SnackBar must be shown — resolve to error UI, not crash
+      expect(submit, contains('Could not access photo library. Please try again.'));
+    });
+
+    test('C50-7: file picker (_Step2Evidence) wraps pickFiles in try/catch — PlatformException fail-safe', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // try block must wrap the pickFiles call site
+      expect(submit, contains('FilePicker.platform.pickFiles'));
+      // catch must be present after pickFiles site
+      final pickIdx = submit.indexOf('FilePicker.platform.pickFiles');
+      final catchIdx = submit.indexOf('} catch (_) {', pickIdx);
+      expect(pickIdx, isNot(-1), reason: 'pickFiles call must be present');
+      expect(catchIdx, isNot(-1), reason: 'catch block must follow pickFiles');
+      // Error SnackBar must be shown — resolve to error UI, not crash
+      expect(submit, contains('Could not access files. Please try again.'));
+    });
+
+    test('C50-8: MachineTrustResponse parses public_record_url — server-authored Share seam', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      // Field declaration must be present
+      expect(mtr, contains('publicRecordUrl'));
+      // Must be parsed from JSON key public_record_url
+      expect(mtr, contains("j['public_record_url']"));
+      // Must be nullable String — fail-closed when absent from server
+      expect(mtr, contains('String? publicRecordUrl'));
+      // Must be propagated to TrustRecord
+      expect(mtr, contains('publicRecordUrl: publicRecordUrl'));
+    });
+
+    test('C50-9: CUSTODY_IS_NOT_LEGAL_TITLE=TRUE annotated on TrustRecord.continuity — display-only guard', () {
+      final models = File('lib/trust/trust_models.dart').readAsStringSync();
+      // Invariant annotation must be present at field declaration site
+      expect(models, contains('CUSTODY_IS_NOT_LEGAL_TITLE'));
+      // continuity field must be present on TrustRecord
+      expect(models, contains('TrustContinuity? continuity'));
+      // Display-only guard annotation keywords must be present
+      expect(models, contains('display-only'));
+    });
+
+    test('C50-10: MachineTrustResponse parses purchase.qualification_outcome — MONEY_CONTROLS_TRUST=FALSE', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      // purchaseQualificationOutcome field must be present
+      expect(mtr, contains('purchaseQualificationOutcome'));
+      // Must be parsed from nested purchase map
+      expect(mtr, contains("purchase['qualification_outcome']"));
+      // Must be nullable — absent when server omits it
+      expect(mtr, contains('String? purchaseQualificationOutcome'));
+      // MONEY_CONTROLS_TRUST invariant must be annotated — server determines trust, not payment state
+      expect(mtr, contains('MONEY_CONTROLS_TRUST'));
     });
   });
 }

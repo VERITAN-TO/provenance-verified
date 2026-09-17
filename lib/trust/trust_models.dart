@@ -335,6 +335,10 @@ class TrustDetermination {
   final String? tierRationale;
   final List<String> metRequirements;
   final List<String> notMetRequirements;
+  // Server-authored purchase qualification outcome. MONEY_CONTROLS_TRUST = FALSE.
+  // QUALIFIED | UNQUALIFIED — from server purchase.qualification_outcome field.
+  // Native must not derive or override qualification from purchase/payment state.
+  final String? purchaseQualificationOutcome;
 
   const TrustDetermination({
     required this.determinationId,
@@ -345,6 +349,7 @@ class TrustDetermination {
     this.tierRationale,
     this.metRequirements = const [],
     this.notMetRequirements = const [],
+    this.purchaseQualificationOutcome,
   });
 
   Map<String, dynamic> toJson() => {
@@ -510,6 +515,9 @@ class TrustRecord {
   final List<ClaimVerdict> claimVerdicts;
   final List<EvidenceItem> evidence;
   final TrustDetermination? determination;
+  // CUSTODY_IS_NOT_LEGAL_TITLE = TRUE: continuity/custody projection is display-only.
+  // Native may project custody state but must not assert legal title transfer,
+  // ownership authority, registry authority, or signing authority.
   final TrustContinuity? continuity;
   final TrustFreshness? freshness;
   final TrustAuthority? authority;
@@ -518,6 +526,9 @@ class TrustRecord {
   final List<String> prohibitedInferences;
   // M1 Security Law: ALWAYS false. Server determines trust.
   final bool moneyControlsTrust;
+  // Server-authored public verification URL for sharing — from machine trust response.
+  // Native must NOT construct this from publicId or base URL; use server-supplied value only.
+  final String? publicRecordUrl;
 
   const TrustRecord({
     required this.publicId,
@@ -533,6 +544,7 @@ class TrustRecord {
     this.limitations = const [],
     this.prohibitedInferences = const [],
     this.moneyControlsTrust = false,
+    this.publicRecordUrl,
   });
 
   // M1-05: MTA1 R2 Ambiguity Defense.
