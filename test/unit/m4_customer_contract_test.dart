@@ -1268,6 +1268,68 @@ void main() {
       expect(provider, isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')));
     });
 
+    // ── R44: MY PV AUTHORITY AND EVIDENCE BOUNDARY ───────────────────────────
+    // _AssetCard must apply the eligible gate before displaying a tier label.
+    // Evidence wording must not overclaim authority or independent verification.
+    // MTA-1: SERVER DETERMINES TRUST. CUSTOMER_SELECTS_TIER=FALSE.
+
+    test('C44-1: _AssetCard derives effectiveTier from eligible before display', () {
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      // Must declare _effectiveTier() helper gating on asset.eligible
+      expect(screen, contains('_effectiveTier()'));
+      expect(screen, contains('asset.eligible ? asset.trustTier : null'));
+      // Badge Text must use effectiveTier, not raw asset.trustTier
+      expect(screen, isNot(contains('_tierLabel(asset.trustTier)')));
+      // tierColor must use effectiveTier
+      expect(screen, contains('_tierColor(effectiveTier)'));
+      // Semantics label must use effectiveTier
+      expect(screen, contains('_tierLabel(effectiveTier)'));
+    });
+
+    test('C44-2: list and detail agree — ineligible shows NOT QUALIFIED on both', () {
+      final listScreen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      final detailScreen = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // List: null effectiveTier maps to NOT QUALIFIED
+      expect(listScreen, contains("if (tier == null) return 'NOT QUALIFIED'"));
+      // Detail: eligible gate applied before tier label
+      expect(detailScreen, contains("if (!asset.eligible) return 'NOT QUALIFIED'"));
+    });
+
+    test('C44-3: evidence section wording does not claim verification authority for server-recorded items', () {
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // Must not use the overbroad "provided by the verification authority" phrase
+      expect(detail, isNot(contains('provided by the verification authority')));
+      // Must clarify items are recorded on submission, not independently verified
+      expect(detail, contains('recorded on submission'));
+      // Must state no inferences beyond what is explicitly stated
+      expect(detail, contains('No inferences beyond what is explicitly stated'));
+      // Must state presence does not make an item independent or qualified
+      expect(detail, contains('does not make an item independent'));
+    });
+
+    test('C44-4: integrity wording is file-integrity-only — not independent evidentiary verification', () {
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // Must read "File integrity verified", not bare "Integrity verified"
+      expect(detail, contains('File integrity verified'));
+      // Must not have the bare unqualified "Integrity verified" string
+      expect(detail, isNot(contains("'Integrity verified'")));
+    });
+
+    test('C44-5: no Transfer mutation or Professional-mode route/action introduced', () {
+      final myPvScreen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      final detailScreen = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // No transfer action in list or detail
+      expect(myPvScreen, isNot(contains('/transfer')));
+      expect(detailScreen, isNot(contains('/transfer')));
+      // No professional mode surface
+      expect(myPvScreen, isNot(contains('/professional')));
+      expect(detailScreen, isNot(contains('/professional')));
+      // Action buttons: only Verify Now, Submit Update, Share — no Transfer button
+      expect(detailScreen, contains('Verify Now'));
+      expect(detailScreen, contains('Submit Update'));
+      expect(detailScreen, isNot(contains('Transfer')));
+    });
+
     // ── R35 ──────────────────────────────────────────────────────────────────
     test('C35-1: my_pv tier labels use canonical Web/Core names — not abbreviated variants', () {
       // R35: my_pv_screen._tierLabel must match CustomerSubmissionDetail.tsx canonical strings.

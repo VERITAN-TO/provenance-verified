@@ -70,7 +70,7 @@ class _UnauthenticatedView extends StatelessWidget {
             const Text('Sign in to view your assets', style: PvTypography.title),
             const SizedBox(height: 10),
             Text(
-              'Your digital passports, custody history, and reliance receipts are waiting.',
+              'Your PV asset records, custody history, and reliance receipts are waiting.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               textAlign: TextAlign.center,
             ),
@@ -125,6 +125,10 @@ class _AssetCard extends StatelessWidget {
   final CustomerAsset asset;
   const _AssetCard({required this.asset});
 
+  // R44: effective tier is null when ineligible — never show a qualified tier label
+  // for an ineligible asset. Must match asset_detail_screen.dart _TierBadge logic.
+  int? _effectiveTier() => asset.eligible ? asset.trustTier : null;
+
   Color _tierColor(int? tier) {
     switch (tier) {
       case 1: return PvColors.tier1;
@@ -148,9 +152,10 @@ class _AssetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tierColor = _tierColor(asset.trustTier);
+    final effectiveTier = _effectiveTier();
+    final tierColor = _tierColor(effectiveTier);
     return Semantics(
-      label: '${asset.assetName}, ${_tierLabel(asset.trustTier)}${asset.hasStaledReceipts ? ', stale receipts' : ''}',
+      label: '${asset.assetName}, ${_tierLabel(effectiveTier)}${asset.hasStaledReceipts ? ', stale receipts' : ''}',
       button: true,
       child: InkWell(
         onTap: () => context.push('/my-pv/asset/${asset.assetId}'),
@@ -217,7 +222,7 @@ class _AssetCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              _tierLabel(asset.trustTier),
+                              _tierLabel(effectiveTier),
                               style: PvTypography.label.copyWith(
                                   color: tierColor, fontSize: 8),
                               maxLines: 1,

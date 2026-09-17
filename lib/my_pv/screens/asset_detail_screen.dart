@@ -109,8 +109,9 @@ class _DetailView extends StatelessWidget {
           _SectionHeader('EVIDENCE SCOPE'),
           const SizedBox(height: 4),
           const Text(
-            'Evidence items listed as provided by the verification authority. '
-            'No inferences beyond what is explicitly stated.',
+            'Evidence items returned by the PV server as recorded on submission. '
+            'Presence does not make an item independent, qualified, corroborated, '
+            'or claim-credit evidence. No inferences beyond what is explicitly stated.',
             style: TextStyle(color: PvColors.muted, fontSize: 12),
           ),
           const SizedBox(height: 8),
@@ -326,7 +327,7 @@ class _EvidenceItem extends StatelessWidget {
                       const Icon(Icons.verified, size: 14, color: PvColors.success),
                       const SizedBox(width: 4),
                       Text(
-                        'Integrity verified',
+                        'File integrity verified',
                         style: PvTypography.bodySmall
                             .copyWith(color: PvColors.success),
                       ),
