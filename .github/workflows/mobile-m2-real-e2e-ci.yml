@@ -33,15 +33,18 @@ env:
   # R35/R36 adds 1 test: C35-1 (my_pv tier labels match canonical Web/Core names).
   # Confirmed executed count: 269 — from CI run 35198037033 job 105125821219 on commit 4c91907 (R36) — all 269 pass;
   #   count gate 268 was sole failure. CI evidence: "+269: All tests passed!"
+  # R42 adds 6 tests: C42-1..C42-6 (offline reliance authority boundary; local receipt validity state fix).
+  # Anticipated count after R42: 269 + 6 = 275. PENDING CI CONFIRMATION.
   # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
   #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5) +5 new R29 tests (C29-1..5)
   #     +5 new R30 tests (C30-1..5) +5 new R31 tests (C31-1..5) +5 new R32 tests (C32-1..5)
-  #     +4 new R33 tests (C33-1..4) +2 new R34 tests (C34-1..2) +1 new R35 test (C35-1),
+  #     +4 new R33 tests (C33-1..4) +2 new R34 tests (C34-1..2) +1 new R35 test (C35-1)
+  #     +6 new R42 tests (C42-1..C42-6),
   #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
   #   trust_models_test.dart: 37.
   # DO NOT update this value by hand. Update only after an executed GitHub Actions
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
-  EXPECTED_M2_UNIT_COUNT: '269'
+  EXPECTED_M2_UNIT_COUNT: '275'
 
 jobs:
   linux-android:

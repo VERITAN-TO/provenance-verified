@@ -45,8 +45,9 @@ class _ReceiptTile extends StatelessWidget {
   final RelianceReceipt receipt;
   const _ReceiptTile({required this.receipt});
 
-  Color _validityColor(ReceiptValidityState s) {
-    switch (s) {
+  Color _validityColor(RelianceReceipt r) {
+    if (!r.isServerIssued) return PvColors.warning;
+    switch (r.validityState) {
       case ReceiptValidityState.valid: return PvColors.success;
       case ReceiptValidityState.invalidated: return PvColors.error;
       case ReceiptValidityState.expired: return PvColors.warning;
@@ -54,9 +55,16 @@ class _ReceiptTile extends StatelessWidget {
     }
   }
 
+  String _badgeLabel(RelianceReceipt r) {
+    // R42: local/offline snapshot is NOT current PV reliance authority.
+    if (!r.isServerIssued) return 'LOCAL SNAPSHOT';
+    return r.validityState.name.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = _validityColor(receipt.validityState);
+    final color = _validityColor(receipt);
+    final label = _badgeLabel(receipt);
     return ListTile(
       onTap: () => context.push('/my-pv/receipts/${receipt.receiptId}'),
       title: Text(receipt.publicId, style: PvTypography.body),
@@ -65,7 +73,9 @@ class _ReceiptTile extends StatelessWidget {
         style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
       ),
       trailing: Semantics(
-        label: 'Receipt validity: ${receipt.validityState.name}',
+        label: receipt.isServerIssued
+            ? 'Receipt validity: ${receipt.validityState.name}'
+            : 'Local snapshot — requery required before relying',
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -74,7 +84,7 @@ class _ReceiptTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
-            receipt.validityState.name.toUpperCase(),
+            label,
             style: PvTypography.label.copyWith(color: color, fontSize: 9),
           ),
         ),

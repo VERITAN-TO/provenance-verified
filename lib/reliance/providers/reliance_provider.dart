@@ -165,7 +165,7 @@ class ReceiptNotifier extends Notifier<AsyncValue<List<RelianceReceipt>>> {
     limitations: limitations,
     prohibitedInferences: prohibitedInferences,
     createdAt: DateTime.now().toUtc(),
-    validityState: ReceiptValidityState.valid,
+    validityState: ReceiptValidityState.unknown,
     policyVersion: policyVersion,
     isServerIssued: false,
   );

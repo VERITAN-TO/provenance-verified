@@ -20,6 +20,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
   ActionabilityPurpose _purpose = ActionabilityPurpose.purchase;
   bool _saving = false;
   String? _savedReceiptId;
+  bool _savedReceiptIsServerIssued = false;
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +110,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                 setState(() {
                   _purpose = p;
                   _savedReceiptId = null;
+                  _savedReceiptIsServerIssued = false;
                 });
               }
             },
@@ -202,12 +204,22 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: PvColors.success.withAlpha(20),
+                        color: (_savedReceiptIsServerIssued
+                                ? PvColors.success
+                                : PvColors.warning)
+                            .withAlpha(20),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Receipt saved: $_savedReceiptId',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.success),
+                        _savedReceiptIsServerIssued
+                            ? 'Receipt saved: $_savedReceiptId'
+                            : 'Offline snapshot saved (not current authority). '
+                                'Requery when online before relying.',
+                        style: PvTypography.bodySmall.copyWith(
+                          color: _savedReceiptIsServerIssued
+                              ? PvColors.success
+                              : PvColors.warning,
+                        ),
                       ),
                     )
                   else
@@ -268,7 +280,10 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
         prohibitedInferences: result.prohibitedInferences,
         policyVersion: result.policyVersion,
       );
-      if (mounted) setState(() => _savedReceiptId = receipt.receiptId);
+      if (mounted) setState(() {
+        _savedReceiptId = receipt.receiptId;
+        _savedReceiptIsServerIssued = receipt.isServerIssued;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

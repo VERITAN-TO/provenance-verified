@@ -5,6 +5,8 @@ import '../providers/reliance_provider.dart';
 import '../receipt_models.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
+// R42: local snapshot authority boundary — requery route
+const _requeryRoute = '/verify';
 
 class ReceiptDetailScreen extends ConsumerWidget {
   final String receiptId;
@@ -31,10 +33,55 @@ class ReceiptDetailScreen extends ConsumerWidget {
               message: 'No receipt found with ID "$receiptId".',
             );
           }
-          final isInvalidated = receipt.validityState != ReceiptValidityState.valid;
+          final isInvalidated = receipt.validityState == ReceiptValidityState.invalidated ||
+              receipt.validityState == ReceiptValidityState.expired;
+          final isLocalSnapshot = !receipt.isServerIssued;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // R42: local snapshot is NOT current PV reliance authority — must block reliance
+              if (isLocalSnapshot)
+                Semantics(
+                  label: 'Local snapshot — not current reliance authority. Requery required.',
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: PvColors.warning.withAlpha(30),
+                      border: Border.all(color: PvColors.warning),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.cloud_off, color: PvColors.warning, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'LOCAL SNAPSHOT — Not current PV reliance authority. '
+                                'Requery before relying on this record.',
+                                style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              context.push('$_requeryRoute/${receipt.publicId}/reliance'),
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Requery for Current Authority'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: PvColors.warning,
+                            side: const BorderSide(color: PvColors.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               if (isInvalidated)
                 Semantics(
                   label: 'Receipt is ${receipt.validityState.name}',

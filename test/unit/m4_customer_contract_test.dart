@@ -1205,6 +1205,69 @@ void main() {
       expect(model, isNot(contains('pv_review_cases')));
     });
 
+    // ── R42: OFFLINE RELIANCE AUTHORITY BOUNDARY ─────────────────────────────
+    // A locally-constructed receipt (isServerIssued=false) MUST NOT appear as
+    // current PV reliance authority. ReceiptValidityState.unknown is the correct
+    // non-authoritative state for offline/local snapshots.
+    // MTA-1: SERVER DETERMINES TRUST. LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
+
+    test('C42-1: local receipt built with unknown validity — never valid', () {
+      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      // _buildLocalReceipt must use ReceiptValidityState.unknown, not .valid
+      expect(provider, contains('validityState: ReceiptValidityState.unknown'));
+      expect(provider, isNot(contains('validityState: ReceiptValidityState.valid,\n    policyVersion: policyVersion,\n    isServerIssued: false')));
+    });
+
+    test('C42-2: receipt list distinguishes local snapshot badge — no green VALID for isServerIssued=false', () {
+      final list = File('lib/reliance/screens/receipt_list_screen.dart').readAsStringSync();
+      // Local snapshot must show 'LOCAL SNAPSHOT', not raw validity state name
+      expect(list, contains("'LOCAL SNAPSHOT'"));
+      // isServerIssued must gate the badge label
+      expect(list, contains('isServerIssued'));
+      // The VALID badge must not be displayed unconditionally from validityState.name
+      expect(list, isNot(contains("receipt.validityState.name.toUpperCase()")));
+    });
+
+    test('C42-3: receipt detail shows authority warning and requery for local snapshot', () {
+      final detail = File('lib/reliance/screens/receipt_detail_screen.dart').readAsStringSync();
+      // Must check isServerIssued to surface authority warning
+      expect(detail, contains('isServerIssued'));
+      // Must label it as local snapshot, not current authority
+      expect(detail, contains('LOCAL SNAPSHOT'));
+      // Must offer requery action to reliance route
+      expect(detail, contains("reliance'"));
+      // Must use existing /verify route for requery — not a new route
+      expect(detail, contains("'/verify'"));
+    });
+
+    test('C42-4: reliance screen save confirmation distinguishes local vs server receipt', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      // Must check isServerIssued on saved receipt
+      expect(screen, contains('isServerIssued'));
+      // Must warn user for offline snapshot
+      expect(screen, contains('not current authority'));
+    });
+
+    test('C42-5: server-issued receipt validityState remains valid — only local changed', () {
+      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      // _parseServerReceipt must still set validityState: ReceiptValidityState.valid
+      expect(provider, contains('validityState: ReceiptValidityState.valid'));
+      // isServerIssued: true on server path
+      expect(provider, contains('isServerIssued: true'));
+    });
+
+    test('C42-6: SocketException/TimeoutException fallback still fails closed on ApiException — B delta preserved', () {
+      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      // B delta: ApiException (4xx/5xx) must propagate — must NOT be caught here
+      expect(provider, contains('B delta'));
+      // Only SocketException and TimeoutException create local receipts
+      expect(provider, contains('on SocketException catch'));
+      expect(provider, contains('on TimeoutException catch'));
+      // Must not have a broad catch that swallows ApiException
+      expect(provider, isNot(contains('} catch (e) {\n        receipt = _buildLocalReceipt')));
+      expect(provider, isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')));
+    });
+
     // ── R35 ──────────────────────────────────────────────────────────────────
     test('C35-1: my_pv tier labels use canonical Web/Core names — not abbreviated variants', () {
       // R35: my_pv_screen._tierLabel must match CustomerSubmissionDetail.tsx canonical strings.
