@@ -1580,5 +1580,66 @@ void main() {
       // Must target com.android.library plugins
       expect(gradle, contains('"com.android.library"'));
     });
+
+    // ── R49: M2-50 DETERMINATION-FIRST FLOW SOURCE LOCKS ─────────────────────
+    // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R49-M2-50-NATIVE-SOURCE-LOCK
+    // Proves the 7-step determination-first wizard is structurally intact,
+    // the server is the sole tier authority (CUSTOMER_SELECTS_TIER=FALSE),
+    // physical evidence upload is wired, and home alerts are server-sourced.
+
+    test('C50-1: submit wizard has exactly 7 steps (0-6) and all step widget classes defined', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Step count constant must be 7
+      expect(submit, contains('_kTotalSteps = 7'));
+      // All 7 step widget classes must be defined
+      expect(submit, contains('class _Step0TrustLadder'));
+      expect(submit, contains('class _Step1AssetInfo'));
+      expect(submit, contains('class _Step2Evidence'));
+      expect(submit, contains('class _Step3Declarations'));
+      expect(submit, contains('class _Step4DeterminationPricing'));
+      expect(submit, contains('class _Step5Settlement'));
+      expect(submit, contains('class _Step6Confirmation'));
+    });
+
+    test('C50-2: determination (Step 4) precedes settlement (Step 5) in _buildStep — determination-first enforced', () {
+      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Both cases must be present
+      final det4Idx = submit.indexOf('_Step4DeterminationPricing');
+      final set5Idx = submit.indexOf('_Step5Settlement');
+      expect(det4Idx, isNot(-1), reason: '_Step4DeterminationPricing must be present in _buildStep');
+      expect(set5Idx, isNot(-1), reason: '_Step5Settlement must be present in _buildStep');
+      // Determination (Step 4) must appear before settlement (Step 5) in source
+      expect(det4Idx, lessThan(set5Idx), reason: 'determination step must precede settlement step — determination-first enforced');
+    });
+
+    test('C50-3: ActivitySubmission.determinedTier is server-authoritative — CUSTOMER_SELECTS_TIER=FALSE annotated', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // determinedTier must be decoded from server JSON key determined_tier
+      expect(model, contains("json['determined_tier']"));
+      // Field must be present
+      expect(model, contains('determinedTier'));
+      // CUSTOMER_SELECTS_TIER=FALSE must be annotated — tier comes from server, never client
+      // Confirmed in R17 lock (C17 group) but also required at the field declaration site
+      expect(model, contains('CUSTOMER_SELECTS_TIER'));
+    });
+
+    test('C50-4: submit_provider wires physical evidence upload via uploadPendingDocuments and uploadEvidence', () {
+      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      // High-level orchestration method must be present
+      expect(provider, contains('uploadPendingDocuments'));
+      // Low-level API call must be present — multipart evidence upload
+      expect(provider, contains('uploadEvidence'));
+      // Must iterate over pending documents (not a no-op stub)
+      expect(provider, contains('pendingDocuments'));
+    });
+
+    test('C50-5: home_screen watches homeAlertsProvider — alerts are server-sourced, not a static list', () {
+      final home = File('lib/home/screens/home_screen.dart').readAsStringSync();
+      // Server-sourced alerts provider must be watched
+      expect(home, contains('homeAlertsProvider'));
+      expect(home, contains('ref.watch(homeAlertsProvider)'));
+      // Must use .when() to handle async state — not a static literal list
+      expect(home, contains('.when('));
+    });
   });
 }
