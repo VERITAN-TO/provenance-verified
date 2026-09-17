@@ -18,9 +18,14 @@ enum CredentialLifecycleStatus {
   revoked,
   expired,
   superseded,
-  notIssued;
+  notIssued,
+  // R32: explicit fail-closed variant for credential/registry authority failure.
+  // CREDENTIAL_AUTHORITY_UNAVAILABLE must NOT become notIssued/neutral/allow.
+  // Render bounded unavailable + retry. Never permit reliance from this state.
+  authorityUnavailable;
 
   // forward-compat: unknown API strings fail-closed to notIssued.
+  // AUTHORITY_UNAVAILABLE strings map to authorityUnavailable (distinct fail-closed).
   // Null input = determination not yet available; returns null.
   static CredentialLifecycleStatus? fromApiString(String? raw) {
     if (raw == null) return null;
@@ -31,18 +36,22 @@ enum CredentialLifecycleStatus {
       case 'EXPIRED':    return CredentialLifecycleStatus.expired;
       case 'SUPERSEDED': return CredentialLifecycleStatus.superseded;
       case 'NOT_ISSUED': return CredentialLifecycleStatus.notIssued;
+      case 'CREDENTIAL_AUTHORITY_UNAVAILABLE':
+      case 'REGISTRY_AUTHORITY_UNAVAILABLE':
+        return CredentialLifecycleStatus.authorityUnavailable;
       default:           return CredentialLifecycleStatus.notIssued;
     }
   }
 
   String get displayLabel {
     switch (this) {
-      case CredentialLifecycleStatus.active:     return 'Credential Active';
-      case CredentialLifecycleStatus.suspended:  return 'Credential Suspended';
-      case CredentialLifecycleStatus.revoked:    return 'Credential Revoked';
-      case CredentialLifecycleStatus.expired:    return 'Credential Expired';
-      case CredentialLifecycleStatus.superseded: return 'Credential Superseded';
-      case CredentialLifecycleStatus.notIssued:  return 'No Active Credential';
+      case CredentialLifecycleStatus.active:               return 'Credential Active';
+      case CredentialLifecycleStatus.suspended:            return 'Credential Suspended';
+      case CredentialLifecycleStatus.revoked:              return 'Credential Revoked';
+      case CredentialLifecycleStatus.expired:              return 'Credential Expired';
+      case CredentialLifecycleStatus.superseded:           return 'Credential Superseded';
+      case CredentialLifecycleStatus.notIssued:            return 'No Active Credential';
+      case CredentialLifecycleStatus.authorityUnavailable: return 'Credential Authority Unavailable';
     }
   }
 }
@@ -57,24 +66,30 @@ enum SettlementPaymentStatus {
   free,
   paid,
   pending,
+  // R32: explicit fail-closed variant for settlement authority lookup failure.
+  // LOOKUP_ERROR is NOT equivalent to unknown/null/pending.
+  // No settle CTA, no checkout, no Public Verify/reliance unlock on LOOKUP_ERROR.
+  lookupError,
   unknown;
 
   static SettlementPaymentStatus? fromApiString(String? raw) {
     if (raw == null) return null;
     switch (raw.toUpperCase()) {
-      case 'FREE':    return SettlementPaymentStatus.free;
-      case 'PAID':    return SettlementPaymentStatus.paid;
-      case 'PENDING': return SettlementPaymentStatus.pending;
-      default:        return SettlementPaymentStatus.unknown;
+      case 'FREE':         return SettlementPaymentStatus.free;
+      case 'PAID':         return SettlementPaymentStatus.paid;
+      case 'PENDING':      return SettlementPaymentStatus.pending;
+      case 'LOOKUP_ERROR': return SettlementPaymentStatus.lookupError;
+      default:             return SettlementPaymentStatus.unknown;
     }
   }
 
   String get displayLabel {
     switch (this) {
-      case SettlementPaymentStatus.free:    return 'Settled (Free)';
-      case SettlementPaymentStatus.paid:    return 'Settled (Paid)';
-      case SettlementPaymentStatus.pending: return 'Awaiting Settlement';
-      case SettlementPaymentStatus.unknown: return 'Unknown';
+      case SettlementPaymentStatus.free:        return 'Settled (Free)';
+      case SettlementPaymentStatus.paid:        return 'Settled (Paid)';
+      case SettlementPaymentStatus.pending:     return 'Awaiting Settlement';
+      case SettlementPaymentStatus.lookupError: return 'Settlement Unavailable';
+      case SettlementPaymentStatus.unknown:     return 'Unknown';
     }
   }
 }
@@ -283,6 +298,52 @@ class Settlement {
 }
 
 // ---------------------------------------------------------------------------
+// TrustCurrentness — R32: PR47 server-authored lifecycle/currentness object.
+// Consumed from customer submission status endpoint when key 'trust_currentness'
+// is present. MTA-1: SERVER DETERMINES TRUST.
+// LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
+// credential_state here is the PR47 customer-operating-plane view, separate from
+// the credentialLifecycle registry plane. NOT_ISSUED ≠ trust failure.
+// ---------------------------------------------------------------------------
+
+class TrustCurrentness {
+  final String? determinationState;
+  final bool? determinationIsCurrent;
+  final DateTime? computedAt;
+  final String? requeryGuidance;
+  final String? relianceBoundary;
+  final String? authorityNote;
+  final String? credentialState;
+
+  const TrustCurrentness({
+    this.determinationState,
+    this.determinationIsCurrent,
+    this.computedAt,
+    this.requeryGuidance,
+    this.relianceBoundary,
+    this.authorityNote,
+    this.credentialState,
+  });
+
+  bool get hasAuthorityUnavailable {
+    final s = (determinationState ?? '').toUpperCase();
+    return s.contains('UNAVAILABLE');
+  }
+
+  factory TrustCurrentness.fromJson(Map<String, dynamic> j) => TrustCurrentness(
+        determinationState:     j['determination_state'] as String?,
+        determinationIsCurrent: j['determination_is_current'] as bool?,
+        computedAt: j['computed_at'] != null
+            ? DateTime.tryParse(j['computed_at'] as String)
+            : null,
+        requeryGuidance:  j['requery_guidance'] as String?,
+        relianceBoundary: j['reliance_boundary'] as String?,
+        authorityNote:    j['authority_note'] as String?,
+        credentialState:  j['credential_state'] as String?,
+      );
+}
+
+// ---------------------------------------------------------------------------
 // SubmissionDetail — full detail returned by GET .../status
 // ---------------------------------------------------------------------------
 
@@ -360,6 +421,9 @@ class SubmissionDetail {
   /// REGISTRY_STATE_ONLY = TRUE: NOT_ISSUED ≠ trust failure.
   /// MTA-1: SERVER DETERMINES TRUST — sourced from pv_review_cases (PR #48).
   final CredentialLifecycleStatus? credentialLifecycle;
+  /// PR47 server-authored trust currentness object — null when not present.
+  /// MTA-1: SERVER DETERMINES TRUST. LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
+  final TrustCurrentness? trustCurrentness;
 
   const SubmissionDetail({
     required this.submissionId,
@@ -377,6 +441,7 @@ class SubmissionDetail {
     this.hasSettlementSeam = false,
     this.settlementData,
     this.credentialLifecycle,
+    this.trustCurrentness,
   });
 
   factory SubmissionDetail.fromJson(Map<String, dynamic> json) {
@@ -415,6 +480,11 @@ class SubmissionDetail {
           : null,
       credentialLifecycle: CredentialLifecycleStatus.fromApiString(
                            json['credential_lifecycle'] as String?),
+      trustCurrentness: json.containsKey('trust_currentness') &&
+              json['trust_currentness'] is Map<String, dynamic>
+          ? TrustCurrentness.fromJson(
+                json['trust_currentness'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

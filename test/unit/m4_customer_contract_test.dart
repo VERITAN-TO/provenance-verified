@@ -1081,5 +1081,49 @@ void main() {
       expect(detail, contains('REGISTRY_STATE_ONLY = TRUE'));
       expect(detail, contains('NOT_ISSUED'));
     });
+
+    // ── R32: fail-closed currentness and settlement authority ─────────────────
+
+    test('C32-1: SettlementPaymentStatus.lookupError is distinct — not collapsed to unknown', () {
+      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(models, contains('lookupError'));
+      expect(models, contains('LOOKUP_ERROR'));
+      expect(models, contains('Settlement Unavailable'));
+    });
+
+    test('C32-2: payment-gated Public Verify removed — CROSS_LANE_HANDOFF_REQUIRED annotated', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('payment-gated authority removed'));
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      expect(detail, contains('MONEY_CONTROLS_TRUST = FALSE'));
+    });
+
+    test('C32-3: authorityUnavailable does not downgrade to neutral — fail-closed in model and UI', () {
+      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(models, contains('authorityUnavailable'));
+      expect(models, contains('CREDENTIAL_AUTHORITY_UNAVAILABLE'));
+      expect(models, contains('REGISTRY_AUTHORITY_UNAVAILABLE'));
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('authorityUnavailable'));
+      expect(detail, contains('authority unavailable'));
+    });
+
+    test('C32-4: TrustCurrentness model consumes all PR47 currentness fields', () {
+      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(models, contains('TrustCurrentness'));
+      expect(models, contains('determination_state'));
+      expect(models, contains('determination_is_current'));
+      expect(models, contains('requery_guidance'));
+      expect(models, contains('reliance_boundary'));
+      expect(models, contains('authority_note'));
+      expect(models, contains('credential_state'));
+    });
+
+    test('C32-5: LOOKUP_ERROR settlement gate excludes CTA — no CTA on authority failure', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('_SettlementLookupErrorSection'));
+      expect(detail, contains('SETTLEMENT UNAVAILABLE'));
+      expect(detail, contains('SettlementPaymentStatus.lookupError'));
+    });
   });
 }

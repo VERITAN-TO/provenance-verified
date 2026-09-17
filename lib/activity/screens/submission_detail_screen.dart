@@ -94,18 +94,33 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
+              // ── Trust currentness — R32: PR47 server-authored currentness object ──
+              // MTA-1: SERVER DETERMINES TRUST. LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
+              if (detail.trustCurrentness != null) ...[
+                _TrustCurrentnessSection(currentness: detail.trustCurrentness!),
+                const SizedBox(height: 16),
+              ],
+
               // ── Settlement CTA — R29: hasSettlementSeam + null data + determination ─
+              // LOOKUP_ERROR: no settle CTA — settlement authority unavailable.
               // PR #47 data.settlement is the explicit server seam. Key present but
               // null means no order linked yet. MONEY_CONTROLS_TRUST = FALSE.
               if (detail.hasSettlementSeam &&
                   detail.settlementData == null &&
+                  detail.settlementPaymentStatus !=
+                      SettlementPaymentStatus.lookupError &&
                   detail.determination != null) ...[
                 _SettlementCtaSection(submissionId: detail.submissionId),
                 const SizedBox(height: 16),
               ],
 
-              // ── Settlement status — FREE or PAID ─────────────────────────
-              if (detail.settlementPaymentStatus != null &&
+              // ── Settlement status — LOOKUP_ERROR fail-closed; FREE/PAID/PENDING ─
+              // LOOKUP_ERROR is explicit and distinct — no CTA, no checkout, no reliance.
+              if (detail.settlementPaymentStatus ==
+                  SettlementPaymentStatus.lookupError) ...[
+                _SettlementLookupErrorSection(),
+                const SizedBox(height: 16),
+              ] else if (detail.settlementPaymentStatus != null &&
                   detail.settlementPaymentStatus !=
                       SettlementPaymentStatus.unknown) ...[
                 _SettlementStatusSection(
@@ -135,18 +150,12 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
-              // ── Public provenance record — R29: settlement authority seam wired ──
-              // PR #47 data.settlement.isSettled (FREE or PAID) is the authority gate.
-              // MTA-1: SERVER DETERMINES TRUST. MONEY_CONTROLS_TRUST = FALSE.
-              if (detail.settlementData != null &&
-                  detail.settlementData!.isSettled &&
-                  detail.publicId != null) ...[
-                _ProvenanceRecordAction(
-                  publicId: detail.publicId!,
-                  determinedAt: detail.determinedAt,
-                ),
-                const SizedBox(height: 16),
-              ],
+              // ── Public Verify — R32: payment-gated authority removed. ────────────
+              // publicId / payment / settlement / determination MUST NOT unlock Public Verify.
+              // CROSS_LANE_HANDOFF_REQUIRED: no explicit public-record authority field
+              // in current server contract for customer submission surface.
+              // A Verify CTA may render only when the server supplies canonical
+              // public-record / registry-active authority. MONEY_CONTROLS_TRUST = FALSE.
 
               // ── Status timeline ──────────────────────────────────────────
               _SectionHeader('STATUS TIMELINE'),
@@ -977,6 +986,13 @@ class _CredentialLifecycleSection extends StatelessWidget {
           icon: Icons.radio_button_unchecked,
           advisory: null,
         );
+      case CredentialLifecycleStatus.authorityUnavailable:
+        return _LifecycleStyle(
+          borderColor: PvColors.warning,
+          iconColor: PvColors.warning,
+          icon: Icons.cloud_off_outlined,
+          advisory: 'Credential authority unavailable — pull to refresh to retry.',
+        );
     }
   }
 }
@@ -996,6 +1012,124 @@ class _LifecycleStyle {
     required this.icon,
     this.advisory,
   });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Settlement lookup error — R32: fail-closed LOOKUP_ERROR state.
+// No CTA, no checkout, no reliance unlock. Bounded retry via pull-to-refresh.
+// MONEY_CONTROLS_TRUST = FALSE.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _SettlementLookupErrorSection extends StatelessWidget {
+  const _SettlementLookupErrorSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Settlement authority unavailable — retry required',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: PvColors.warning.withAlpha(15),
+          border: Border.all(color: PvColors.warning),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_outlined,
+                    color: PvColors.warning, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'SETTLEMENT UNAVAILABLE',
+                  style: PvTypography.label.copyWith(color: PvColors.warning),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Settlement authority could not be reached. '
+              'No settlement action is available. Pull to refresh to retry.',
+              style: PvTypography.body,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Trust currentness section — R32: PR47 server-authored currentness object.
+// Renders server-authored requery guidance, reliance boundary, and authority note.
+// MTA-1: SERVER DETERMINES TRUST. LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _TrustCurrentnessSection extends StatelessWidget {
+  final TrustCurrentness currentness;
+  const _TrustCurrentnessSection({required this.currentness});
+
+  @override
+  Widget build(BuildContext context) {
+    final isUnavailable = currentness.hasAuthorityUnavailable;
+    final isCurrent = currentness.determinationIsCurrent ?? true;
+    final borderColor = isUnavailable
+        ? PvColors.warning
+        : (isCurrent ? PvColors.muted : PvColors.warning);
+    final iconColor = isUnavailable
+        ? PvColors.warning
+        : (isCurrent ? PvColors.muted : PvColors.warning);
+    final icon = isUnavailable
+        ? Icons.cloud_off_outlined
+        : (isCurrent ? Icons.check_circle_outline : Icons.update_outlined);
+
+    return Semantics(
+      label: 'Trust currentness: ${isUnavailable ? "authority unavailable" : (isCurrent ? "current" : "requery recommended")}',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, color: iconColor, size: 16),
+              const SizedBox(width: 6),
+              Text('TRUST CURRENTNESS',
+                  style: PvTypography.label.copyWith(color: PvColors.muted)),
+            ]),
+            if (currentness.requeryGuidance != null) ...[
+              const SizedBox(height: 6),
+              Text(currentness.requeryGuidance!,
+                  style: PvTypography.body.copyWith(color: iconColor)),
+            ],
+            if (currentness.relianceBoundary != null) ...[
+              const SizedBox(height: 4),
+              Text(currentness.relianceBoundary!,
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            ],
+            if (currentness.authorityNote != null) ...[
+              const SizedBox(height: 4),
+              Text(currentness.authorityNote!,
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            ],
+            if (isUnavailable) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Trust authority unavailable — pull to refresh to retry.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
