@@ -34,6 +34,9 @@ import '../../submit/screens/submit_screen.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../activity/screens/submission_detail_screen.dart';
 
+// Professional tools (auth required)
+import '../../professional/screens/professional_batch_screen.dart';
+
 // Auth screens (no auth required)
 import '../../auth/screens/sign_in_screen.dart';
 import '../../auth/screens/sign_up_screen.dart';
@@ -46,7 +49,7 @@ const String _sessionKey = 'pv_customer_session';
 const _storage = FlutterSecureStorage();
 
 /// Paths that require the user to be signed in.
-const _protectedPrefixes = ['/my-pv', '/submit', '/activity'];
+const _protectedPrefixes = ['/my-pv', '/submit', '/activity', '/professional'];
 
 Future<bool> _isAuthenticated() async {
   try {
@@ -240,6 +243,27 @@ final GoRouter appRouter = GoRouter(
               ],
             ),
           ],
+        ),
+      ],
+    ),
+
+    // ------------------------------------------------------------------
+    // Professional tools — outside shell, auth required (via _protectedPrefixes)
+    // PROFESSIONAL_CANNOT_SELECT_TIER — no tier selection, no issuance, no marks.
+    // ------------------------------------------------------------------
+    GoRoute(
+      path: '/professional',
+      name: 'professional',
+      redirect: (_, __) async {
+        final authenticated = await _isAuthenticated();
+        return authenticated ? '/professional/batch' : null;
+      },
+      builder: (context, state) => const ProfessionalBatchScreen(),
+      routes: [
+        GoRoute(
+          path: 'batch',
+          name: 'professional-batch',
+          builder: (context, state) => const ProfessionalBatchScreen(),
         ),
       ],
     ),

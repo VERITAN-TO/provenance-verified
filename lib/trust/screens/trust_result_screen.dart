@@ -60,6 +60,8 @@ class _RecordView extends StatelessWidget {
           freshness: record.freshness?.state ?? FreshnessState.unknown,
           onRequery: () => ref.invalidate(trustRecordProvider(record.publicId)),
         ),
+        // PHYSICAL_MATCH_NOT_SUPPORTED: no approved physical proof method is operational.
+        const _PhysicalMatchGate(),
         TrustBadge(record: record),
         const SizedBox(height: 16),
         _InfoRow('Record', record.publicId),
@@ -213,6 +215,43 @@ class _LifecycleBanner extends StatelessWidget {
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 10),
             Expanded(child: Text(message, style: PvTypography.bodySmall.copyWith(color: color))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhysicalMatchGate extends StatelessWidget {
+  const _PhysicalMatchGate();
+
+  @override
+  Widget build(BuildContext context) {
+    // PHYSICAL_MATCH_NOT_SUPPORTED: no approved physical proof method is operational.
+    // This app retrieves server-authored trust records only.
+    // Physical object identity matching is not performed by this device.
+    return Semantics(
+      label: 'Physical object matching: not available — no approved physical proof method is operational.',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: PvColors.muted.withAlpha(18),
+          border: Border.all(color: PvColors.muted.withAlpha(80)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.sensors_off_outlined, color: PvColors.muted, size: 16),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Physical object matching: not available — no approved physical proof method is operational. '
+                'This record is server-authored only.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+            ),
           ],
         ),
       ),

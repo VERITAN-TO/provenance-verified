@@ -62,6 +62,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
             tooltip: 'Reliance receipts',
             onPressed: () => context.push('/my-pv/receipts'),
           ),
+          IconButton(
+            icon: const Icon(Icons.business_center_outlined),
+            tooltip: 'Professional batch verification',
+            onPressed: () => context.push('/professional/batch'),
+          ),
         ],
       ),
       body: Stack(
