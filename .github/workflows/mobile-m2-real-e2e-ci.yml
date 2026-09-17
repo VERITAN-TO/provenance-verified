@@ -62,12 +62,14 @@ env:
   #     +2 R48-corrected C47 tests (C47-1, C47-2) +2 new R48 tests (C48-1, C48-2)
   #     +5 new R49 tests (C50-1..C50-5),
   #     +5 new R50 tests (C50-6..C50-10), C47-1/C47-2 updated (same IDs, not new).
+  #     +5 new M2-50-04 tests (C50-11..C50-15).
   #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
   #   trust_models_test.dart: 37.
   # DO NOT update this value by hand. Update only after an executed GitHub Actions
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
   # Confirmed executed count: 306 — from CI run 35257032745 on commit d5d1b8e (R50).
-  EXPECTED_M2_UNIT_COUNT: '306'
+  # Confirmed executed count: 311 — from CI run 35259983102 on commit ddb2f2f (M2-50-04 C50-11..C50-15). All 311 pass.
+  EXPECTED_M2_UNIT_COUNT: '311'
 
 jobs:
   linux-android:
