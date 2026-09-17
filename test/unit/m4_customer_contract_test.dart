@@ -233,8 +233,8 @@ void main() {
       // Must not use Gold or stale FINGERPRINT/DECLARED/VERIFIED abbreviations for T4
       expect(screen, isNot(contains("'T4 GOLD'")));
       expect(screen, isNot(contains("'T4 GOLD STANDARD'")));
-      // Must use canonical governed authority label for T4
-      expect(screen, contains('T4 GOVERNED AUTHORITY'));
+      // R35: must use canonical Web/Core governed authority label for T4
+      expect(screen, contains('T4 — Highest Governed Provenance Authority'));
     });
 
     test('asset detail tier badge does not assert Gold Standard for T4', () {
