@@ -1824,9 +1824,11 @@ void main() {
     test('C51-2: Defect D repair — Requery in lifecycle warning section invalidates both trustRecordProvider and simpleActionabilityProvider', () {
       final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
       // lifecycleWarning section must exist
-      final warningIdx = screen.indexOf('lifecycleWarning)');
+      final warningIdx = screen.indexOf('else if (lifecycleWarning)');
       expect(warningIdx, isNot(-1), reason: 'lifecycleWarning branch must be present');
-      final warningSection = screen.substring(warningIdx, warningIdx + 700);
+      final warningEnd = screen.indexOf('DropdownButtonFormField<ActionabilityPurpose>', warningIdx);
+      expect(warningEnd, greaterThan(warningIdx), reason: 'lifecycleWarning branch boundary must be present');
+      final warningSection = screen.substring(warningIdx, warningEnd);
       // Requery must invalidate trustRecordProvider — forces fresh lifecycle/currentness server evaluation
       expect(warningSection, contains('ref.invalidate(trustRecordProvider('),
           reason: 'Requery must force fresh trust server evaluation for lifecycle currency');
