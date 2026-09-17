@@ -80,14 +80,32 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                   border: Border.all(color: PvColors.warning),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.update, color: PvColors.warning, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '$lifecycleStatus — Requery this record before relying on it.',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+                    Row(
+                      children: [
+                        const Icon(Icons.update, color: PvColors.warning, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '$lifecycleStatus — Requery this record before relying on it.',
+                            style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        ref.invalidate(trustRecordProvider(widget.publicId));
+                        ref.invalidate(simpleActionabilityProvider(args));
+                      },
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Requery for Current Status'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PvColors.warning,
+                        side: const BorderSide(color: PvColors.warning),
                       ),
                     ),
                   ],
@@ -224,7 +242,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                     )
                   else
                     FilledButton.icon(
-                      onPressed: isUnknown || _saving || lifecycleBlocked
+                      onPressed: isUnknown || _saving || lifecycleBlocked || lifecycleWarning
                           ? null
                           : () => _saveReceipt(result, trustAsync.value),
                       icon: _saving

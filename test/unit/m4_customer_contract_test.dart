@@ -1807,5 +1807,95 @@ void main() {
       // Provider must not hardcode a single-document assumption — loop over all documents
       expect(provider, contains('for (int i = 0; i < current.documents.length; i++)'));
     });
+
+    // ── R51: M2-50-05 Rely/Share/Requery/Lifecycle-alert ─────────────────────────────
+
+    test('C51-1: Defect D repair — lifecycleWarning (SUPERSEDED/EXPIRED) disables Save Receipt; fresh requery required before reliance', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      // lifecycleWarning must be declared, covering EXPIRED and SUPERSEDED states
+      expect(screen, contains('lifecycleWarning'));
+      expect(screen, contains("lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'"),
+          reason: 'lifecycleWarning must cover both EXPIRED and SUPERSEDED — not silently treated as current');
+      // Save Receipt disabled condition must include lifecycleWarning alongside lifecycleBlocked
+      expect(screen, contains('lifecycleBlocked || lifecycleWarning'),
+          reason: 'SUPERSEDED/EXPIRED must gate Save Receipt — Defect D repair: cannot produce receipt without requery');
+    });
+
+    test('C51-2: Defect D repair — Requery in lifecycle warning section invalidates both trustRecordProvider and simpleActionabilityProvider', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      // lifecycleWarning section must exist
+      final warningIdx = screen.indexOf('lifecycleWarning)');
+      expect(warningIdx, isNot(-1), reason: 'lifecycleWarning branch must be present');
+      final warningSection = screen.substring(warningIdx, warningIdx + 700);
+      // Requery must invalidate trustRecordProvider — forces fresh lifecycle/currentness server evaluation
+      expect(warningSection, contains('ref.invalidate(trustRecordProvider('),
+          reason: 'Requery must force fresh trust server evaluation for lifecycle currency');
+      // Requery must also invalidate simpleActionabilityProvider — synchronized actionability refresh
+      expect(warningSection, contains('ref.invalidate(simpleActionabilityProvider('),
+          reason: 'Requery must force fresh actionability evaluation synchronized with trust');
+      // Requery button must be accessible
+      expect(warningSection, contains('Requery for Current Status'),
+          reason: 'Requery button must be present and labeled in lifecycle warning section');
+    });
+
+    test('C51-3: Share invariant — Clipboard copies server-authored URL only; no publicId or Env.pvApiBaseUrl synthesis', () {
+      final screen = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      // Share must be gated on server-authored publicRecordUrl from machine-trust response
+      expect(screen, contains('publicRecordUrl'));
+      // Server URL is promoted to local variable for Dart null-safety flow
+      expect(screen, contains('final url = publicRecordUrl'));
+      // Clipboard.setData must be present for Share
+      expect(screen, contains('Clipboard.setData'));
+      // Share path must not reference Env.pvApiBaseUrl — no URL synthesis from env
+      expect(screen, isNot(contains('Env.pvApiBaseUrl')),
+          reason: 'Share must not synthesize URL from PV_API_BASE_URL — server-authored url only');
+      // Clipboard.setData must appear AFTER the publicRecordUrl null+empty guard
+      final clipIdx = screen.indexOf('Clipboard.setData');
+      final urlGuardIdx = screen.indexOf('if (url != null && url.isNotEmpty)');
+      expect(urlGuardIdx, isNot(-1), reason: 'publicRecordUrl null+empty guard must be present');
+      expect(clipIdx, greaterThan(urlGuardIdx),
+          reason: 'Clipboard.setData must be inside the publicRecordUrl guard — missing URL = no Share');
+    });
+
+    test('C51-4: _LifecycleBanner in trust_result_screen is visually and semantically explicit for REVOKED, SUSPENDED, SUPERSEDED, EXPIRED', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      // All four dangerous lifecycle states must be explicitly handled in _LifecycleBanner
+      expect(screen, contains("'SUSPENDED'"));
+      expect(screen, contains("'REVOKED'"));
+      expect(screen, contains("'SUPERSEDED'"));
+      expect(screen, contains("'EXPIRED'"));
+      // Blocked states (REVOKED/SUSPENDED) must display do-not-rely message
+      expect(screen, contains('Do not rely on this record'));
+      // EXPIRED must warn about currency before reliance
+      expect(screen, contains('Verify currency before reliance'));
+      // _LifecycleBanner must precede _ActionButtons — lifecycle state visible before CTA
+      final bannerIdx = screen.indexOf('_LifecycleBanner');
+      final actionsIdx = screen.indexOf('_ActionButtons');
+      expect(bannerIdx, isNot(-1), reason: '_LifecycleBanner must be a distinct component');
+      expect(actionsIdx, isNot(-1), reason: '_ActionButtons must be present');
+      expect(bannerIdx, lessThan(actionsIdx),
+          reason: 'Lifecycle banner must appear before action buttons — user sees lifecycle state before CTA');
+      // Banner uses Semantics for accessibility
+      expect(screen, contains('Semantics('));
+    });
+
+    test('C51-5: reliance_screen lifecycle gate — REVOKED + SUSPENDED + SUPERSEDED + EXPIRED + UNKNOWN all prevent receipt production', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      // REVOKED and SUSPENDED are in the blocked set
+      expect(screen, contains("const blockedLifecycles = {'REVOKED', 'SUSPENDED'}"));
+      expect(screen, contains('lifecycleBlocked'));
+      // SUPERSEDED and EXPIRED are the lifecycle warning states
+      expect(screen, contains("lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'"));
+      expect(screen, contains('lifecycleWarning'));
+      // Save Receipt disabled for ALL dangerous states — no receipt without explicit requery
+      expect(screen, contains('isUnknown || _saving || lifecycleBlocked || lifecycleWarning'),
+          reason: 'All dangerous lifecycle states must disable Save Receipt');
+      // REVOKED/SUSPENDED must show blocked banner with do-not-rely message
+      expect(screen, contains("'RELIANCE BLOCKED — This record is \$lifecycleStatus. '"));
+      // SUPERSEDED/EXPIRED must show warning with explicit Requery CTA
+      expect(screen, contains('Requery for Current Status'));
+      // UNKNOWN actionability must also block reliance
+      expect(screen, contains('UNKNOWN actionability — Do not rely on this record for the stated purpose'));
+    });
   });
 }
