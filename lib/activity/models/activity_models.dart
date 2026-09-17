@@ -5,7 +5,7 @@
 
 // ---------------------------------------------------------------------------
 // Credential lifecycle — server-reported registry credential state.
-// Sourced from pv_review_cases via DB-authoritative tenant+asset linkage (PR #48).
+// Sourced from pv_credentials via review-case linkage (PR #48 R34).
 // REGISTRY_STATE_ONLY = TRUE: lifecycle is a separate authority plane from
 // determination tier, settlement, and Gold Seal authority.
 // NOT_ISSUED does not mean trust failure — no active issued credential only.
@@ -24,7 +24,7 @@ enum CredentialLifecycleStatus {
   // Render bounded unavailable + retry. Never permit reliance from this state.
   authorityUnavailable;
 
-  // forward-compat: unknown API strings fail-closed to notIssued.
+  // R34: unknown/unrecognized API strings fail-closed to authorityUnavailable.
   // AUTHORITY_UNAVAILABLE strings map to authorityUnavailable (distinct fail-closed).
   // Null input = determination not yet available; returns null.
   static CredentialLifecycleStatus? fromApiString(String? raw) {
@@ -39,7 +39,7 @@ enum CredentialLifecycleStatus {
       case 'CREDENTIAL_AUTHORITY_UNAVAILABLE':
       case 'REGISTRY_AUTHORITY_UNAVAILABLE':
         return CredentialLifecycleStatus.authorityUnavailable;
-      default:           return CredentialLifecycleStatus.notIssued;
+      default:           return CredentialLifecycleStatus.authorityUnavailable;
     }
   }
 
@@ -432,7 +432,7 @@ class SubmissionDetail {
   /// Credential registry lifecycle state — null when determination is not yet
   /// complete or when asset/tenant coordinates are unavailable.
   /// REGISTRY_STATE_ONLY = TRUE: NOT_ISSUED ≠ trust failure.
-  /// MTA-1: SERVER DETERMINES TRUST — sourced from pv_review_cases (PR #48).
+  /// MTA-1: SERVER DETERMINES TRUST — sourced from pv_credentials via review-case linkage (PR #48 R34).
   final CredentialLifecycleStatus? credentialLifecycle;
   /// PR47 server-authored trust currentness object — null when not present.
   /// MTA-1: SERVER DETERMINES TRUST. LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.

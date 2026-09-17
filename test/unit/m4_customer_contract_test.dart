@@ -1010,7 +1010,7 @@ void main() {
 
     // ───────────────────────────────────────────────────────────────────────────
     // C30 — R30: credential lifecycle rebind
-    // data.credential_lifecycle from PR #48 / pv_review_cases.
+    // data.credential_lifecycle from PR #48 / pv_credentials via review-case linkage (R34).
     // REGISTRY_STATE_ONLY = TRUE: lifecycle is a separate authority plane.
     // NOT_ISSUED ≠ trust failure.  MTA-1: SERVER DETERMINES TRUST.
     // ───────────────────────────────────────────────────────────────────────────
@@ -1027,13 +1027,13 @@ void main() {
       expect(model, contains('displayLabel'));
     });
 
-    test('C30-2: fromApiString is null-safe and fail-closed — null → null, unknown → notIssued', () {
+    test('C30-2: fromApiString is null-safe and fail-closed — null → null, NOT_ISSUED maps explicitly', () {
       final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
       // Null input returns null (determination not yet available)
       expect(model, contains('if (raw == null) return null'));
-      // NOT_ISSUED mapping must be present
+      // NOT_ISSUED mapping must be present as an explicit named case
       expect(model, contains("case 'NOT_ISSUED'"));
-      // Default must fail-closed to notIssued (not active)
+      // NOT_ISSUED explicit arm maps to notIssued (known neutral state)
       expect(model, contains('return CredentialLifecycleStatus.notIssued'));
     });
 
@@ -1179,6 +1179,30 @@ void main() {
       final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
       expect(models, contains('MTA-1: SERVER DETERMINES TRUST'));
       expect(models, contains('MONEY_CONTROLS_TRUST = FALSE'));
+    });
+
+    // ── R34: canonical lifecycle source and fail-closed default ───────────────
+
+    test('C34-1: fromApiString default fails closed to authorityUnavailable — not notIssued', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // R34: unrecognized API strings must NOT silently downgrade to notIssued.
+      // notIssued is a known neutral state; authorityUnavailable is the correct
+      // fail-closed for unrecognized/unknown server strings.
+      expect(model, contains('return CredentialLifecycleStatus.authorityUnavailable'));
+      // The default arm must return authorityUnavailable, not notIssued.
+      // Confirm the default arm is the authorityUnavailable return (not a named case arm).
+      final defaultIdx = model.indexOf('default:');
+      expect(defaultIdx, greaterThan(0));
+      final defaultArm = model.substring(defaultIdx, defaultIdx + 80);
+      expect(defaultArm, contains('authorityUnavailable'));
+    });
+
+    test('C34-2: credential lifecycle source annotation references pv_credentials — not pv_review_cases', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // R34: Core PR48 fixed canonical lifecycle source to pv_credentials via review_case_id.
+      // Native source-of-authority comments must reflect the corrected path.
+      expect(model, contains('pv_credentials'));
+      expect(model, isNot(contains('pv_review_cases')));
     });
   });
 }
