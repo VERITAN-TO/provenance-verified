@@ -138,7 +138,7 @@ class _DetailView extends StatelessWidget {
           const Divider(height: 32),
 
           // ── Action buttons ────────────────────────────────────────────────
-          _ActionButtons(asset: asset),
+          _ActionButtons(asset: asset, publicRecordUrl: publicRecordUrl),
           const SizedBox(height: 32),
         ],
       ),
@@ -587,7 +587,8 @@ class _ReceiptRow extends StatelessWidget {
 
 class _ActionButtons extends StatelessWidget {
   final CustomerAsset asset;
-  const _ActionButtons({required this.asset});
+  final String? publicRecordUrl;
+  const _ActionButtons({required this.asset, this.publicRecordUrl});
 
   @override
   Widget build(BuildContext context) {
