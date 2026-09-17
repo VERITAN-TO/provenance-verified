@@ -1204,5 +1204,20 @@ void main() {
       expect(model, contains('pv_credentials'));
       expect(model, isNot(contains('pv_review_cases')));
     });
+
+    // ── R35 ──────────────────────────────────────────────────────────────────
+    test('C35-1: my_pv tier labels use canonical Web/Core names — not abbreviated variants', () {
+      // R35: my_pv_screen._tierLabel must match CustomerSubmissionDetail.tsx canonical strings.
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      expect(screen, contains('Accountable Existence'));
+      expect(screen, contains('Accountable Declaration'));
+      expect(screen, contains('Evidence-Established Trust'));
+      expect(screen, contains('Highest Governed Provenance Authority'));
+      // Confirm old abbreviated forms are gone.
+      expect(screen, isNot(contains("'T1 EXISTENCE'")));
+      expect(screen, isNot(contains("'T2 DECLARATION'")));
+      expect(screen, isNot(contains("'T3 EVIDENCE-ESTABLISHED'")));
+      expect(screen, isNot(contains("'T4 GOVERNED AUTHORITY'")));
+    });
   });
 }
