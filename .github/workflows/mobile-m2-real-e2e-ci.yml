@@ -410,6 +410,12 @@ jobs:
     outputs:
       integration_gate: ${{ steps.int_gate.outputs.integration_gate }}
       m2_int_test_count: ${{ steps.int_test.outputs.m2_int_test_count }}
+      integration_state: ${{ steps.int_classify.outputs.integration_state }}
+      http_status: ${{ steps.probe.outputs.http_status }}
+      content_type: ${{ steps.probe.outputs.content_type }}
+      bootstrap_classification: ${{ steps.probe.outputs.bootstrap_classification }}
+      endpoint_url_sha256: ${{ steps.probe.outputs.endpoint_url_sha256 }}
+      endpoint_host: ${{ steps.probe.outputs.endpoint_host }}
 
     steps:
       - name: Checkout
@@ -424,6 +430,52 @@ jobs:
 
       - name: flutter pub get
         run: flutter pub get
+
+      - name: Probe bootstrap endpoint
+        id: probe
+        env:
+          PV_QUAL_API_BASE_URL: ${{ vars.PV_QUAL_API_BASE_URL }}
+        run: |
+          if [ -z "$PV_QUAL_API_BASE_URL" ]; then
+            echo "endpoint_url_sha256=N/A" >> $GITHUB_OUTPUT
+            echo "endpoint_host=N/A" >> $GITHUB_OUTPUT
+            echo "http_status=N/A" >> $GITHUB_OUTPUT
+            echo "content_type=N/A" >> $GITHUB_OUTPUT
+            echo "bootstrap_classification=CREDENTIAL_OR_CONFIG_MISSING" >> $GITHUB_OUTPUT
+            echo "PROBE: PV_QUAL_API_BASE_URL not configured"
+            exit 0
+          fi
+          ENDPOINT_URL_SHA=$(printf '%s' "$PV_QUAL_API_BASE_URL" | sha256sum | cut -d' ' -f1)
+          ENDPOINT_HOST=$(printf '%s' "$PV_QUAL_API_BASE_URL" | sed 's|https\?://||' | cut -d'/' -f1)
+          echo "endpoint_url_sha256=$ENDPOINT_URL_SHA" >> $GITHUB_OUTPUT
+          echo "endpoint_host=$ENDPOINT_HOST" >> $GITHUB_OUTPUT
+          HTTP_STATUS=$(curl -s \
+            -D /tmp/probe-headers.txt \
+            -o /tmp/probe-body.txt \
+            -w '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            --connect-timeout 10 --max-time 15 \
+            "$PV_QUAL_API_BASE_URL/api/v1/mobile/token" \
+            -d '{"tenant_id":"ci-diagnostic-probe","device_id":"ci-probe-device","platform":"android","app_version":"0.0.0"}' \
+            2>/dev/null || echo "000")
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          CONTENT_TYPE=$(grep -i '^content-type:' /tmp/probe-headers.txt 2>/dev/null | \
+            head -1 | tr -d '\r\n' | sed 's/.*[Cc]ontent-[Tt]ype: *//' | sed 's/"/\\"/')
+          echo "content_type=$CONTENT_TYPE" >> $GITHUB_OUTPUT
+          RESP_PREFIX=$(head -c 200 /tmp/probe-body.txt 2>/dev/null | tr -d '\n\r' | cut -c1-80)
+          echo "PROBE: HTTP=$HTTP_STATUS host=$ENDPOINT_HOST content-type=$CONTENT_TYPE"
+          echo "PROBE: response-prefix=${RESP_PREFIX:0:80}"
+          if echo "$RESP_PREFIX" | grep -qi '<!DOCTYPE\|<html'; then
+            echo "bootstrap_classification=HTML_RESPONSE" >> $GITHUB_OUTPUT
+          elif [ "$HTTP_STATUS" = "000" ]; then
+            echo "bootstrap_classification=CONNECTION_FAILED" >> $GITHUB_OUTPUT
+          elif echo "$RESP_PREFIX" | grep -q '^[[:space:]]*{'; then
+            echo "bootstrap_classification=JSON_RESPONSE" >> $GITHUB_OUTPUT
+          else
+            echo "bootstrap_classification=UNKNOWN" >> $GITHUB_OUTPUT
+          fi
 
       - name: Real backend integration tests (M2-INT-01 to M2-INT-08)
         id: int_test
@@ -452,6 +504,24 @@ jobs:
           echo "integration_gate=PASS" >> $GITHUB_OUTPUT
           echo "M2_INT_GATE=PASS"
 
+      - name: Classify integration result
+        id: int_classify
+        if: always()
+        run: |
+          if [ "${{ steps.int_test.outcome }}" = "success" ]; then
+            echo "integration_state=EXECUTED_PASS" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.int_test.outcome }}" = "failure" ]; then
+            BOOTSTRAP_CLASS="${{ steps.probe.outputs.bootstrap_classification }}"
+            if [ "$BOOTSTRAP_CLASS" = "HTML_RESPONSE" ] || [ "$BOOTSTRAP_CLASS" = "CONNECTION_FAILED" ]; then
+              echo "integration_state=EXECUTED_FAIL_EXTERNAL_BACKEND" >> $GITHUB_OUTPUT
+            else
+              echo "integration_state=EXECUTED_FAIL_NATIVE_OR_UNCLASSIFIED" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "integration_state=EXECUTED_FAIL_NATIVE_OR_UNCLASSIFIED" >> $GITHUB_OUTPUT
+          fi
+          echo "CLASSIFY: integration_state set (int_test outcome=${{ steps.int_test.outcome }})"
+
       - name: Upload integration test output
         if: always()
         uses: actions/upload-artifact@v4
@@ -463,7 +533,8 @@ jobs:
 
   evidence:
     name: 'Evidence Assembly'
-    needs: [linux-android, macos-ios]
+    needs: [linux-android, macos-ios, real-backend-integration]
+    if: ${{ always() && needs.linux-android.result == 'success' && needs.macos-ios.result == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -498,9 +569,34 @@ jobs:
       - name: Generate mobile-m2-ci-evidence.json
         run: |
           WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Derive real-backend truth from actual integration job result.
+          # Possible results: success | failure | skipped (disabled by authority) | cancelled.
+          INTEGRATION_RESULT="${{ needs.real-backend-integration.result }}"
+          INTEGRATION_STATE="${{ needs.real-backend-integration.outputs.integration_state }}"
+          HTTP_STATUS="${{ needs.real-backend-integration.outputs.http_status }}"
+          CONTENT_TYPE="${{ needs.real-backend-integration.outputs.content_type }}"
+          BOOTSTRAP_CLASS="${{ needs.real-backend-integration.outputs.bootstrap_classification }}"
+          ENDPOINT_SHA="${{ needs.real-backend-integration.outputs.endpoint_url_sha256 }}"
+          ENDPOINT_HOST="${{ needs.real-backend-integration.outputs.endpoint_host }}"
+
+          if [ "$INTEGRATION_RESULT" = "skipped" ] || [ -z "$INTEGRATION_STATE" ]; then
+            FINAL_STATE="DISABLED_BY_AUTHORITY"
+            ENDPOINT_SHA="N/A"
+            ENDPOINT_HOST="N/A"
+            HTTP_STATUS="N/A"
+            CONTENT_TYPE="N/A"
+            BOOTSTRAP_CLASS="NOT_EXECUTED"
+          else
+            FINAL_STATE="$INTEGRATION_STATE"
+          fi
+
+          # Sanitize content_type for JSON embedding (strip quotes/control chars).
+          CONTENT_TYPE_SAFE=$(printf '%s' "$CONTENT_TYPE" | tr -d '"' | tr -d '\r\n' | cut -c1-80)
+
           cat > mobile-m2-ci-evidence.json << ENDJSON
           {
-            "schema": "pv.mobile-ci-evidence.m2.v1",
+            "schema": "pv.mobile-ci-evidence.m2.v2",
             "m2_head_sha": "${{ needs.linux-android.outputs.head_sha }}",
             "m1_ancestry_sha": "82ad06a",
             "workflow_run_id": "${{ github.run_id }}",
@@ -519,6 +615,9 @@ jobs:
             "android_flavor": "qualification",
             "android_aab_sha256": "${{ needs.linux-android.outputs.android_aab_sha256 }}",
             "android_aab_size_bytes": ${{ needs.linux-android.outputs.android_aab_size }},
+            "signing_state": "UNSIGNED_QUALIFICATION",
+            "production_signing_dependency_graph": "PASS",
+            "production_signing_fail_closed": "PASS",
             "macos_flutter_analyze": "PASS",
             "macos_flutter_test_unit": "PASS",
             "macos_unit_test_count": ${{ needs.macos-ios.outputs.test_count }},
@@ -546,9 +645,14 @@ jobs:
               "result": "PASS"
             },
             "real_backend": {
-              "url": "${{ env.PV_API_BASE_URL }}",
+              "endpoint_binding": "sha256:$ENDPOINT_SHA",
+              "endpoint_host_sanitized": "$ENDPOINT_HOST",
+              "bootstrap_path": "/api/v1/mobile/token",
               "api_key_source": "PV_QUAL_API_KEY (GitHub secret)",
-              "integration_gate": "PENDING_CREDENTIAL_PROVISIONING"
+              "integration_state": "$FINAL_STATE",
+              "http_status": "$HTTP_STATUS",
+              "content_type": "$CONTENT_TYPE_SAFE",
+              "bootstrap_classification": "$BOOTSTRAP_CLASS"
             },
             "eight_stone_binding": "PASS",
             "downloaded_android_hash_match": "PASS",
@@ -560,6 +664,24 @@ jobs:
           }
           ENDJSON
           cat mobile-m2-ci-evidence.json
+
+      - name: Assert evidence truth
+        run: |
+          # Regression gate: when integration executed, evidence must not claim
+          # PENDING_CREDENTIAL_PROVISIONING and must not bind to the global build URL.
+          INTEGRATION_RESULT="${{ needs.real-backend-integration.result }}"
+          if [ "$INTEGRATION_RESULT" = "success" ] || [ "$INTEGRATION_RESULT" = "failure" ]; then
+            if grep -q 'PENDING_CREDENTIAL_PROVISIONING' mobile-m2-ci-evidence.json; then
+              echo "::error::EVIDENCE_TRUTH_REGRESSION: integration executed but evidence claims PENDING_CREDENTIAL_PROVISIONING"
+              exit 1
+            fi
+            GLOBAL_URL_SHA=$(printf '%s' '${{ env.PV_API_BASE_URL }}' | sha256sum | cut -d' ' -f1)
+            if grep -q "sha256:$GLOBAL_URL_SHA" mobile-m2-ci-evidence.json; then
+              echo "::error::EVIDENCE_TRUTH_REGRESSION: evidence binds global build URL instead of qualification endpoint"
+              exit 1
+            fi
+          fi
+          echo "EVIDENCE_TRUTH=PASS"
 
       - name: Generate checksum manifest
         run: |
