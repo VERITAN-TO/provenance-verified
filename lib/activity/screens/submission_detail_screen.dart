@@ -832,69 +832,8 @@ class _SectionHeader extends StatelessWidget {
       );
 }
 
-// ────────────────────────────────────────────────────────────────────────────
-// Provenance record link — wired in R29 via settlement authority seam.
-// Gate: settlement.isSettled (FREE or PAID from PR #47 data.settlement).
-// MTA-1: SERVER DETERMINES TRUST.
-// LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
-// ────────────────────────────────────────────────────────────────────────────
-
-class _ProvenanceRecordAction extends StatelessWidget {
-  final String publicId;
-  final DateTime? determinedAt;
-  const _ProvenanceRecordAction({required this.publicId, this.determinedAt});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'View public provenance record for $publicId',
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: PvColors.surface,
-          border: Border.all(color: PvColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'PROVENANCE RECORD AVAILABLE',
-              style: PvTypography.label.copyWith(color: PvColors.muted),
-            ),
-            const SizedBox(height: 6),
-            SelectableText(publicId, style: PvTypography.mono),
-            if (determinedAt != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Determined ${_formatDate(determinedAt!)}',
-                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-              ),
-            ],
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.push('/verify/$publicId'),
-                icon: const Icon(Icons.verified_outlined, size: 18),
-                label: const Text('Verify Provenance Record'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: PvColors.onBackground,
-                  side: const BorderSide(color: PvColors.border),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _formatDate(DateTime dt) {
-    final l = dt.toLocal();
-    return '${l.year}-${l.month.toString().padLeft(2, '0')}-${l.day.toString().padLeft(2, '0')}';
-  }
-}
+// _ProvenanceRecordAction removed in R32.
+// Payment-gated Public Verify authority is stale (see R32 CROSS_LANE_HANDOFF_REQUIRED comment above).
 
 // ────────────────────────────────────────────────────────────────────────────
 // Credential lifecycle section — R31: lifecycle-aware trust currentness plane.
