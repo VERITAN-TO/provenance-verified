@@ -1536,8 +1536,11 @@ void main() {
       expect(detail, contains('Clipboard.setData'));
       // Must be guarded by server-supplied publicRecordUrl — fail-closed
       expect(detail, contains('publicRecordUrl'));
-      // The guard must check both null and empty — fail-closed on absent server URL
-      expect(detail, contains('publicRecordUrl != null && publicRecordUrl.isNotEmpty'));
+      // The guard must check both null and empty — fail-closed on absent server URL.
+      // publicRecordUrl field is promoted to a local `url` variable for Dart null-safety
+      // flow analysis (nullable fields don't flow-promote through null checks).
+      expect(detail, contains('final url = publicRecordUrl'));
+      expect(detail, contains('url != null && url.isNotEmpty'));
       // pvApiBaseUrl must NOT be used as canonical public Verify URL — fabrication guard
       expect(detail, isNot(contains("Env.pvApiBaseUrl}/verify/")));
       // No deferred stub message — Share is either active (server URL) or hidden
