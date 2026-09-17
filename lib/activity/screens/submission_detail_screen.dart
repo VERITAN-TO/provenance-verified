@@ -888,10 +888,11 @@ class _ProvenanceRecordAction extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Credential lifecycle section — R30: registry state plane.
+// Credential lifecycle section — R31: lifecycle-aware trust currentness plane.
 // Separate authority plane from determination (trust) and settlement (commercial).
-// NOT_ISSUED ≠ trust failure. MTA-1: SERVER DETERMINES TRUST.
-// REGISTRY_STATE_ONLY = TRUE.
+// NOT_ISSUED ≠ trust failure. REVOKED/SUSPENDED: do-not-rely advisory shown.
+// EXPIRED/SUPERSEDED: currentness advisory shown. ACTIVE: positive indicator.
+// MTA-1: SERVER DETERMINES TRUST. REGISTRY_STATE_ONLY = TRUE.
 // ────────────────────────────────────────────────────────────────────────────
 
 class _CredentialLifecycleSection extends StatelessWidget {
@@ -900,26 +901,101 @@ class _CredentialLifecycleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: PvColors.surface,
-        border: Border.all(color: PvColors.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'CREDENTIAL REGISTRY',
-            style: PvTypography.label.copyWith(color: PvColors.muted),
-          ),
-          const SizedBox(height: 6),
-          Text(status.displayLabel, style: PvTypography.body),
-        ],
+    final style = _lifecycleStyle(status);
+    return Semantics(
+      label: 'Credential registry: ${status.displayLabel}',
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          border: Border.all(color: style.borderColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(style.icon, color: style.iconColor, size: 16),
+              const SizedBox(width: 6),
+              Text('CREDENTIAL REGISTRY',
+                  style: PvTypography.label.copyWith(color: PvColors.muted)),
+            ]),
+            const SizedBox(height: 6),
+            Text(status.displayLabel, style: PvTypography.body),
+            if (style.advisory != null) ...[
+              const SizedBox(height: 6),
+              Text(style.advisory!,
+                  style: PvTypography.bodySmall.copyWith(color: style.iconColor)),
+            ],
+          ],
+        ),
       ),
     );
   }
+
+  _LifecycleStyle _lifecycleStyle(CredentialLifecycleStatus s) {
+    switch (s) {
+      case CredentialLifecycleStatus.active:
+        return _LifecycleStyle(
+          borderColor: PvColors.success,
+          iconColor: PvColors.success,
+          icon: Icons.verified_outlined,
+          advisory: null,
+        );
+      case CredentialLifecycleStatus.revoked:
+        return _LifecycleStyle(
+          borderColor: PvColors.error,
+          iconColor: PvColors.error,
+          icon: Icons.block_outlined,
+          advisory: 'Do not rely on this record — credential revoked.',
+        );
+      case CredentialLifecycleStatus.suspended:
+        return _LifecycleStyle(
+          borderColor: PvColors.warning,
+          iconColor: PvColors.warning,
+          icon: Icons.pause_circle_outline,
+          advisory: 'Credential suspended — verify current status before relying.',
+        );
+      case CredentialLifecycleStatus.expired:
+        return _LifecycleStyle(
+          borderColor: PvColors.warning,
+          iconColor: PvColors.warning,
+          icon: Icons.timer_off_outlined,
+          advisory: 'Credential expired — current trust state may differ.',
+        );
+      case CredentialLifecycleStatus.superseded:
+        return _LifecycleStyle(
+          borderColor: PvColors.warning,
+          iconColor: PvColors.warning,
+          icon: Icons.update_outlined,
+          advisory: 'Credential superseded — verify the current record.',
+        );
+      case CredentialLifecycleStatus.notIssued:
+        return _LifecycleStyle(
+          borderColor: PvColors.border,
+          iconColor: PvColors.muted,
+          icon: Icons.radio_button_unchecked,
+          advisory: null,
+        );
+    }
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Lifecycle style data — internal to _CredentialLifecycleSection.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _LifecycleStyle {
+  final Color borderColor;
+  final Color iconColor;
+  final IconData icon;
+  final String? advisory;
+  const _LifecycleStyle({
+    required this.borderColor,
+    required this.iconColor,
+    required this.icon,
+    this.advisory,
+  });
 }
 
 // ────────────────────────────────────────────────────────────────────────────

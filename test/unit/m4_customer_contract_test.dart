@@ -1046,5 +1046,40 @@ void main() {
       // Widget receives status from the field (not inlined trust claim)
       expect(detail, contains('status: detail.credentialLifecycle!'));
     });
+
+    // ── R31: Trust currentness — lifecycle-aware UI + approachingStale ──────
+
+    test('C31-1: StaleBanner surfaces approachingStale advisory before requiresRequery gate', () {
+      final banner = File('lib/trust/widgets/stale_banner.dart').readAsStringSync();
+      expect(banner, contains('approachingStale'));
+      expect(banner, contains('Verification due soon'));
+      expect(banner, contains('_ApproachingStaleAdvisory'));
+    });
+
+    test('C31-2: _CredentialLifecycleSection shows revoked do-not-rely advisory', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('Do not rely on this record'));
+      expect(detail, contains('revoked'));
+    });
+
+    test('C31-3: _CredentialLifecycleSection shows suspended verify-before-relying advisory', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('suspended'));
+      expect(detail, contains('verify current status before relying'));
+    });
+
+    test('C31-4: _CredentialLifecycleSection is lifecycle-aware with distinct states', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('_LifecycleStyle'));
+      expect(detail, contains('CredentialLifecycleStatus.active'));
+      expect(detail, contains('PvColors.success'));
+      expect(detail, contains('PvColors.error'));
+    });
+
+    test('C31-5: REGISTRY_STATE_ONLY annotation and NOT_ISSUED preserved in enhanced section', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      expect(detail, contains('REGISTRY_STATE_ONLY = TRUE'));
+      expect(detail, contains('NOT_ISSUED'));
+    });
   });
 }
