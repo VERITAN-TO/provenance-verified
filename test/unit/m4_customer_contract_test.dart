@@ -1136,5 +1136,49 @@ void main() {
       expect(detail, contains('SETTLEMENT UNAVAILABLE'));
       expect(detail, contains('SettlementPaymentStatus.lookupError'));
     });
+
+    // ── R33: list-endpoint determination_state binding + credential authority ruling ──
+
+    test('C33-1: list credential_state placeholder NOT displayed as badge — Core PR48 authority ruling', () {
+      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // PR47 credential_state on list is a placeholder (currently always NOT_ISSUED).
+      // Core PR48: lifecycle_sourced_from_pv_credentials_only=TRUE.
+      // List card must NOT display it as a credential badge.
+      expect(screen, isNot(contains("item.credentialState!.toUpperCase()")));
+      expect(screen, isNot(contains("item.credentialState!.isNotEmpty")));
+      // PR47 contract-ready field still parsed in model (data contract preserved) but not displayed.
+      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(models, contains('credentialState'));
+      expect(models, contains('credential_state'));
+    });
+
+    test('C33-2: AUTHORITY_UNAVAILABLE list card — error border + badge; tier suppressed', () {
+      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // determination_state == AUTHORITY_UNAVAILABLE must trigger fail-closed display.
+      expect(screen, contains("determinationState == 'AUTHORITY_UNAVAILABLE'"));
+      expect(screen, contains('PvColors.error'));
+      expect(screen, contains('AUTHORITY UNAVAILABLE'));
+      // AUTHORITY_UNAVAILABLE must be checked BEFORE determinedTier display.
+      final avIdx = screen.indexOf("determinationState == 'AUTHORITY_UNAVAILABLE'");
+      final tierIdx = screen.indexOf('determinedTier != null');
+      expect(avIdx, lessThan(tierIdx),
+          reason: 'AUTHORITY_UNAVAILABLE branch must precede tier display — tier suppressed when authority unavailable');
+    });
+
+    test('C33-3: AUTHORITY_UNAVAILABLE list card — notice paragraph shown', () {
+      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      expect(screen, contains('Canonical determination temporarily unavailable'));
+      expect(screen, contains('View details or refresh to retry'));
+    });
+
+    test('C33-4: no payment/settlement inference for credential on list card — MTA-1 enforced', () {
+      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      // List card must not use settlementPaymentStatus to infer or display credential state.
+      expect(screen, isNot(contains('settlementPaymentStatus')));
+      // List model must carry MTA-1 and MONEY_CONTROLS_TRUST annotations.
+      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      expect(models, contains('MTA-1: SERVER DETERMINES TRUST'));
+      expect(models, contains('MONEY_CONTROLS_TRUST = FALSE'));
+    });
   });
 }

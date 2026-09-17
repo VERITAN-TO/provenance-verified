@@ -136,7 +136,9 @@ class _SubmissionRow extends StatelessWidget {
                     ),
                     // R28/R33: branch on determination_state per flutter_consumer_contract.
                     // AUTHORITY_UNAVAILABLE: suppress tier, show badge + notice (R28-SD-04).
-                    // DETERMINED: show tier + credential_state badge (R28-SD-03, R28-SD-05).
+                    // DETERMINED: show tier (R28-SD-03). No credential badge — list credential_state
+                    //   is PR47 placeholder; canonical authority is credential_lifecycle (detail).
+                    //   Core PR48: lifecycle_sourced_from_pv_credentials_only=TRUE.
                     // NOT_DETERMINED / null: no lifecycle badge (R28 display_rules).
                     // MTA-1: SERVER DETERMINES TRUST.
                     if (item.determinationState == 'AUTHORITY_UNAVAILABLE') ...[
@@ -163,21 +165,16 @@ class _SubmissionRow extends StatelessWidget {
                         item.determinedTier!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       // Server-authored determination result — never client-claimed.
+                      // credential_state from list endpoint is PR47 placeholder (NOT_ISSUED default).
+                      // Canonical credential authority is credential_lifecycle from detail endpoint.
+                      // Per Core PR48: lifecycle_sourced_from_pv_credentials_only=TRUE.
+                      // List card shows no credential badge — R33/Core authority ruling.
                       Text(
                         'Determined: ${item.determinedTier}',
                         style: PvTypography.bodySmall.copyWith(
                             color: PvColors.onBackground,
                             fontWeight: FontWeight.w600),
                       ),
-                      if (item.credentialState != null &&
-                          item.credentialState!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          item.credentialState!.toUpperCase().replaceAll('_', ' '),
-                          style: PvTypography.label.copyWith(
-                              color: PvColors.muted, fontSize: 9),
-                        ),
-                      ],
                     ] else ...[
                       const SizedBox(height: 2),
                       Text(
