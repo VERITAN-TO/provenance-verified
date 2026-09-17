@@ -18,15 +18,17 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(":app")
 }
-// Defensive: ensure all Android library subprojects compile against SDK 36.
-// flutter_plugin_android_lifecycle requires minCompileSdk=36; file_picker >=8.1.4
-// ships with compileSdkVersion 36 in its own build.gradle (root cause fix).
-// plugins.withId fires pre-evaluation, which avoids the "already evaluated" error
-// that afterEvaluate triggers when evaluationDependsOn(":app") is in scope above.
-subprojects {
-    plugins.withId("com.android.library") {
-        extensions.configure<com.android.build.gradle.LibraryExtension> {
-            compileSdk = 36
+// Enforce compileSdk=36 on every Android library plugin after its own build.gradle runs.
+// flutter_plugin_android_lifecycle requires minCompileSdk=36; file_picker sets compileSdk=34
+// in its own build.gradle AFTER plugins.withId fires, so that approach fails.
+// gradle.afterProject fires after each project's configuration is complete — which means
+// file_picker's own compileSdk=34 assignment has already run and we can override it.
+// This avoids the "already evaluated" error that afterEvaluate hits under evaluationDependsOn.
+gradle.afterProject {
+    if (plugins.hasPlugin("com.android.library")) {
+        val ext = extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)
+        if (ext != null) {
+            ext.compileSdk = 36
         }
     }
 }
