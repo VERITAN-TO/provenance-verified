@@ -200,6 +200,17 @@ jobs:
           echo "SIGNING_STATE=UNSIGNED_QUALIFICATION"
           rm -rf /tmp/aab-sign-check
 
+      - name: Assert PRODUCTION_SIGNING_FAIL_CLOSED
+        run: |
+          # productionRelease must fail closed when signing credentials are absent.
+          # CI has no key.properties and no ANDROID_SIGNING_PASSWORD.
+          # The AGP variant gate (assertProductionSigningForProductionRelease) must exit non-zero.
+          if (cd android && ./gradlew :app:assertProductionSigningForProductionRelease 2>&1); then
+            echo "::error::PRODUCTION_SIGNING_AUTHORITY_REQUIRED: production signing gate did not fail — fail-closed regression"
+            exit 1
+          fi
+          echo "PRODUCTION_SIGNING_FAIL_CLOSED=PASS"
+
       - name: Compute Android AAB SHA256
         id: aab_hash
         run: |

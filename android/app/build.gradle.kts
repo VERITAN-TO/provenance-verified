@@ -82,6 +82,29 @@ android {
     }
 }
 
+afterEvaluate {
+    // Variant-scoped signing custody using the AGP applicationVariants API.
+    // qualificationRelease: unsigned intentional (SIGNING_STATE=UNSIGNED_QUALIFICATION).
+    // productionRelease: PRODUCTION_SIGNING_AUTHORITY_REQUIRED — fails closed when credentials absent.
+    // Does not use task-name string matching; variant identity comes from the AGP variant model.
+    android.applicationVariants.all {
+        if (flavorName == "production" && buildType.name == "release") {
+            val cap = name.replaceFirstChar { it.uppercase() }
+            val gate = tasks.register("assertProductionSigningFor$cap") {
+                group = "verification"
+                doFirst {
+                    check(hasSigningCredentials) {
+                        "PRODUCTION_SIGNING_AUTHORITY_REQUIRED: $name cannot build without " +
+                        "key.properties + ANDROID_SIGNING_PASSWORD. " +
+                        "UNSIGNED_QUALIFICATION is valid only for qualificationRelease."
+                    }
+                }
+            }
+            tasks.matching { it.name == "bundle$cap" }.configureEach { dependsOn(gate) }
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
