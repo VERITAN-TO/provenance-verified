@@ -200,16 +200,41 @@ jobs:
           echo "SIGNING_STATE=UNSIGNED_QUALIFICATION"
           rm -rf /tmp/aab-sign-check
 
-      - name: Assert PRODUCTION_SIGNING_FAIL_CLOSED
+      - name: Assert PRODUCTION_SIGNING_DEPENDENCY_GRAPH
         run: |
-          # productionRelease must fail closed when signing credentials are absent.
-          # CI has no key.properties and no ANDROID_SIGNING_PASSWORD.
-          # The AGP variant gate (assertProductionSigningForProductionRelease) must exit non-zero.
-          if (cd android && ./gradlew :app:assertProductionSigningForProductionRelease 2>&1); then
-            echo "::error::PRODUCTION_SIGNING_AUTHORITY_REQUIRED: production signing gate did not fail — fail-closed regression"
+          # Dry-run bundleProductionRelease to prove assertProductionSigningForProductionRelease
+          # is in the task dependency graph — without credentials, without building anything.
+          DRY_RUN_OUTPUT=$(cd android && ./gradlew :app:bundleProductionRelease --dry-run 2>&1)
+          echo "$DRY_RUN_OUTPUT"
+          if ! echo "$DRY_RUN_OUTPUT" | grep -q ":app:assertProductionSigningForProductionRelease"; then
+            echo "::error::PRODUCTION_SIGNING_DEPENDENCY_GRAPH: gate task absent from bundleProductionRelease dependency plan"
             exit 1
           fi
-          echo "PRODUCTION_SIGNING_FAIL_CLOSED=PASS"
+          if [ -f "build/app/outputs/bundle/productionRelease/app-production-release.aab" ]; then
+            echo "::error::PRODUCTION_AAB_EMITTED: dry-run produced a production AAB — custody violation"
+            exit 1
+          fi
+          echo "PRODUCTION_SIGNING_DEPENDENCY_GRAPH=PASS (gate in dependency plan, no AAB emitted)"
+
+      - name: Assert PRODUCTION_SIGNING_FAIL_CLOSED
+        run: |
+          # productionRelease must fail closed: gate must exit non-zero and emit
+          # the exact PRODUCTION_SIGNING_AUTHORITY_REQUIRED marker.
+          # CI has no key.properties and no ANDROID_SIGNING_PASSWORD.
+          set +e
+          (cd android && ./gradlew :app:assertProductionSigningForProductionRelease 2>&1) | tee /tmp/gate-output.txt
+          GATE_EXIT=${PIPESTATUS[0]}
+          set -e
+          if [ "$GATE_EXIT" -eq 0 ]; then
+            echo "::error::PRODUCTION_SIGNING_AUTHORITY_REQUIRED: gate succeeded unexpectedly — fail-closed regression"
+            exit 1
+          fi
+          if ! grep -q "PRODUCTION_SIGNING_AUTHORITY_REQUIRED" /tmp/gate-output.txt; then
+            echo "::error::PRODUCTION_SIGNING_FAIL_CLOSED: gate failed but PRODUCTION_SIGNING_AUTHORITY_REQUIRED marker absent"
+            cat /tmp/gate-output.txt
+            exit 1
+          fi
+          echo "PRODUCTION_SIGNING_FAIL_CLOSED=PASS (PRODUCTION_SIGNING_AUTHORITY_REQUIRED marker confirmed)"
 
       - name: Compute Android AAB SHA256
         id: aab_hash

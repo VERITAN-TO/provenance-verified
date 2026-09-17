@@ -86,7 +86,8 @@ afterEvaluate {
     // Variant-scoped signing custody using the AGP applicationVariants API.
     // qualificationRelease: unsigned intentional (SIGNING_STATE=UNSIGNED_QUALIFICATION).
     // productionRelease: PRODUCTION_SIGNING_AUTHORITY_REQUIRED — fails closed when credentials absent.
-    // Does not use task-name string matching; variant identity comes from the AGP variant model.
+    // Variant scope (flavorName, buildType.name) from AGP variant model.
+    // tasks.matching uses the model-derived task name — an exact equality predicate, not a broad pattern.
     android.applicationVariants.all {
         if (flavorName == "production" && buildType.name == "release") {
             val cap = name.replaceFirstChar { it.uppercase() }
