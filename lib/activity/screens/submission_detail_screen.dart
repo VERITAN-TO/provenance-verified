@@ -85,6 +85,15 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
+              // ── Credential lifecycle — R30: registry state plane ──────────────
+              // Separate from determination (trust) and settlement (commercial).
+              // NOT_ISSUED ≠ trust failure. Null = determination not yet available.
+              // 503 REGISTRY_AUTHORITY_UNAVAILABLE → HTTP error → existing retry UX.
+              if (detail.credentialLifecycle != null) ...[
+                _CredentialLifecycleSection(status: detail.credentialLifecycle!),
+                const SizedBox(height: 16),
+              ],
+
               // ── Settlement CTA — R29: hasSettlementSeam + null data + determination ─
               // PR #47 data.settlement is the explicit server seam. Key present but
               // null means no order linked yet. MONEY_CONTROLS_TRUST = FALSE.
@@ -875,6 +884,41 @@ class _ProvenanceRecordAction extends StatelessWidget {
   static String _formatDate(DateTime dt) {
     final l = dt.toLocal();
     return '${l.year}-${l.month.toString().padLeft(2, '0')}-${l.day.toString().padLeft(2, '0')}';
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Credential lifecycle section — R30: registry state plane.
+// Separate authority plane from determination (trust) and settlement (commercial).
+// NOT_ISSUED ≠ trust failure. MTA-1: SERVER DETERMINES TRUST.
+// REGISTRY_STATE_ONLY = TRUE.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _CredentialLifecycleSection extends StatelessWidget {
+  final CredentialLifecycleStatus status;
+  const _CredentialLifecycleSection({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: PvColors.surface,
+        border: Border.all(color: PvColors.border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CREDENTIAL REGISTRY',
+            style: PvTypography.label.copyWith(color: PvColors.muted),
+          ),
+          const SizedBox(height: 6),
+          Text(status.displayLabel, style: PvTypography.body),
+        ],
+      ),
+    );
   }
 }
 

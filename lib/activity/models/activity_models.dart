@@ -4,6 +4,50 @@
 // The client displays what the backend reports; it makes no trust claims.
 
 // ---------------------------------------------------------------------------
+// Credential lifecycle — server-reported registry credential state.
+// Sourced from pv_review_cases via DB-authoritative tenant+asset linkage (PR #48).
+// REGISTRY_STATE_ONLY = TRUE: lifecycle is a separate authority plane from
+// determination tier, settlement, and Gold Seal authority.
+// NOT_ISSUED does not mean trust failure — no active issued credential only.
+// MTA-1: SERVER DETERMINES TRUST — sourced exclusively from the server.
+// ---------------------------------------------------------------------------
+
+enum CredentialLifecycleStatus {
+  active,
+  suspended,
+  revoked,
+  expired,
+  superseded,
+  notIssued;
+
+  // forward-compat: unknown API strings fail-closed to notIssued.
+  // Null input = determination not yet available; returns null.
+  static CredentialLifecycleStatus? fromApiString(String? raw) {
+    if (raw == null) return null;
+    switch (raw.toUpperCase()) {
+      case 'ACTIVE':     return CredentialLifecycleStatus.active;
+      case 'SUSPENDED':  return CredentialLifecycleStatus.suspended;
+      case 'REVOKED':    return CredentialLifecycleStatus.revoked;
+      case 'EXPIRED':    return CredentialLifecycleStatus.expired;
+      case 'SUPERSEDED': return CredentialLifecycleStatus.superseded;
+      case 'NOT_ISSUED': return CredentialLifecycleStatus.notIssued;
+      default:           return CredentialLifecycleStatus.notIssued;
+    }
+  }
+
+  String get displayLabel {
+    switch (this) {
+      case CredentialLifecycleStatus.active:     return 'Credential Active';
+      case CredentialLifecycleStatus.suspended:  return 'Credential Suspended';
+      case CredentialLifecycleStatus.revoked:    return 'Credential Revoked';
+      case CredentialLifecycleStatus.expired:    return 'Credential Expired';
+      case CredentialLifecycleStatus.superseded: return 'Credential Superseded';
+      case CredentialLifecycleStatus.notIssued:  return 'No Active Credential';
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Settlement payment status — server-reported payment lifecycle state.
 // MONEY_CONTROLS_TRUST = FALSE: this field is informational only.
 // Scoped to the authenticated customer; never projected as trust state.
@@ -311,6 +355,11 @@ class SubmissionDetail {
   // MONEY_CONTROLS_TRUST = FALSE.
   final bool hasSettlementSeam;
   final Settlement? settlementData;
+  /// Credential registry lifecycle state — null when determination is not yet
+  /// complete or when asset/tenant coordinates are unavailable.
+  /// REGISTRY_STATE_ONLY = TRUE: NOT_ISSUED ≠ trust failure.
+  /// MTA-1: SERVER DETERMINES TRUST — sourced from pv_review_cases (PR #48).
+  final CredentialLifecycleStatus? credentialLifecycle;
 
   const SubmissionDetail({
     required this.submissionId,
@@ -327,6 +376,7 @@ class SubmissionDetail {
     this.settlementPaymentStatus,
     this.hasSettlementSeam = false,
     this.settlementData,
+    this.credentialLifecycle,
   });
 
   factory SubmissionDetail.fromJson(Map<String, dynamic> json) {
@@ -363,6 +413,8 @@ class SubmissionDetail {
       settlementData: json.containsKey('settlement') && json['settlement'] is Map<String, dynamic>
           ? Settlement.fromJson(json['settlement'] as Map<String, dynamic>)
           : null,
+      credentialLifecycle: CredentialLifecycleStatus.fromApiString(
+                           json['credential_lifecycle'] as String?),
     );
   }
 }
