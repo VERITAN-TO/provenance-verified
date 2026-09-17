@@ -7,9 +7,12 @@
 // by evidence and policy; price is derived from the determined tier; payment,
 // if any, is collected only after determination via CustomerSubmissionDetail.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/submit_models.dart';
 import '../providers/submit_provider.dart';
 import '../../design/pv_colors.dart';
@@ -602,19 +605,14 @@ class _PhotoSection extends ConsumerWidget {
                 .toList(),
           ),
         const SizedBox(height: 12),
-        // Note: image_picker is not in pubspec. This button is the integration
-        // point. Add image_picker to pubspec and replace this with picker logic.
         OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Photo capture: add image_picker to pubspec to enable.',
-                  style: TextStyle(color: Colors.white),
-                ),
-                backgroundColor: PvColors.surface,
-              ),
-            );
+          onPressed: () async {
+            final picker = ImagePicker();
+            final XFile? picked =
+                await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+            if (picked != null) {
+              ref.read(submitProvider.notifier).addPhoto(picked.path);
+            }
           },
           icon: const Icon(Icons.add_a_photo_outlined, size: 18),
           label: const Text('Add Photo'),
@@ -645,7 +643,17 @@ class _PhotoTile extends StatelessWidget {
             border: Border.all(color: PvColors.border),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.image_outlined, color: PvColors.muted, size: 32),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              File(path),
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.broken_image_outlined, color: PvColors.muted, size: 32),
+            ),
+          ),
         ),
         Positioned(
           top: -4,
@@ -786,19 +794,22 @@ class _Step2Evidence extends ConsumerWidget {
 
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: () {
-                  // Integration point: add file_picker to pubspec to enable
-                  // real file picking. The backend endpoint accepts multipart
-                  // POST /api/v1/customer/submissions/:id/evidence.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Document upload: add file_picker to pubspec to enable.',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: PvColors.surface,
-                    ),
+                onPressed: () async {
+                  final result = await FilePicker.platform.pickFiles(
+                    allowMultiple: false,
+                    type: FileType.any,
                   );
+                  if (result != null && result.files.isNotEmpty) {
+                    final file = result.files.first;
+                    final path = file.path;
+                    if (path != null) {
+                      ref.read(submitProvider.notifier).addDocument(EvidenceDocument(
+                        filePath: path,
+                        fileName: file.name,
+                        docType: EvidenceDocumentType.other,
+                      ));
+                    }
+                  }
                 },
                 icon: const Icon(Icons.attach_file, size: 18),
                 label: const Text('Add Document'),
