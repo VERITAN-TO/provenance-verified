@@ -86,10 +86,16 @@ class _SubmissionRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: PvColors.surface,
             border: Border.all(
-              color: item.hasEvidenceRequest
-                  ? PvColors.warning
-                  : PvColors.border,
-              width: item.hasEvidenceRequest ? 1.5 : 1,
+              // R28/R33: AUTHORITY_UNAVAILABLE → error border (R28-SD-04).
+              color: item.determinationState == 'AUTHORITY_UNAVAILABLE'
+                  ? PvColors.error
+                  : item.hasEvidenceRequest
+                      ? PvColors.warning
+                      : PvColors.border,
+              width: (item.determinationState == 'AUTHORITY_UNAVAILABLE' ||
+                      item.hasEvidenceRequest)
+                  ? 1.5
+                  : 1,
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -128,7 +134,32 @@ class _SubmissionRow extends StatelessWidget {
                       _relativeTime(item.updatedAt),
                       style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                     ),
-                    if (item.determinedTier != null &&
+                    // R28/R33: branch on determination_state per flutter_consumer_contract.
+                    // AUTHORITY_UNAVAILABLE: suppress tier, show badge + notice (R28-SD-04).
+                    // DETERMINED: show tier + credential_state badge (R28-SD-03, R28-SD-05).
+                    // NOT_DETERMINED / null: no lifecycle badge (R28 display_rules).
+                    // MTA-1: SERVER DETERMINES TRUST.
+                    if (item.determinationState == 'AUTHORITY_UNAVAILABLE') ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: PvColors.error.withAlpha(30),
+                          border: Border.all(color: PvColors.error),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'AUTHORITY UNAVAILABLE',
+                          style: PvTypography.label.copyWith(
+                              color: PvColors.error, fontSize: 9),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Canonical determination temporarily unavailable. View details or refresh to retry.',
+                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                      ),
+                    ] else if (item.determinedTier != null &&
                         item.determinedTier!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       // Server-authored determination result — never client-claimed.
@@ -138,6 +169,15 @@ class _SubmissionRow extends StatelessWidget {
                             color: PvColors.onBackground,
                             fontWeight: FontWeight.w600),
                       ),
+                      if (item.credentialState != null &&
+                          item.credentialState!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          item.credentialState!.toUpperCase().replaceAll('_', ' '),
+                          style: PvTypography.label.copyWith(
+                              color: PvColors.muted, fontSize: 9),
+                        ),
+                      ],
                     ] else ...[
                       const SizedBox(height: 2),
                       Text(

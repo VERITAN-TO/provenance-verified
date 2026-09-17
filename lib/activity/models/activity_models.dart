@@ -198,6 +198,15 @@ class SubmissionStatusItem {
   /// Settlement payment status — null when settlement has not occurred.
   /// MONEY_CONTROLS_TRUST = FALSE: this is billing state only.
   final SettlementPaymentStatus? settlementPaymentStatus;
+  // R28/R33: list-endpoint fields from Web flutter_consumer_contract.
+  // MTA-1: SERVER DETERMINES TRUST.
+  // Null = old API (pre-R28 backend). Fail-closed: null treated as NOT_DETERMINED
+  // unless determinedTier is non-null (in which case treat as DETERMINED).
+  /// determination_state from list endpoint: DETERMINED | AUTHORITY_UNAVAILABLE | NOT_DETERMINED.
+  final String? determinationState;
+  /// credential_state from list endpoint: NOT_ISSUED | ACTIVE | SUSPENDED | REVOKED | EXPIRED | SUPERSEDED.
+  /// Currently always NOT_ISSUED. Data contract ready.
+  final String? credentialState;
 
   const SubmissionStatusItem({
     required this.submissionId,
@@ -208,6 +217,8 @@ class SubmissionStatusItem {
     required this.updatedAt,
     required this.hasEvidenceRequest,
     this.settlementPaymentStatus,
+    this.determinationState,
+    this.credentialState,
   });
 
   factory SubmissionStatusItem.fromJson(Map<String, dynamic> json) {
@@ -224,6 +235,8 @@ class SubmissionStatusItem {
       hasEvidenceRequest:  json['has_evidence_request'] as bool? ?? false,
       settlementPaymentStatus: SettlementPaymentStatus.fromApiString(
                              json['settlement_payment_status'] as String?),
+      determinationState:  json['determination_state'] as String?,
+      credentialState:     json['credential_state'] as String?,
     );
   }
 }
