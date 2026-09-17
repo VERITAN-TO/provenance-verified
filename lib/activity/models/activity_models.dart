@@ -195,6 +195,50 @@ class CustodyEvent {
 }
 
 // ---------------------------------------------------------------------------
+// Settlement — server-authored order/settlement data from data.settlement.
+// Authority seam added in PR #47. Null key = old API (fail-closed).
+// MONEY_CONTROLS_TRUST = FALSE: payment state is informational only.
+// MTA-1: SERVER DETERMINES TRUST — this object comes from the server.
+// ---------------------------------------------------------------------------
+
+class Settlement {
+  final String orderId;
+  final String paymentStatus;
+  final String? serviceTier;
+  final int? amountCents;
+  final String? currency;
+  final DateTime? settledAt;
+
+  const Settlement({
+    required this.orderId,
+    required this.paymentStatus,
+    this.serviceTier,
+    this.amountCents,
+    this.currency,
+    this.settledAt,
+  });
+
+  // Returns true when settlement is complete: FREE or PAID.
+  // MONEY_CONTROLS_TRUST = FALSE: isSettled gates record presentation,
+  // not trust tier authority.
+  bool get isSettled {
+    final s = paymentStatus.toUpperCase();
+    return s == 'FREE' || s == 'PAID';
+  }
+
+  factory Settlement.fromJson(Map<String, dynamic> j) => Settlement(
+        orderId:       j['orderId'] as String? ?? '',
+        paymentStatus: j['paymentStatus'] as String? ?? '',
+        serviceTier:   j['serviceTier'] as String?,
+        amountCents:   j['amountCents'] as int?,
+        currency:      j['currency'] as String?,
+        settledAt:     j['settledAt'] != null
+            ? DateTime.tryParse(j['settledAt'] as String)
+            : null,
+      );
+}
+
+// ---------------------------------------------------------------------------
 // SubmissionDetail — full detail returned by GET .../status
 // ---------------------------------------------------------------------------
 
@@ -261,6 +305,12 @@ class SubmissionDetail {
   /// Settlement payment status — null when settlement has not occurred.
   /// MONEY_CONTROLS_TRUST = FALSE: this is billing state only.
   final SettlementPaymentStatus? settlementPaymentStatus;
+  // Settlement authority from data.settlement (PR #47 explicit seam, R29).
+  // hasSettlementSeam = true iff server returned the 'settlement' key.
+  // Key-absent (old API) → false → fail-closed. Key-present-null → seam active, no order yet.
+  // MONEY_CONTROLS_TRUST = FALSE.
+  final bool hasSettlementSeam;
+  final Settlement? settlementData;
 
   const SubmissionDetail({
     required this.submissionId,
@@ -275,6 +325,8 @@ class SubmissionDetail {
     this.publicId,
     this.determinedAt,
     this.settlementPaymentStatus,
+    this.hasSettlementSeam = false,
+    this.settlementData,
   });
 
   factory SubmissionDetail.fromJson(Map<String, dynamic> json) {
@@ -307,6 +359,10 @@ class SubmissionDetail {
       determinedAt: DateTime.tryParse(json['determined_at'] as String? ?? ''),
       settlementPaymentStatus: SettlementPaymentStatus.fromApiString(
                                json['settlement_payment_status'] as String?),
+      hasSettlementSeam: json.containsKey('settlement'),
+      settlementData: json.containsKey('settlement') && json['settlement'] is Map<String, dynamic>
+          ? Settlement.fromJson(json['settlement'] as Map<String, dynamic>)
+          : null,
     );
   }
 }

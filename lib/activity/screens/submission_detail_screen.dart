@@ -85,12 +85,15 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
-              // ── Settlement CTA suppressed — SETTLEMENT_NULL_AMBIGUOUS ─────
-              // R28: null settlementPaymentStatus is ambiguous — server may
-              // have failed to resolve settlement authority. No existing explicit
-              // signal distinguishes "not yet settled" from "settlement state
-              // unavailable". CROSS_LANE_HANDOFF_REQUIRED from Web/Lead-B.
-              // MONEY_CONTROLS_TRUST = FALSE.
+              // ── Settlement CTA — R29: hasSettlementSeam + null data + determination ─
+              // PR #47 data.settlement is the explicit server seam. Key present but
+              // null means no order linked yet. MONEY_CONTROLS_TRUST = FALSE.
+              if (detail.hasSettlementSeam &&
+                  detail.settlementData == null &&
+                  detail.determination != null) ...[
+                _SettlementCtaSection(submissionId: detail.submissionId),
+                const SizedBox(height: 16),
+              ],
 
               // ── Settlement status — FREE or PAID ─────────────────────────
               if (detail.settlementPaymentStatus != null &&
@@ -123,12 +126,18 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
-              // ── Provenance record action suppressed — CROSS_LANE_HANDOFF_REQUIRED
-              // R28: publicId alone (determination/projection identity) is NOT a
-              // canonical registry/lifecycle-active authority signal. Mission 2
-              // authority requires PAYMENT → CREDENTIAL AUTHORITY → REGISTRY/LIFECYCLE.
-              // _ProvenanceRecordAction is retained below but must not render
-              // until an explicit server authority seam is added to the API.
+              // ── Public provenance record — R29: settlement authority seam wired ──
+              // PR #47 data.settlement.isSettled (FREE or PAID) is the authority gate.
+              // MTA-1: SERVER DETERMINES TRUST. MONEY_CONTROLS_TRUST = FALSE.
+              if (detail.settlementData != null &&
+                  detail.settlementData!.isSettled &&
+                  detail.publicId != null) ...[
+                _ProvenanceRecordAction(
+                  publicId: detail.publicId!,
+                  determinedAt: detail.determinedAt,
+                ),
+                const SizedBox(height: 16),
+              ],
 
               // ── Status timeline ──────────────────────────────────────────
               _SectionHeader('STATUS TIMELINE'),
@@ -499,7 +508,6 @@ class _EvidenceRequestSection extends StatelessWidget {
 // settlement does not change the trust determination.
 // ────────────────────────────────────────────────────────────────────────────
 
-// ignore: unused_element
 class _SettlementCtaSection extends StatelessWidget {
   final String submissionId;
   const _SettlementCtaSection({required this.submissionId});
@@ -807,20 +815,15 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Provenance record link — RETAINED, NOT RENDERED (R28).
-// CROSS_LANE_HANDOFF_REQUIRED: publicId alone is not a canonical
-// registry/lifecycle-active authority signal. Rendering requires an explicit
-// server-supplied field from the trust authority chain on the submissions
-// status API response. MTA-1: SERVER DETERMINES TRUST.
+// Provenance record link — wired in R29 via settlement authority seam.
+// Gate: settlement.isSettled (FREE or PAID from PR #47 data.settlement).
+// MTA-1: SERVER DETERMINES TRUST.
 // LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY.
 // ────────────────────────────────────────────────────────────────────────────
 
-// ignore: unused_element
 class _ProvenanceRecordAction extends StatelessWidget {
   final String publicId;
-  // ignore: unused_field
   final DateTime? determinedAt;
-  // ignore: unused_element_parameter
   const _ProvenanceRecordAction({required this.publicId, this.determinedAt});
 
   @override

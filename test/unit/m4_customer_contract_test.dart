@@ -730,9 +730,9 @@ void main() {
       expect(provider, contains('CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE'));
     });
 
-    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; action suppressed pending authority seam', () {
+    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; settlement seam wired in R29', () {
       final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      // publicId field must be decoded from server response (retained for forward compat)
+      // publicId field must be decoded from server response
       expect(models, contains("json['public_id']"));
       expect(models, contains('publicId'));
       // determinedAt must be decoded
@@ -740,19 +740,21 @@ void main() {
       expect(models, contains('determinedAt'));
       // MTA-1 law comment must be present — server determines, native displays
       expect(models, contains('MTA-1: SERVER DETERMINES TRUST'));
-      // R28: publicId alone is NOT a canonical registry/lifecycle-active authority signal.
-      // _ProvenanceRecordAction widget is retained in source but must not be rendered.
+      // R29: hasSettlementSeam and settlementData decoded from data.settlement
+      expect(models, contains('hasSettlementSeam'));
+      expect(models, contains('settlementData'));
+      expect(models, contains("json.containsKey('settlement')"));
+      // Settlement authority seam wired in detail screen
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
       // publicId reference must exist in detail screen (model decode retained)
       expect(detail, contains('publicId'));
-      // _ProvenanceRecordAction widget class must be retained for future use
+      // _ProvenanceRecordAction widget class must be present and wired
       expect(detail, contains('_ProvenanceRecordAction'));
-      // BUT: publicId-gated call site must NOT be present — action suppressed
+      // publicId-alone gate must be absent (settlement.isSettled is the authority)
       expect(detail, isNot(contains('if (detail.publicId != null)')));
-      // Settlement CTA suppression comment must be present (SETTLEMENT_NULL_AMBIGUOUS)
-      expect(detail, contains('SETTLEMENT_NULL_AMBIGUOUS'));
-      // Provenance action suppression must be documented (CROSS_LANE_HANDOFF_REQUIRED)
-      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // R29: settlement.isSettled is the authority gate for the public record link
+      expect(detail, contains('isSettled'));
+      expect(detail, contains('hasSettlementSeam'));
       // Must have Semantics for screen reader (custody timeline)
       expect(detail, contains('Semantics'));
     });
@@ -871,61 +873,128 @@ void main() {
     // ambiguous. Both actions suppressed until explicit server seam is added.
     // CUSTOMER_SELECTS_TIER=FALSE  MONEY_CONTROLS_TRUST=FALSE
 
-    test('C28-1: publicId alone must not unlock a public-reliance Verify action — call site absent', () {
+    test('C28-1: publicId alone must not unlock a public-reliance Verify action — R29 settlement gate required', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
-      // publicId-gated rendering condition must be absent
+      // publicId-alone gate must be absent (not a registry authority by itself)
       expect(detail, isNot(contains('if (detail.publicId != null)')));
-      // _ProvenanceRecordAction call site must not instantiate via publicId
-      expect(detail, isNot(contains('publicId: detail.publicId!')));
-      // CROSS_LANE_HANDOFF_REQUIRED comment must document the suppression
-      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // R29: settlement.isSettled is the gate for the record link
+      expect(detail, contains('isSettled'));
+      // Gate must require settlementData (server object), not just publicId
+      expect(detail, contains('settlementData != null'));
     });
 
-    test('C28-2: payment state (FREE/PAID/PENDING) must not unlock a public-reliance Verify action', () {
+    test('C28-2: payment state alone does not unlock public-reliance Verify — R29 requires full settlement seam', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
       // Settlement status display (informational badge) must still be present
       expect(detail, contains('_SettlementStatusSection'));
       // My-PV navigation for FREE/PAID settlement must still be present
       expect(detail, contains('_MyPvNavigationSection'));
-      // publicId-based Verify action must not be gated on any settlement state
-      expect(detail, isNot(contains('publicId: detail.publicId!')));
+      // R29: full gate requires settlementData (server object) + isSettled + publicId
+      expect(detail, contains('settlementData!.isSettled'));
       // MONEY_CONTROLS_TRUST=FALSE annotation must be present
       expect(detail, contains('MONEY_CONTROLS_TRUST'));
     });
 
-    test('C28-3: settlement CTA suppressed — null settlementPaymentStatus is ambiguous', () {
+    test('C28-3: settlement CTA wired in R29 — hasSettlementSeam gate replaces null-ambiguous suppression', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
-      // null-gated settlement CTA call must be absent
+      // Null-only gate must be absent (null alone was ambiguous — requires key-presence seam)
       expect(detail, isNot(contains('detail.settlementPaymentStatus == null')));
-      // Suppression rationale must be documented in source
-      expect(detail, contains('SETTLEMENT_NULL_AMBIGUOUS'));
-      // _SettlementCtaSection class must be retained (for future explicit-signal use)
+      // R29: CTA gated on hasSettlementSeam (server sent settlement key)
+      expect(detail, contains('detail.hasSettlementSeam'));
+      // _SettlementCtaSection class must exist and be callable
       expect(detail, contains('class _SettlementCtaSection'));
+      // MONEY_CONTROLS_TRUST annotation must be present
+      expect(detail, contains('MONEY_CONTROLS_TRUST'));
     });
 
-    test('C28-4: unknown/error settlement must not enable any settlement or public-reliance action', () {
+    test('C28-4: unknown/error settlement state must not enable settlement CTA — R29 gate requires hasSettlementSeam+null data', () {
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
       // unknown gates out the settlement status section — guard must be present
       expect(detail, contains('SettlementPaymentStatus.unknown'));
-      // _SettlementCtaSection class must be retained but not called
+      // _SettlementCtaSection class must exist (wired in R29)
       expect(detail, contains('class _SettlementCtaSection'));
-      // The conditional call site (_SettlementCtaSection with submissionId argument) must be absent
-      expect(detail, isNot(contains("_SettlementCtaSection(\n")));
-      // publicId-based Verify action must also be absent
-      expect(detail, isNot(contains('publicId: detail.publicId!')));
+      // CTA gate must require hasSettlementSeam (key-presence guard, not null guard alone)
+      expect(detail, contains('detail.hasSettlementSeam'));
+      // CTA gate must require settlementData == null (order not yet linked)
+      expect(detail, contains('detail.settlementData == null'));
     });
 
-    test('C28-5: no registry/lifecycle-active field on current API — Verify action permanently suppressed until seam added', () {
+    test('C28-5: public record authority uses settlement.isSettled — not registry_active; seam wired in R29', () {
       final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
-      // Model must not introduce a registry_active field (requires Lead-B server seam)
+      // Model must not introduce a registry_active field
       expect(model, isNot(contains("'registry_active'")));
       expect(model, isNot(contains('registryActive')));
       // Detail screen must not gate any action on an invented authority field
       expect(detail, isNot(contains("'registry_active'")));
       expect(detail, isNot(contains('registryActive')));
-      // CROSS_LANE_HANDOFF_REQUIRED must be present to document the pending seam
-      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // R29: settlement.isSettled IS the authority seam (from PR #47 data.settlement)
+      expect(detail, contains('isSettled'));
+      // Settlement data must be non-null to gate the link
+      expect(detail, contains('settlementData != null'));
+    });
+
+    // ── R29 SETTLEMENT AUTHORITY SEAM LOCKS ───────────────────────────────────
+    // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R29-NATIVE-CAPABILITY-CLOSURE
+    // PR #47 data.settlement is the explicit server seam for both the settlement
+    // CTA and the public provenance record link. Key-presence gate (hasSettlementSeam)
+    // is fail-closed against old API responses with no settlement key.
+    // MONEY_CONTROLS_TRUST = FALSE  MTA-1: SERVER DETERMINES TRUST
+
+    test('C29-1: Settlement model: isSettled = FREE or PAID; class decoded from data.settlement', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // Settlement class must exist
+      expect(model, contains('class Settlement'));
+      // isSettled must gate on FREE and PAID
+      expect(model, contains("'FREE'"));
+      expect(model, contains("'PAID'"));
+      expect(model, contains('isSettled'));
+      // paymentStatus and orderId fields must be present
+      expect(model, contains('paymentStatus'));
+      expect(model, contains('orderId'));
+      // MONEY_CONTROLS_TRUST = FALSE annotation must be present
+      expect(model, contains('MONEY_CONTROLS_TRUST = FALSE'));
+    });
+
+    test('C29-2: hasSettlementSeam uses json.containsKey — key-absent old API is fail-closed', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // Key-presence gate is the correct distinguisher: absent key ≠ null settlement
+      expect(model, contains("json.containsKey('settlement')"));
+      // hasSettlementSeam field must be present on SubmissionDetail
+      expect(model, contains('hasSettlementSeam'));
+    });
+
+    test('C29-3: _ProvenanceRecordAction renders only when settlementData.isSettled — publicId alone insufficient', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // Gate must require isSettled (settlement authority from server)
+      expect(detail, contains('isSettled'));
+      // publicId-alone gate must be absent
+      expect(detail, isNot(contains('if (detail.publicId != null)')));
+      // Gate must require settlementData.isSettled
+      expect(detail, contains('settlementData!.isSettled'));
+      // Gate must also require publicId not null
+      expect(detail, contains('detail.publicId != null'));
+    });
+
+    test('C29-4: Settlement CTA shown when hasSettlementSeam + no order linked + determination present', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // All three R29 gate components must be present
+      expect(detail, contains('detail.hasSettlementSeam'));
+      expect(detail, contains('detail.settlementData == null'));
+      expect(detail, contains('detail.determination != null'));
+      // The CTA call site must now be active
+      expect(detail, contains('_SettlementCtaSection(submissionId: detail.submissionId)'));
+    });
+
+    test('C29-5: SubmissionDetail.fromJson reads settlement key safely — key-absent and key-present-null both handled', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      // fromJson must check key presence before parsing
+      expect(model, contains("json.containsKey('settlement')"));
+      // settlementData must only be non-null when key is present AND value is a map
+      expect(model, contains("json['settlement'] is Map<String, dynamic>"));
+      // Both fields must appear in the constructor call
+      expect(model, contains('hasSettlementSeam:'));
+      expect(model, contains('settlementData:'));
     });
   });
 }
