@@ -10,15 +10,16 @@ env:
   FLUTTER_CHANNEL: 'stable'
   PV_API_BASE_URL: 'https://provenance-verified-private.vercel.app'
   # EXPECTED_M2_UNIT_COUNT: fail-closed gate — must match actual executed test count.
-  # Confirmed executed count: 237 — from CI run 35157801981 on commit f439b89
-  # (Linux job 105001277050 + macOS job 105001277154, both reported 237 with 0 failures).
-  # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49 (+7 STONE tests),
-  #   m4_customer_contract_test.dart: 78 (includes C25-1/2/3 added at R24 + C20-6/C24-3 fixed at R25),
+  # Confirmed executed count: 237 — from CI run 35165330574 on commit 32b3019 (R27).
+  # R28 adds 5 tests: C28-1..C28-5 (public reliance failsafe + settlement null ambiguity).
+  # Expected count after R28: 237 + 5 = 242.
+  # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
+  #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5),
   #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
-  #   trust_models_test.dart: 37 (qr_handler 21 + machine_trust 37 = 237 total confirmed).
+  #   trust_models_test.dart: 37.
   # DO NOT update this value by hand. Update only after an executed GitHub Actions
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
-  EXPECTED_M2_UNIT_COUNT: '237'
+  EXPECTED_M2_UNIT_COUNT: '242'
 
 jobs:
   linux-android:

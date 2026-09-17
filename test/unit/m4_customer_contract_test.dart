@@ -730,9 +730,9 @@ void main() {
       expect(provider, contains('CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE'));
     });
 
-    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; detail screen shows verify action', () {
+    test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; action suppressed pending authority seam', () {
       final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      // publicId field must be decoded from server response
+      // publicId field must be decoded from server response (retained for forward compat)
       expect(models, contains("json['public_id']"));
       expect(models, contains('publicId'));
       // determinedAt must be decoded
@@ -740,13 +740,20 @@ void main() {
       expect(models, contains('determinedAt'));
       // MTA-1 law comment must be present — server determines, native displays
       expect(models, contains('MTA-1: SERVER DETERMINES TRUST'));
-      // Detail screen must have the provenance record action
+      // R28: publicId alone is NOT a canonical registry/lifecycle-active authority signal.
+      // _ProvenanceRecordAction widget is retained in source but must not be rendered.
       final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // publicId reference must exist in detail screen (model decode retained)
       expect(detail, contains('publicId'));
+      // _ProvenanceRecordAction widget class must be retained for future use
       expect(detail, contains('_ProvenanceRecordAction'));
-      // Must route to verify (not assert trust state itself)
-      expect(detail, contains("'/verify/\$publicId'"));
-      // Must have Semantics for screen reader
+      // BUT: publicId-gated call site must NOT be present — action suppressed
+      expect(detail, isNot(contains('if (detail.publicId != null)')));
+      // Settlement CTA suppression comment must be present (SETTLEMENT_NULL_AMBIGUOUS)
+      expect(detail, contains('SETTLEMENT_NULL_AMBIGUOUS'));
+      // Provenance action suppression must be documented (CROSS_LANE_HANDOFF_REQUIRED)
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+      // Must have Semantics for screen reader (custody timeline)
       expect(detail, contains('Semantics'));
     });
 
@@ -855,6 +862,70 @@ void main() {
       expect(router, contains("name: 'submission-detail'"));
       // pathParameters['submissionId'] must be used for the ID
       expect(router, contains("pathParameters['submissionId']"));
+    });
+
+    // ── R28 PUBLIC RELIANCE FAILSAFE LOCKS ────────────────────────────────────
+    // CTO_WORK_ORDER_ID: PV-M2-LEAD-C-R28-PUBLIC-RELIANCE-FAILSAFE-32B3
+    // publicId alone (or any combination of determination/payment state) is NOT
+    // a canonical registry/lifecycle-active authority signal. Settlement null is
+    // ambiguous. Both actions suppressed until explicit server seam is added.
+    // CUSTOMER_SELECTS_TIER=FALSE  MONEY_CONTROLS_TRUST=FALSE
+
+    test('C28-1: publicId alone must not unlock a public-reliance Verify action — call site absent', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // publicId-gated rendering condition must be absent
+      expect(detail, isNot(contains('if (detail.publicId != null)')));
+      // _ProvenanceRecordAction call site must not instantiate via publicId
+      expect(detail, isNot(contains('publicId: detail.publicId!')));
+      // CROSS_LANE_HANDOFF_REQUIRED comment must document the suppression
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
+    });
+
+    test('C28-2: payment state (FREE/PAID/PENDING) must not unlock a public-reliance Verify action', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // Settlement status display (informational badge) must still be present
+      expect(detail, contains('_SettlementStatusSection'));
+      // My-PV navigation for FREE/PAID settlement must still be present
+      expect(detail, contains('_MyPvNavigationSection'));
+      // publicId-based Verify action must not be gated on any settlement state
+      expect(detail, isNot(contains('publicId: detail.publicId!')));
+      // MONEY_CONTROLS_TRUST=FALSE annotation must be present
+      expect(detail, contains('MONEY_CONTROLS_TRUST'));
+    });
+
+    test('C28-3: settlement CTA suppressed — null settlementPaymentStatus is ambiguous', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // null-gated settlement CTA call must be absent
+      expect(detail, isNot(contains('detail.settlementPaymentStatus == null')));
+      // Suppression rationale must be documented in source
+      expect(detail, contains('SETTLEMENT_NULL_AMBIGUOUS'));
+      // _SettlementCtaSection class must be retained (for future explicit-signal use)
+      expect(detail, contains('class _SettlementCtaSection'));
+    });
+
+    test('C28-4: unknown/error settlement must not enable any settlement or public-reliance action', () {
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // unknown gates out the settlement status section — guard must be present
+      expect(detail, contains('SettlementPaymentStatus.unknown'));
+      // _SettlementCtaSection class must be retained but not called
+      expect(detail, contains('class _SettlementCtaSection'));
+      // The conditional call site (_SettlementCtaSection with submissionId argument) must be absent
+      expect(detail, isNot(contains("_SettlementCtaSection(\n")));
+      // publicId-based Verify action must also be absent
+      expect(detail, isNot(contains('publicId: detail.publicId!')));
+    });
+
+    test('C28-5: no registry/lifecycle-active field on current API — Verify action permanently suppressed until seam added', () {
+      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      // Model must not introduce a registry_active field (requires Lead-B server seam)
+      expect(model, isNot(contains("'registry_active'")));
+      expect(model, isNot(contains('registryActive')));
+      // Detail screen must not gate any action on an invented authority field
+      expect(detail, isNot(contains("'registry_active'")));
+      expect(detail, isNot(contains('registryActive')));
+      // CROSS_LANE_HANDOFF_REQUIRED must be present to document the pending seam
+      expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
     });
   });
 }
