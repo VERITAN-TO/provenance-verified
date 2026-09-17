@@ -1629,8 +1629,8 @@ void main() {
       expect(provider, contains('uploadPendingDocuments'));
       // Low-level API call must be present — multipart evidence upload
       expect(provider, contains('uploadEvidence'));
-      // Must iterate over pending documents (not a no-op stub)
-      expect(provider, contains('pendingDocuments'));
+      // Must guard on !doc.uploaded — skips already-uploaded documents, not a no-op stub
+      expect(provider, contains('!doc.uploaded'));
     });
 
     test('C50-5: home_screen watches homeAlertsProvider — alerts are server-sourced, not a static list', () {
