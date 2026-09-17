@@ -1382,6 +1382,8 @@ void main() {
 
       // Consumer teardown — autoDispose: state IS disposed
       sub1.close();
+      // Riverpod 2 schedules autoDispose disposal via microtask; yield to let it run.
+      await Future.value();
 
       // Second consumer — fresh evaluation forced
       final sub2 = container.listen(autoDisposeProvider('key'), (_, __) {});
@@ -1397,7 +1399,7 @@ void main() {
       expect(provider, contains('FutureProvider.autoDispose.family'));
       expect(provider, isNot(contains('FutureProvider.family<ActionabilityResult,')));
       // Security law comment preserved
-      expect(provider, contains('NEVER cached for reliance'));
+      expect(provider, contains('NEVER be cached for reliance'));
     });
 
     test('C45-2: actionabilityProvider (full-args variant) is also autoDispose', () {
