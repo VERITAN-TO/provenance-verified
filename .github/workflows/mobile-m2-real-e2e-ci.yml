@@ -69,7 +69,9 @@ env:
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
   # Confirmed executed count: 306 — from CI run 35257032745 on commit d5d1b8e (R50).
   # Confirmed executed count: 311 — from CI run 35259983102 on commit ddb2f2f (M2-50-04 C50-11..C50-15). All 311 pass.
-  EXPECTED_M2_UNIT_COUNT: '311'
+  # Projected count: 322 — 311 + 5 C51 tests (M2-50-05, commit 8bf94b6) + 6 C52/C53 tests (M2-50-08/07).
+  # Awaiting CI execution on successor/m4-determination-first-r2 to confirm.
+  EXPECTED_M2_UNIT_COUNT: '322'
 
 jobs:
   linux-android:
