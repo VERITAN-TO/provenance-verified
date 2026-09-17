@@ -24,14 +24,18 @@ env:
   # R32 also updates C22-2, C28-1, C28-2, C28-5, C29-3 (same count; tests updated for payment-gate removal).
   # CI run 35182964601 on commit bbe8bcb confirmed 262 total tests (257 passing + 5 failing before R32 fix).
   # Confirmed executed count: 262 — from CI run 35182964601 on commit bbe8bcb (R32) — all 262 pass after fix.
+  # R33 adds 4 tests: C33-1..C33-4 (list credential_state authority ruling; AUTHORITY_UNAVAILABLE fail-closed).
+  # Confirmed executed count: 266 — from CI run 35185928675 on commit 8adc444 (R33) — all 266 pass;
+  #   count gate 262 was sole failure. CI evidence: "+266: All tests passed!"
   # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
   #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5) +5 new R29 tests (C29-1..5)
-  #     +5 new R30 tests (C30-1..5) +5 new R31 tests (C31-1..5) +5 new R32 tests (C32-1..5),
+  #     +5 new R30 tests (C30-1..5) +5 new R31 tests (C31-1..5) +5 new R32 tests (C32-1..5)
+  #     +4 new R33 tests (C33-1..4),
   #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
   #   trust_models_test.dart: 37.
   # DO NOT update this value by hand. Update only after an executed GitHub Actions
   # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
-  EXPECTED_M2_UNIT_COUNT: '262'
+  EXPECTED_M2_UNIT_COUNT: '266'
 
 jobs:
   linux-android:
