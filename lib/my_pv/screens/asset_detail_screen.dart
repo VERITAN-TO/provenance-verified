@@ -592,6 +592,8 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Promote nullable field to local for Dart null-safety flow analysis.
+    final url = publicRecordUrl;
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -618,10 +620,10 @@ class _ActionButtons extends StatelessWidget {
         // Rendered only when server explicitly returns publicRecordUrl.
         // Native must not construct a public verification URL from publicId.
         // Fail-closed: button hidden when publicRecordUrl is null or empty.
-        if (publicRecordUrl != null && publicRecordUrl.isNotEmpty)
+        if (url != null && url.isNotEmpty)
           OutlinedButton.icon(
             onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: publicRecordUrl));
+              await Clipboard.setData(ClipboardData(text: url));
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Verification link copied to clipboard.')),
