@@ -8,13 +8,19 @@ plugins {
 
 val keyPropertiesFile = rootProject.file("key.properties")
 val keyProperties = Properties()
-if (keyPropertiesFile.exists()) {
+val signingPass: String? = System.getenv("ANDROID_SIGNING_PASSWORD")
+// BUILD QUALIFICATION != SIGNING AUTHORITY.
+// qualificationRelease builds in CI are intentionally unsigned (SIGNING_STATE=UNSIGNED_QUALIFICATION).
+// Production signing requires key.properties + ANDROID_SIGNING_PASSWORD from a human authority.
+val hasSigningCredentials: Boolean = keyPropertiesFile.exists() && signingPass != null
+
+if (hasSigningCredentials) {
     keyProperties.load(FileInputStream(keyPropertiesFile))
 }
 
 android {
     namespace = "to.veritan.pv.provenance_verified_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
 
     compileOptions {
@@ -22,13 +28,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    signingConfigs {
-        create("release") {
-            keyAlias = keyProperties["keyAlias"] as String
-            storeFile = keyProperties["storeFile"]?.let { file(it as String) }
-            val signingPass = System.getenv("ANDROID_SIGNING_PASSWORD") ?: ""
-            storePassword = signingPass
-            keyPassword = signingPass
+    if (hasSigningCredentials) {
+        signingConfigs {
+            create("release") {
+                keyAlias = keyProperties["keyAlias"] as String
+                storeFile = file(keyProperties["storeFile"] as String)
+                storePassword = signingPass!!
+                keyPassword = signingPass!!
+            }
         }
     }
 
@@ -54,19 +61,46 @@ android {
         applicationId = "to.veritan.pv"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        compileSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // Signing applied only when human signing authority credentials are present.
+            // CI qualification builds (no key.properties, no ANDROID_SIGNING_PASSWORD) produce
+            // an intentionally unsigned AAB: SIGNING_STATE=UNSIGNED_QUALIFICATION.
+            // ANDROID_RELEASE_CUSTODY_BLOCKED: never substitute debug signing for release authority.
+            signingConfig = if (hasSigningCredentials) signingConfigs.getByName("release") else null
             isMinifyEnabled = false
             isShrinkResources = false
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+}
+
+afterEvaluate {
+    // Variant-scoped signing custody using the AGP applicationVariants API.
+    // qualificationRelease: unsigned intentional (SIGNING_STATE=UNSIGNED_QUALIFICATION).
+    // productionRelease: PRODUCTION_SIGNING_AUTHORITY_REQUIRED — fails closed when credentials absent.
+    // Variant scope (flavorName, buildType.name) from AGP variant model.
+    // tasks.matching uses the model-derived task name — an exact equality predicate, not a broad pattern.
+    android.applicationVariants.all {
+        if (flavorName == "production" && buildType.name == "release") {
+            val cap = name.replaceFirstChar { it.uppercase() }
+            val gate = tasks.register("assertProductionSigningFor$cap") {
+                group = "verification"
+                doFirst {
+                    check(hasSigningCredentials) {
+                        "PRODUCTION_SIGNING_AUTHORITY_REQUIRED: $name cannot build without " +
+                        "key.properties + ANDROID_SIGNING_PASSWORD. " +
+                        "UNSIGNED_QUALIFICATION is valid only for qualificationRelease."
+                    }
+                }
+            }
+            tasks.matching { it.name == "bundle$cap" }.configureEach { dependsOn(gate) }
         }
     }
 }

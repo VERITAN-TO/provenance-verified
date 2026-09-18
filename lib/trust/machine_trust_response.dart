@@ -44,17 +44,23 @@ class MtLimitation {
   final String code;
   final String message;
   final String? affectedClaim;
+  final List<String> prohibitedInferences;
 
   const MtLimitation({
     required this.code,
     required this.message,
     this.affectedClaim,
+    this.prohibitedInferences = const [],
   });
 
   factory MtLimitation.fromJson(Map<String, dynamic> j) => MtLimitation(
         code: j['code'] as String? ?? '',
         message: j['message'] as String? ?? '',
         affectedClaim: j['affected_claim'] as String?,
+        prohibitedInferences: (j['prohibited_inferences'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
       );
 }
 
@@ -90,13 +96,28 @@ class MachineTrustResponse {
   final String credentialStatus;
   final bool credentialAuthoritative;
   final String continuityState;
+  // current_custodian: who physically holds the asset (server-provided, display-only).
+  // CUSTODY_IS_NOT_LEGAL_TITLE = TRUE — native must not assert legal title from this.
+  final String? currentCustodian;
+  // current_owner: server-reported legal title holder (display-only, no authority assertion).
+  final String? currentOwner;
   final String lifecycleState;
   final String servedAt;
+  // why_this_tier: server-authored list of requirements met for the current tier.
+  final List<String> whyThisTier;
+  // why_not_higher: server-authored list of gaps preventing the next tier.
+  final List<String> whyNotHigher;
   // trust_state_digest comes from x-pv-trust-state-digest response header.
   final String trustStateDigest;
   // physical_subject_id comes from x-pv-physical-subject response header.
   final String physicalSubjectId;
   final Map<String, dynamic>? error;
+  // Server-authored public verification URL — safe for Native sharing.
+  // Constructed server-side from PV_SITE_URL env var; Native must NOT construct this from publicId.
+  final String? publicRecordUrl;
+  // Server-authored purchase qualification outcome. MONEY_CONTROLS_TRUST = FALSE.
+  // QUALIFIED | UNQUALIFIED — from server purchase.qualification_outcome.
+  final String? purchaseQualificationOutcome;
 
   const MachineTrustResponse({
     required this.schema,
@@ -130,11 +151,17 @@ class MachineTrustResponse {
     required this.credentialStatus,
     required this.credentialAuthoritative,
     required this.continuityState,
+    this.currentCustodian,
+    this.currentOwner,
     required this.lifecycleState,
     required this.servedAt,
+    this.whyThisTier = const [],
+    this.whyNotHigher = const [],
     required this.trustStateDigest,
     required this.physicalSubjectId,
     this.error,
+    this.publicRecordUrl,
+    this.purchaseQualificationOutcome,
   });
 
   bool get hasError => error != null;
@@ -154,6 +181,7 @@ class MachineTrustResponse {
     final credential = j['credential'] as Map<String, dynamic>? ?? {};
     final continuity = j['continuity'] as Map<String, dynamic>? ?? {};
     final lifecycle = j['lifecycle'] as Map<String, dynamic>? ?? {};
+    final purchase = j['purchase'] as Map<String, dynamic>? ?? {};
 
     return MachineTrustResponse(
       schema: j['schema'] as String? ?? 'pv.machine-trust.v1',
@@ -196,7 +224,29 @@ class MachineTrustResponse {
       credentialStatus: credential['status'] as String? ?? 'UNKNOWN',
       credentialAuthoritative: credential['authoritative'] as bool? ?? false,
       continuityState: continuity['state'] as String? ?? 'UNKNOWN',
+      currentCustodian: continuity['current_custodian'] as String?,
+      currentOwner: continuity['current_owner'] as String?,
       lifecycleState: lifecycle['state'] as String? ?? 'UNKNOWN',
+      whyThisTier: (determination['why_this_tier'] as List?)
+              ?.map((e) {
+                final entry = e as Map<String, dynamic>? ?? {};
+                return (entry['requirement'] as String?) ??
+                    (entry['reason_code'] as String?) ??
+                    '';
+              })
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [],
+      whyNotHigher: (determination['why_not_higher'] as List?)
+              ?.map((e) {
+                final entry = e as Map<String, dynamic>? ?? {};
+                return (entry['missing_requirement'] as String?) ??
+                    (entry['reason_code'] as String?) ??
+                    '';
+              })
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [],
       servedAt: j['served_at'] as String? ?? '',
       trustStateDigest: trustStateDigestHeader.isNotEmpty
           ? trustStateDigestHeader
@@ -205,6 +255,8 @@ class MachineTrustResponse {
           ? physicalSubjectHeader
           : subject['subject_id'] as String? ?? '',
       error: j['error'] as Map<String, dynamic>?,
+      publicRecordUrl: j['public_record_url'] as String?,
+      purchaseQualificationOutcome: purchase['qualification_outcome'] as String?,
     );
   }
 
@@ -228,11 +280,11 @@ class MachineTrustResponse {
       material: false,
     )).toList();
 
-    // Map limitations
+    // Map limitations — prohibitedInferences from server's per-limitation field, not affectedClaim.
     final lims = limitations.map((l) => TrustLimitation(
       code: l.code,
       message: l.message,
-      prohibitedInferences: l.affectedClaim != null ? [l.affectedClaim!] : [],
+      prohibitedInferences: l.prohibitedInferences,
     )).toList();
 
     // Map freshness
@@ -245,7 +297,7 @@ class MachineTrustResponse {
       );
     }
 
-    // Map determination
+    // Map determination — metRequirements/notMetRequirements from server's why_this_tier/why_not_higher.
     final determination = TrustDetermination(
       determinationId: determinationId,
       tier: tier,
@@ -253,6 +305,9 @@ class MachineTrustResponse {
       qualificationState: eligible ? QualificationState.qualified : QualificationState.unqualified,
       materialConflict: materialConflict,
       tierRationale: tierLabel.isNotEmpty ? tierLabel : null,
+      metRequirements: whyThisTier,
+      notMetRequirements: whyNotHigher,
+      purchaseQualificationOutcome: purchaseQualificationOutcome,
     );
 
     // Map authority
@@ -266,15 +321,20 @@ class MachineTrustResponse {
       status: lifecycleState,
     );
 
-    // Map continuity
+    // Map continuity — currentCustodian/currentOwner from server (display-only, CUSTODY_IS_NOT_LEGAL_TITLE=TRUE).
     TrustContinuity? continuity;
-    if (contState != ContinuityState.unknown) {
-      continuity = TrustContinuity(state: contState);
+    if (contState != ContinuityState.unknown || currentCustodian != null || currentOwner != null) {
+      continuity = TrustContinuity(
+        state: contState,
+        currentCustodian: currentCustodian,
+        currentOwner: currentOwner,
+      );
     }
 
     return TrustRecord(
       publicId: publicId,
       trustStateDigest: trustStateDigest,
+      publicRecordUrl: publicRecordUrl,
       subject: TrustSubject(
         subjectId: subjectId,
         physicalSubjectId: physicalSubjectId,

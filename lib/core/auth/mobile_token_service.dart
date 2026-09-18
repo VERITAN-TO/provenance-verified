@@ -84,7 +84,11 @@ class MobileTokenService {
     }
 
     final deviceId   = await _getOrCreateDeviceId();
-    final platform   = Platform.isIOS ? 'ios' : 'android';
+    // Use PV_MOBILE_PLATFORM dart-define when set (CI/test bootstrap with non-UUID tenant IDs).
+    // Server guards against test platform in production runtime (TEST_PLATFORM_IN_PRODUCTION).
+    final platform = Env.mobilePlatform.isNotEmpty
+        ? Env.mobilePlatform
+        : (Platform.isIOS ? 'ios' : 'android');
     final appVersion = Env.appVersion;
 
     final response = await _client

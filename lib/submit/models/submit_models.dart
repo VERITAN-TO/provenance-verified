@@ -29,6 +29,10 @@ enum ServiceTier {
     }
   }
 
+  // Educational reference only — this string is NEVER sent to the server.
+  // The server derives service_code from its own canonical determination.
+  // T4_PV_GOLD_SEAL is a historic internal label; T4 determination does not
+  // confer Gold Seal authority (GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE).
   String get serviceCode {
     switch (this) {
       case ServiceTier.t1Free: return 'T1_FREE_ASSET_FINGERPRINT';
@@ -172,9 +176,6 @@ class SubmissionDraft {
   final String? submissionId;
   final String? orderId;
   final int step;
-  // Deprecated compatibility field. It is never sent to the server and cannot
-  // affect determination, quote, order, payment, credential, or mark authority.
-  final ServiceTier? selectedTier;
   final String assetName;
   final String assetType;
   final GemstoneAttributes gemstoneAttributes;
@@ -188,7 +189,6 @@ class SubmissionDraft {
     this.submissionId,
     this.orderId,
     this.step = 0,
-    this.selectedTier,
     this.assetName = '',
     this.assetType = '',
     this.gemstoneAttributes = const GemstoneAttributes(),
@@ -199,11 +199,10 @@ class SubmissionDraft {
     this.declaredTermsAgreed = false,
   });
 
-  SubmissionDraft copyWith({String? submissionId, String? orderId, int? step, ServiceTier? selectedTier, String? assetName, String? assetType, GemstoneAttributes? gemstoneAttributes, List<String>? photoPaths, List<EvidenceDocument>? documents, bool? declaredAccurate, bool? declaredTierMayDiffer, bool? declaredTermsAgreed}) => SubmissionDraft(
+  SubmissionDraft copyWith({String? submissionId, String? orderId, int? step, String? assetName, String? assetType, GemstoneAttributes? gemstoneAttributes, List<String>? photoPaths, List<EvidenceDocument>? documents, bool? declaredAccurate, bool? declaredTierMayDiffer, bool? declaredTermsAgreed}) => SubmissionDraft(
     submissionId: submissionId ?? this.submissionId,
     orderId: orderId ?? this.orderId,
     step: step ?? this.step,
-    selectedTier: selectedTier ?? this.selectedTier,
     assetName: assetName ?? this.assetName,
     assetType: assetType ?? this.assetType,
     gemstoneAttributes: gemstoneAttributes ?? this.gemstoneAttributes,
@@ -269,7 +268,7 @@ class SubmissionQuote {
       determinationId: data['determination_id']?.toString(),
       determinationDigest: data['determination_digest']?.toString(),
       whyThisTier: data['why_this_tier']?.toString(),
-      whyNotNextTier: data['why_not_next_tier']?.toString(),
+      whyNotNextTier: data['why_not_higher']?.toString() ?? data['why_not_next_tier']?.toString(),
       limitations: (data['limitations'] as List?) ?? const [],
     );
   }

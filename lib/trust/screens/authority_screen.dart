@@ -15,8 +15,31 @@ class AuthorityScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Issuing Authority')),
       body: trustAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading issuing authority'),
+        ),
+        error: (e, _) => Semantics(
+          label: 'Could not load authority information.',
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: PvColors.error, size: 48),
+                  const SizedBox(height: 16),
+                  const Text('Could not load authority', style: PvTypography.title),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         data: (record) {
           final authority = record.authority;
           return ListView(
