@@ -76,7 +76,7 @@ jobs:
 
   lead-c:
     needs: route
-    if: ${{ needs.route.outputs.authorized == 'true' && needs.route.outputs.lane == 'C' && vars.PV_EXECUTION_TRIGGER_ENABLED == 'true' }}
+    if: ${{ needs.route.outputs.authorized == 'true' && needs.route.outputs.lane == 'C' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     concurrency:
