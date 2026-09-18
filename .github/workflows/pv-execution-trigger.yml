@@ -33,9 +33,9 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
-          EVENT_PATH: ${{ github.event_path }}
         run: |
           set -euo pipefail
+          EVENT_PATH="${GITHUB_EVENT_PATH:?GITHUB_EVENT_PATH not set}"
           pr="0"
           case "$EVENT_NAME" in
             pull_request)
