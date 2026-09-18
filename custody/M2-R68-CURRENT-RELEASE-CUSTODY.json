@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "custody_type": "PV_MISSION2_CURRENT_NATIVE_RELEASE_HANDOFF",
+  "status": "QUALIFICATION_ONLY",
+  "source_sha": "9ef4ec8f9bf07ecfa1349fb524996176604a0c20",
+  "source_branch": "successor/m4-determination-first-r2",
+  "workflow_run": 35338256848,
+  "version_name": "3.0.0",
+  "version_code": 1,
+  "bundle_ids": {
+    "ios_production": "to.veritan.pv",
+    "android_production": "to.veritan.pv",
+    "android_qualification": "to.veritan.pv.qual",
+    "android_development": "to.veritan.pv.dev"
+  },
+  "qualification": {
+    "pubspec_lock_sync": "PASS",
+    "linux_analyze": "PASS",
+    "linux_unit_tests": "PASS_360",
+    "android_unsigned_qualification": "PASS",
+    "macos_analyze": "PASS",
+    "macos_unit_tests": "PASS_360",
+    "ios_no_codesign_release": "PASS",
+    "evidence_assembly": "PASS",
+    "real_backend_integration": "EXECUTED_FAIL_EXTERNAL_BACKEND"
+  },
+  "artifacts": {
+    "android_qualification_aab": {
+      "artifact_id": 10543683335,
+      "sha256": "90ef9a3d2de326b5d15bdd80651145eb6e7fdbdc6f6d0cfae72d40290557069b",
+      "signing_state": "UNSIGNED_QUALIFICATION"
+    },
+    "ios_nocodesign_app": {
+      "artifact_id": 10544530370,
+      "sha256": "921780c920d34d17f97ec6acbdef732dae4b979dfde2afb0966402a400c4c8ac",
+      "signing_state": "NO_CODESIGN"
+    },
+    "evidence_package": {
+      "artifact_id": 10544042536,
+      "sha256": "fa5a1d50e926162cd8f6614e8a92970a9d18ffdd4503cc8e72487b38ff158bb4"
+    },
+    "resolved_pubspec_lock": {
+      "artifact_id": 10543269500
+    }
+  },
+  "historical_custody": {
+    "custody/M3-RELEASE-CANDIDATE.json": {
+      "classification": "HISTORICAL_ONLY",
+      "reason": "Binds historical M2/M3 source SHAs, 183-test evidence and an older signed Android artifact. It is not the current Mission 2 candidate."
+    },
+    "M2-IOS-NATIVE-E2E-CUSTODY.json": {
+      "classification": "HISTORICAL_ONLY",
+      "reason": "Binds historical profile runner, development provisioning lineage and older bundle identifier. It is not current release custody."
+    }
+  },
+  "release_authority": {
+    "android_production_signing": "HUMAN_AUTHORITY_REQUIRED",
+    "android_signing_gate": "key.properties + ANDROID_SIGNING_PASSWORD",
+    "ios_export_method": "app-store-connect",
+    "ios_signing_style": "automatic",
+    "ios_production_signing": "HUMAN_AUTHORITY_REQUIRED",
+    "testflight": "NOT_EXECUTED",
+    "app_store_submission": "NOT_EXECUTED",
+    "play_store_submission": "NOT_EXECUTED"
+  },
+  "transfer_custody_boundary": {
+    "transfer_mutation_authority": "NOT_PROVEN",
+    "transfer_mutation_genuinely_missing": true,
+    "native_transfer_mutation": "PROHIBITED_UNTIL_SERVER_AUTHORITY_EXISTS",
+    "read_only_custody_history": "PRESERVE"
+  },
+  "external_gate": {
+    "real_backend_integration": {
+      "state": "EXECUTED_FAIL_EXTERNAL_BACKEND",
+      "workflow_variable": "PV_QUAL_API_BASE_URL",
+      "rule": "Do not patch Native around the backend failure."
+    }
+  },
+  "prohibited_actions": [
+    "PRODUCTION_SIGNING",
+    "TESTFLIGHT",
+    "APP_STORE_SUBMISSION",
+    "PLAY_STORE_SUBMISSION",
+    "KEY_OR_CERT_REGENERATION",
+    "PRODUCTION_DEPLOYMENT",
+    "PRODUCTION_DB_OR_DATA_MUTATION",
+    "LIVE_MONEY"
+  ],
+  "maximum_truthful_state": "TESTED_QUALIFICATION_ARTIFACTS_PRESENT__PRODUCTION_RELEASE_CUSTODY_NOT_COMPLETE"
+}
