@@ -411,20 +411,30 @@ class TrustLimitation {
 class TrustContinuity {
   final ContinuityState state;
   final String? gapDescription;
+  // Server-provided physical custodian (display-only). CUSTODY_IS_NOT_LEGAL_TITLE = TRUE.
+  final String? currentCustodian;
+  // Server-provided legal title holder (display-only, no ownership authority assertion).
+  final String? currentOwner;
 
   const TrustContinuity({
     required this.state,
     this.gapDescription,
+    this.currentCustodian,
+    this.currentOwner,
   });
 
   Map<String, dynamic> toJson() => {
         'state': state.toJson(),
         if (gapDescription != null) 'gap_description': gapDescription,
+        if (currentCustodian != null) 'current_custodian': currentCustodian,
+        if (currentOwner != null) 'current_owner': currentOwner,
       };
 
   factory TrustContinuity.fromJson(Map<String, dynamic> j) => TrustContinuity(
         state: ContinuityState.fromJson(j['state']),
         gapDescription: j['gap_description'] as String?,
+        currentCustodian: j['current_custodian'] as String?,
+        currentOwner: j['current_owner'] as String?,
       );
 }
 

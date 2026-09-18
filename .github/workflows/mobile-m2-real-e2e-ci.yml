@@ -78,8 +78,10 @@ env:
   #   ios_archive_sha256: 250e362001928fc0072d9103d89c2a3a0dac22cf5f899a150e9d0613d7786b07 (no-codesign)
   # M2-50-07 inventory (C54-1..C54-4) adds 4 tests — confirmed at fc6fb4c.
   # M2-50-08 physical-match gate (C55-1..C55-2) adds 2 tests — confirmed at d9697c9.
-  # M2-50-09 My PV freshness (C56-1..C56-3) adds 3 tests. Projected count: 331. Pending CI confirmation.
-  EXPECTED_M2_UNIT_COUNT: '331'
+  # M2-50-09 My PV freshness (C56-1..C56-3) adds 3 tests. Confirmed 331 at 417102a (run 35293738059).
+  # R62 runtime dimensions (C62-1..C62-8) adds 8 tests: why/why-not, limitations, custody-vs-title.
+  # Projected count after R62: 331 + 8 = 339. Pending CI confirmation.
+  EXPECTED_M2_UNIT_COUNT: '339'
 
 jobs:
   linux-android:

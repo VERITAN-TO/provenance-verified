@@ -1546,4 +1546,71 @@ void main() {
               'so the list fetches fresh server state on reveal');
     });
   });
+
+  group('M2-50-09 Runtime Dimensions — R62 Native Contract (C62 — STATIC_CONTRACT)', () {
+    test('C62-1 STATIC_CONTRACT: machine_trust_response reads why_this_tier from determination', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('why_this_tier'),
+          reason: 'MachineTrustResponse must read determination.why_this_tier so the server-authored '
+              'met-requirements list reaches TrustDetermination.metRequirements');
+    });
+
+    test('C62-2 STATIC_CONTRACT: machine_trust_response reads why_not_higher from determination', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('why_not_higher'),
+          reason: 'MachineTrustResponse must read determination.why_not_higher so the server-authored '
+              'gap list reaches TrustDetermination.notMetRequirements');
+    });
+
+    test('C62-3 STATIC_CONTRACT: toTrustRecord maps whyThisTier to metRequirements', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('metRequirements: whyThisTier'),
+          reason: 'toTrustRecord must populate TrustDetermination.metRequirements from whyThisTier '
+              'so WhyThisTierScreen renders server-returned requirements, not empty');
+    });
+
+    test('C62-4 STATIC_CONTRACT: toTrustRecord maps whyNotHigher to notMetRequirements', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('notMetRequirements: whyNotHigher'),
+          reason: 'toTrustRecord must populate TrustDetermination.notMetRequirements from whyNotHigher '
+              'so WhyNotHigherScreen renders server-returned gaps, not empty');
+    });
+
+    test('C62-5 STATIC_CONTRACT: machine_trust_response reads current_custodian and current_owner', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('current_custodian'),
+          reason: 'MachineTrustResponse must read continuity.current_custodian — physical holder '
+              'per the A machine response contract; server authority preserved display-only');
+      expect(mtr, contains('current_owner'),
+          reason: 'MachineTrustResponse must read continuity.current_owner — title holder '
+              'per the A machine response contract; CUSTODY_IS_NOT_LEGAL_TITLE=TRUE');
+    });
+
+    test('C62-6 STATIC_CONTRACT: TrustContinuity exposes currentCustodian and currentOwner', () {
+      final models = File('lib/trust/trust_models.dart').readAsStringSync();
+      expect(models, contains('currentCustodian'),
+          reason: 'TrustContinuity must carry currentCustodian so ContinuityWidget can '
+              'display the server-reported physical custodian distinct from title holder');
+      expect(models, contains('currentOwner'),
+          reason: 'TrustContinuity must carry currentOwner (display-only, no authority assertion) '
+              'so the custody-vs-title distinction reaches the UI from the server');
+    });
+
+    test('C62-7 STATIC_CONTRACT: MtLimitation reads prohibited_inferences per limitation', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains("j['prohibited_inferences']"),
+          reason: 'MtLimitation.fromJson must read prohibited_inferences from each limitation entry '
+              'per the A machine response contract; affectedClaim must not be used as a substitute');
+    });
+
+    test('C62-8 STATIC_CONTRACT: ContinuityWidget presents custodian and title holder', () {
+      final widget = File('lib/trust/widgets/continuity_widget.dart').readAsStringSync();
+      expect(widget, contains('currentCustodian'),
+          reason: 'ContinuityWidget must display server-reported currentCustodian to surface '
+              'the custody dimension of the full custody-vs-title contract');
+      expect(widget, contains('currentOwner'),
+          reason: 'ContinuityWidget must display server-reported currentOwner to surface '
+              'the title dimension; display-only, CUSTODY_IS_NOT_LEGAL_TITLE=TRUE preserved');
+    });
+  });
 }
