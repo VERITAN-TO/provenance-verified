@@ -1,12 +1,35 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "custody_type": "PV_MISSION2_CURRENT_NATIVE_RELEASE_HANDOFF",
   "status": "QUALIFICATION_ONLY",
-  "source_sha": "9ef4ec8f9bf07ecfa1349fb524996176604a0c20",
+  "qualified_product_sha": "9ef4ec8f9bf07ecfa1349fb524996176604a0c20",
   "source_branch": "successor/m4-determination-first-r2",
-  "workflow_run": 35338256848,
-  "version_name": "3.0.0",
-  "version_code": 1,
+  "qualified_product_workflow_run": 35338256848,
+  "custody_overlay_parent_sha": "61a114a20ebcbf518105148154f28eef62e3bc17",
+  "custody_record_revision_rule": "The Git commit containing this file is the custody-record revision identity; do not embed a self-referential current commit SHA.",
+  "control_vector": {
+    "authority": {
+      "repository": "VERITAN-TO/provenance-verified-private",
+      "pull_request": 17,
+      "sha": "bb103717e0bdf1a0dce99531108c456856332244"
+    },
+    "web_customer": {
+      "repository": "VERITAN-TO/provenance-verified-private",
+      "pull_request": 47,
+      "sha": "0e8edd04eb8a6d1c8b1443abc8dd94048db8533e"
+    },
+    "backend_convergence": {
+      "repository": "VERITAN-TO/provenance-verified-private",
+      "pull_request": 48,
+      "sha": "c81e32e79c3eb687457a29df42f873f68128e0ea"
+    }
+  },
+  "toolchain": {
+    "flutter": "3.47.2",
+    "dart": "3.13.2",
+    "app_version": "3.0.0+1",
+    "pubspec_lock_sha256": "6c8f8434cd1eeeb3897f403e332f5821a874afee248577bf09af75b9a64d6540"
+  },
   "bundle_ids": {
     "ios_production": "to.veritan.pv",
     "android_production": "to.veritan.pv",
@@ -40,8 +63,21 @@
       "sha256": "fa5a1d50e926162cd8f6614e8a92970a9d18ffdd4503cc8e72487b38ff158bb4"
     },
     "resolved_pubspec_lock": {
-      "artifact_id": 10543269500
+      "artifact_id": 10543269500,
+      "sha256": "6c8f8434cd1eeeb3897f403e332f5821a874afee248577bf09af75b9a64d6540"
     }
+  },
+  "exact_head_requalification": {
+    "parent_custody_sha": "61a114a20ebcbf518105148154f28eef62e3bc17",
+    "parent_exact_head_run": 35358571191,
+    "parent_run_state": "COMPLETED_WITH_EXTERNAL_BACKEND_FAILURE_ONLY",
+    "repo_owned_gates": {
+      "linux_analyze_unit_android": "PASS",
+      "macos_analyze_unit_ios_nocodesign": "PASS",
+      "evidence_assembly": "PASS"
+    },
+    "real_backend_integration": "EXECUTED_FAIL_EXTERNAL_BACKEND",
+    "next_revision_rule": "This custody repair commit must earn its own exact-head CI evidence before CUSTOS can bind SHA-specific release custody."
   },
   "historical_custody": {
     "custody/M3-RELEASE-CANDIDATE.json": {
@@ -73,8 +109,19 @@
     "real_backend_integration": {
       "state": "EXECUTED_FAIL_EXTERNAL_BACKEND",
       "workflow_variable": "PV_QUAL_API_BASE_URL",
+      "observed_endpoint": "provenance-verified-qual-r9qsk1nyy-admin-56661436s-projects.vercel.app",
+      "observed_deployment_id": "dpl_2LrUphbSQA2cN152NxYLLKjXEZnX",
+      "observed_backend_sha": "767bd4f49bee56e3998fafe0791ad2bea8415b2f",
+      "required_backend_relation": "Must bind to the current lawful non-production API contract before Real Backend Integration can qualify.",
       "rule": "Do not patch Native around the backend failure."
     }
+  },
+  "rollback": {
+    "strategy": "Revert only the custody overlay revision(s) to the prior custody parent.",
+    "prior_custody_parent": "61a114a20ebcbf518105148154f28eef62e3bc17",
+    "product_history_rewrite": false,
+    "backend_mutation_required": false,
+    "key_or_certificate_action_required": false
   },
   "prohibited_actions": [
     "PRODUCTION_SIGNING",
@@ -86,5 +133,5 @@
     "PRODUCTION_DB_OR_DATA_MUTATION",
     "LIVE_MONEY"
   ],
-  "maximum_truthful_state": "TESTED_QUALIFICATION_ARTIFACTS_PRESENT__PRODUCTION_RELEASE_CUSTODY_NOT_COMPLETE"
+  "maximum_truthful_state": "TESTED_QUALIFICATION_ARTIFACTS_PRESENT__EXACT_RELEASE_CUSTODY_REQUIRES_CHILD_SHA_REQUALIFICATION_AND_BACKEND_REBIND"
 }
