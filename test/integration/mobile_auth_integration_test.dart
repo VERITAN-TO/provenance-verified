@@ -28,7 +28,7 @@ import 'package:provenance_verified_app/core/config/environment.dart';
 import 'package:provenance_verified_app/core/auth/mobile_token_service.dart';
 import 'package:provenance_verified_app/core/network/api_client.dart';
 
-const _baseUrl = 'https://provenance-verified-private.vercel.app';
+const _baseUrl = Env.pvApiBaseUrl;
 
 // Stable qual subject ID — override via --dart-define if needed.
 const _qualSubjectId = String.fromEnvironment(
