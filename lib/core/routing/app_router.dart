@@ -36,6 +36,7 @@ import '../../activity/screens/submission_detail_screen.dart';
 
 // Professional tools (auth required)
 import '../../professional/screens/professional_batch_screen.dart';
+import '../../professional/screens/professional_inventory_screen.dart';
 
 // Auth screens (no auth required)
 import '../../auth/screens/sign_in_screen.dart';
@@ -264,6 +265,11 @@ final GoRouter appRouter = GoRouter(
           path: 'batch',
           name: 'professional-batch',
           builder: (context, state) => const ProfessionalBatchScreen(),
+        ),
+        GoRoute(
+          path: 'inventory',
+          name: 'professional-inventory',
+          builder: (context, state) => const ProfessionalInventoryScreen(),
         ),
       ],
     ),

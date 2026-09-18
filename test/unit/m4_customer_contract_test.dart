@@ -1460,4 +1460,44 @@ void main() {
           reason: 'asset_detail_screen must not reference /professional (C44-5)');
     });
   });
+
+  group('M2-50-07 Professional Inventory (C54)', () {
+    test('C54-1: professional_inventory_screen exists with PROFESSIONAL_CANNOT_SELECT_TIER annotation', () {
+      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      expect(screen.isNotEmpty, isTrue,
+          reason: 'professional_inventory_screen.dart must exist');
+      expect(screen, contains('PROFESSIONAL_CANNOT_SELECT_TIER'),
+          reason: 'Inventory must annotate PROFESSIONAL_CANNOT_SELECT_TIER — no tier selection');
+      expect(screen, contains('MONEY_CONTROLS_TRUST = FALSE'),
+          reason: 'Inventory must annotate that money does not control trust');
+    });
+
+    test('C54-2: professional_inventory_screen fails closed — AUTHORITY UNAVAILABLE present', () {
+      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      expect(screen, contains('AUTHORITY UNAVAILABLE'),
+          reason: 'Inventory must display AUTHORITY UNAVAILABLE when tier is null — fail closed');
+      expect(screen, contains('safeTier'),
+          reason: 'Inventory must use safeTier (returns null for UNQUALIFIED) as fail-closed gate');
+    });
+
+    test('C54-3: professional_inventory_screen navigates to trust result, not a shortcut tier display', () {
+      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      expect(screen, contains('/verify/'),
+          reason: 'Inventory must navigate to /verify/:id for full trust result detail');
+      expect(screen, isNot(contains('selectTier')),
+          reason: 'Inventory must not allow tier selection');
+      expect(screen, isNot(contains('tier_selector')),
+          reason: 'Inventory must not have tier selector');
+    });
+
+    test('C54-4: professional inventory route registered in router', () {
+      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
+      expect(router, contains("'inventory'"),
+          reason: '/professional/inventory route must be registered');
+      expect(router, contains('ProfessionalInventoryScreen'),
+          reason: 'Router must reference ProfessionalInventoryScreen');
+      expect(router, contains("professional-inventory"),
+          reason: 'named route professional-inventory must be registered');
+    });
+  });
 }
