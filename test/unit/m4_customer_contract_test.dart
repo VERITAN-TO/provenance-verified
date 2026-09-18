@@ -1367,7 +1367,7 @@ void main() {
       expect(screen, contains('lifecycleBlocked'));
       expect(screen, contains("lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'"));
       expect(screen, contains('lifecycleWarning'));
-      expect(screen, contains('isUnknown || _saving || lifecycleBlocked || lifecycleWarning'),
+      expect(screen, contains('isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
           reason: 'All dangerous lifecycle states must disable Save Receipt');
       expect(screen, contains("'RELIANCE BLOCKED — This record is \$lifecycleStatus. '"));
       expect(screen, contains('Requery for Current Status'));
