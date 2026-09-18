@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/trust_provider.dart';
 import '../trust_models.dart';
+import '../../core/network/api_client.dart';
 import '../widgets/trust_badge.dart';
 import '../widgets/claims_list.dart';
 import '../widgets/evidence_list.dart';
@@ -274,17 +275,29 @@ class _ErrorView extends ConsumerWidget {
     final msg = error.toString().toLowerCase();
     final isNotFound = msg.contains('not_found') || msg.contains('404') ||
         msg.contains('not found') || publicId.trim().isEmpty;
-    final isNetwork = msg.contains('network') || msg.contains('timeout') ||
-        msg.contains('socket');
+    // R66: authority/network failure must remain distinct from NOT FOUND —
+    // a 401/403 from the mobile bootstrap token means the SERVER could not
+    // authorize this request, not that the record doesn't exist or the
+    // network is down. Checked before the generic network-string match so
+    // an ApiException never falls through to the raw-error fallback below.
+    final apiError = error is ApiException ? error as ApiException : null;
+    final isAuthorityUnavailable = !isNotFound && apiError != null &&
+        (apiError.statusCode == 401 || apiError.statusCode == 403);
+    final isNetwork = !isNotFound && !isAuthorityUnavailable &&
+        (msg.contains('network') || msg.contains('timeout') || msg.contains('socket'));
 
     final (icon, iconColor, title, body) = isNotFound
         ? (Icons.search_off, PvColors.muted, 'Record not found',
             'No PV record exists for "$publicId". Check the ID and try again.')
-        : isNetwork
-            ? (Icons.signal_wifi_off, PvColors.warning, 'Connection error',
-                'Could not reach the PV server. Check your connection and retry.')
-            : (Icons.error_outline, PvColors.error, 'Unable to load record',
-                error.toString());
+        : isAuthorityUnavailable
+            ? (Icons.gpp_maybe_outlined, PvColors.warning, 'Authority unavailable',
+                'The PV server could not authorize this request. This is not a '
+                'statement about the record itself — retry shortly.')
+            : isNetwork
+                ? (Icons.signal_wifi_off, PvColors.warning, 'Connection error',
+                    'Could not reach the PV server. Check your connection and retry.')
+                : (Icons.error_outline, PvColors.error, 'Unable to load record',
+                    'Something went wrong loading this record. Retry, or check the ID and try again.');
 
     return Semantics(
       label: '$title. $body',

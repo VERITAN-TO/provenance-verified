@@ -6,6 +6,7 @@ import '../../actionability/actionability_models.dart';
 import '../../actionability/providers/actionability_provider.dart';
 import '../providers/reliance_provider.dart';
 import '../../core/config/constants.dart';
+import '../../core/network/api_client.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
@@ -189,8 +190,23 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
             loading: () => const Center(
               child: CircularProgressIndicator(semanticsLabel: 'Querying actionability from server'),
             ),
-            error: (e, _) => Semantics(
-              label: 'Error querying actionability: ${e.toString()}',
+            error: (e, _) {
+              // R66: distinguish authority-unavailable/network failure from a
+              // generic error, and never surface the raw exception text —
+              // same pattern as trust_result_screen.dart's _ErrorView.
+              final apiError = e is ApiException ? e as ApiException : null;
+              final isAuthorityUnavailable = apiError != null &&
+                  (apiError.statusCode == 401 || apiError.statusCode == 403);
+              final msg = e.toString().toLowerCase();
+              final isNetwork = !isAuthorityUnavailable &&
+                  (msg.contains('network') || msg.contains('timeout') || msg.contains('socket'));
+              final message = isAuthorityUnavailable
+                  ? 'The PV server could not authorize this actionability query. Retry shortly.'
+                  : isNetwork
+                      ? 'Could not reach the PV server. Check your connection and retry.'
+                      : 'Could not query actionability. Retry.';
+              return Semantics(
+              label: message,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -205,21 +221,13 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                         const Icon(Icons.error_outline,
                             color: PvColors.error, size: 18),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Could not query actionability.',
-                            style: TextStyle(color: PvColors.error),
+                            message,
+                            style: const TextStyle(color: PvColors.error),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      e.toString(),
-                      style: PvTypography.bodySmall
-                          .copyWith(color: PvColors.muted),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
@@ -234,7 +242,8 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                   ],
                 ),
               ),
-            ),
+              );
+            },
             data: (result) {
               final isUnknown = result.decision == ActionabilityDecision.unknown;
               return Column(
@@ -355,10 +364,15 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
           _savedReceiptIsServerIssued = receipt.isServerIssued;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
+        // R66: fixed, accessible copy — not the raw exception — and this
+        // failure must never render as saved: _savedReceiptId stays null.
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save receipt: $e'), backgroundColor: PvColors.error),
+          const SnackBar(
+            content: Text('Could not save the reliance receipt. Check your connection and retry.'),
+            backgroundColor: PvColors.error,
+          ),
         );
       }
     } finally {

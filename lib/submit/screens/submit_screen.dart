@@ -186,6 +186,10 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
                     child: CircularProgressIndicator(
                       color: PvColors.cyan,
                       strokeWidth: 2,
+                      // R66: async save/evaluate/quote/upload/settlement calls
+                      // all route through this shared indicator — it needs an
+                      // accessible label of its own.
+                      semanticsLabel: 'Processing — please wait',
                     ),
                   )
                 : _buildStep(draft, step),
@@ -1047,7 +1051,9 @@ class _Step4DeterminationPricing extends StatelessWidget {
   Widget build(BuildContext context) {
     if (quote == null) {
       return Center(
-        child: Padding(
+        child: Semantics(
+          label: 'Determination result not available.',
+          child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1068,6 +1074,7 @@ class _Step4DeterminationPricing extends StatelessWidget {
                 ),
               ],
             ],
+          ),
           ),
         ),
       );
@@ -1583,12 +1590,16 @@ class _BottomBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: loading
-                  ? const SizedBox(
+                  // R66: the button's own accessible name (nextLabel) is
+                  // replaced by a bare spinner while loading — give it an
+                  // explicit label so the busy state is still announced.
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.black,
+                        semanticsLabel: '$nextLabel — loading',
                       ),
                     )
                   : Text(nextLabel),

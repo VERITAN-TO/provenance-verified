@@ -20,9 +20,12 @@ class ReceiptDetailScreen extends ConsumerWidget {
       body: receiptsAsync.when(
         loading: () => const Center(
             child: CircularProgressIndicator(semanticsLabel: 'Loading receipt')),
-        error: (e, _) => _BoundedErrorView(
+        // R66: fixed, accessible copy — not the raw exception (matches
+        // receipt_list_screen.dart's already-correct copy for this same
+        // provider/failure).
+        error: (_, __) => _BoundedErrorView(
           title: 'Could not load receipts',
-          message: e.toString(),
+          message: 'Check your connection and retry.',
           onRetry: () => ref.invalidate(receiptListProvider),
         ),
         data: (receipts) {

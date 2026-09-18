@@ -1798,4 +1798,85 @@ void main() {
       }
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // M2-50-11 — R66: accessibility + empty/loading/error/recovery state finish
+  // Surgical repairs only (no redesign): explicit distinct states, accessible
+  // labels on newly-repaired loading/retry paths, and removal of raw
+  // exception text from customer-visible copy. C44-5/C53-*/C54-*/C55-*/C57-*
+  // and all M4 canonical contract tests above remain preserved.
+  // ---------------------------------------------------------------------------
+  group('M2-50-11 Accessibility + State Completeness (C58)', () {
+    test('C58-1: My PV true-empty state is structurally distinct from authority/error state', () {
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      expect(screen, contains('class _EmptyAssetsView'));
+      expect(screen, contains('class _ErrorView'));
+      expect(screen, contains('if (assets.isEmpty)'),
+          reason: 'empty view only renders for a genuinely empty successful data result');
+      expect(screen, contains('error: (err, _) => _ErrorView(error: err)'),
+          reason: 'error view only renders for a provider error, never folded into the empty branch');
+    });
+
+    test('C58-2: Verify _ErrorView distinguishes not-found/authority-unavailable/network/generic and never leaks raw exception text', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      expect(screen, contains('isNotFound'));
+      expect(screen, contains('isAuthorityUnavailable'));
+      expect(screen, contains('isNetwork'));
+      expect(screen, contains("'Authority unavailable'"));
+      final occurrences = 'error.toString()'.allMatches(screen).length;
+      expect(occurrences, 1,
+          reason: 'error.toString() must be used exactly once, for state classification only — '
+              'never as the displayed body text (that was the pre-R66 defect)');
+    });
+
+    test('C58-3: Rely actionability error view distinguishes authority/network from generic and never leaks raw exception text', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      expect(screen, contains('isAuthorityUnavailable'));
+      expect(screen, contains('isNetwork'));
+      final occurrences = 'e.toString()'.allMatches(screen).length;
+      expect(occurrences, 1,
+          reason: 'e.toString() must be used exactly once, for state classification only');
+      expect(screen, isNot(contains(r'Failed to save receipt: $e')),
+          reason: 'save-receipt failure must use fixed accessible copy, not the raw exception');
+    });
+
+    test('C58-4: Rely Save Receipt still disables on lifecycleBlocked/freshnessRequiresRequery/lifecycleWarning; Requery remains available', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      expect(screen, contains('isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
+          reason: 'R66 must not weaken the existing R51/R63 disable condition');
+      expect(screen, contains("'Requery for Current Status'"));
+    });
+
+    test('C58-5: Submit preserves exact saveDeclarations -> submitForEvaluation -> fetchQuote order and adds accessible loading labels', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final saveIdx  = screen.indexOf('await notifier.saveDeclarations();');
+      final evalIdx  = screen.indexOf('await notifier.submitForEvaluation();');
+      final quoteIdx = screen.indexOf('final q = await notifier.fetchQuote();');
+      expect(saveIdx, isNot(-1));
+      expect(evalIdx, isNot(-1));
+      expect(quoteIdx, isNot(-1));
+      expect(saveIdx, lessThan(evalIdx),
+          reason: 'saveDeclarations must still precede submitForEvaluation');
+      expect(evalIdx, lessThan(quoteIdx),
+          reason: 'submitForEvaluation must still precede fetchQuote');
+      expect(screen, contains("semanticsLabel: 'Processing — please wait'"));
+      expect(screen, contains(r"semanticsLabel: '$nextLabel — loading'"));
+    });
+
+    test('C58-6: scanner_screen invalid-QR error is an accessible live-announced state, not SnackBar-only', () {
+      final screen = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
+      expect(screen, contains('liveRegion: true'),
+          reason: 'invalid QR error must be accessible, not only a visual SnackBar');
+      expect(screen, contains("tooltip: 'Dismiss'"));
+      expect(screen, isNot(contains('ScaffoldMessenger.of(context).showSnackBar')),
+          reason: 'the pre-R66 SnackBar-only invalid-QR error is replaced by the accessible banner above, not merely supplemented');
+    });
+
+    test('C58-7: receipt_detail_screen error view never leaks raw exception text', () {
+      final screen = File('lib/reliance/screens/receipt_detail_screen.dart').readAsStringSync();
+      expect(screen, isNot(contains('message: e.toString()')),
+          reason: 'receipt detail load failure must use fixed accessible copy, matching receipt_list_screen.dart');
+      expect(screen, contains("message: 'Check your connection and retry.'"));
+    });
+  });
 }

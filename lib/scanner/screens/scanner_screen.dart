@@ -18,25 +18,28 @@ class _ScannerScreenState extends State<ScannerScreen> {
     torchEnabled: false,
   );
   bool _processing = false;
+  // R66: an invalid/deceptive QR scan must expose an accessible error, not
+  // only a visual SnackBar — a screen-reader user watching a live camera
+  // view may never discover a transient SnackBar. This persists on screen
+  // (liveRegion announces it) until the next valid scan or manual dismiss.
+  String? _scanError;
 
   void _onDetect(BarcodeCapture capture) {
     if (_processing) return;
     final raw = capture.barcodes.firstOrNull?.rawValue;
     final result = QrHandler.parse(raw);
     if (result is QrValid) {
-      setState(() => _processing = true);
+      setState(() {
+        _processing = true;
+        _scanError = null;
+      });
       _controller.stop();
       context.push('/verify/${result.publicId}').then((_) {
         _processing = false;
         _controller.start();
       });
     } else if (result is QrInvalid && raw != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.reason),
-          backgroundColor: PvColors.error,
-        ),
-      );
+      setState(() => _scanError = result.reason);
     }
   }
 
@@ -82,6 +85,42 @@ class _ScannerScreenState extends State<ScannerScreen> {
               onDetect: _onDetect,
             ),
           ),
+          if (_scanError != null)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Semantics(
+                liveRegion: true,
+                label: 'Scan error: $_scanError',
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  color: PvColors.error,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _scanError!,
+                            style: PvTypography.bodySmall.copyWith(color: Colors.white),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Dismiss',
+                          onPressed: () => setState(() => _scanError = null),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             bottom: 48,
             left: 0,
