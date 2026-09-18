@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../trust/providers/trust_provider.dart';
-import '../../trust/trust_models.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
