@@ -1311,7 +1311,7 @@ void main() {
       expect(screen, contains('lifecycleWarning'));
       expect(screen, contains("lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'"),
           reason: 'lifecycleWarning must cover both EXPIRED and SUPERSEDED — not silently treated as current');
-      expect(screen, contains('lifecycleBlocked || lifecycleWarning'),
+      expect(screen, contains('lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
           reason: 'SUPERSEDED/EXPIRED must gate Save Receipt — Defect D repair: cannot produce receipt without requery');
     });
 
