@@ -249,7 +249,13 @@ final GoRouter appRouter = GoRouter(
     ),
 
     // ------------------------------------------------------------------
-    // Professional tools — outside shell, auth required (via _protectedPrefixes)
+    // Batch verify / tracked records — outside shell, auth required (via
+    // _protectedPrefixes). Gated only by the same generic _isAuthenticated()
+    // check as /my-pv, /submit, /activity — deliberately: no server-authoritative
+    // Professional authorization/entitlement seam exists for this client to
+    // reuse (R65 estate search), so none is fabricated here. These screens are
+    // non-authoritative customer utilities, not an authorized "Professional
+    // mode" or tenant inventory.
     // PROFESSIONAL_CANNOT_SELECT_TIER — no tier selection, no issuance, no marks.
     // ------------------------------------------------------------------
     GoRoute(

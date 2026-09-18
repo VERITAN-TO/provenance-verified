@@ -5,11 +5,14 @@ import '../../trust/providers/trust_provider.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
-// PROFESSIONAL_CANNOT_SELECT_TIER — professional mode projects canonical trust only.
+// PROFESSIONAL_CANNOT_SELECT_TIER — this screen projects canonical trust only.
 // Server determines tier. This screen may not select tier, strengthen evidence,
-// issue marks, or bypass tenant/auth. Inventory is read-only; trust state is live
-// from server. Fails closed on partial/unknown authority.
-// MONEY_CONTROLS_TRUST = FALSE.
+// issue marks, or bypass tenant/auth. The tracked-ID list below is local/session
+// state only — it is NOT a server-authoritative tenant inventory, and no proven
+// server-authoritative Professional authorization seam exists to gate this screen
+// on (R65 estate search: PR #3 comment history). Trust state is live from server.
+// Fails closed on partial/unknown authority.
+// MONEY_CONTROLS_TRUST = FALSE. PHYSICAL_MATCH_NOT_SUPPORTED.
 
 class ProfessionalInventoryScreen extends ConsumerStatefulWidget {
   const ProfessionalInventoryScreen({super.key});
@@ -44,22 +47,30 @@ class _ProfessionalInventoryScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Professional Inventory')),
+      // R65: non-authoritative — "Tracked Records", not "Professional
+      // Inventory". This list is local/session state only, not a server
+      // inventory, tenant membership, or professional authorization.
+      appBar: AppBar(title: const Text('Tracked Records')),
       body: Column(
         children: [
-          // Capability header — PROFESSIONAL_CANNOT_SELECT_TIER
+          // Capability header — plain-language disclosure, no internal control
+          // tokens in customer-visible text (tokens remain in the file header
+          // comment above and in tests — PROFESSIONAL_CANNOT_SELECT_TIER,
+          // PHYSICAL_MATCH_NOT_SUPPORTED).
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: PvColors.muted.withAlpha(20),
             child: Text(
-              'Canonical trust projection only. Tier is server-determined. '
-              'PROFESSIONAL_CANNOT_SELECT_TIER. '
-              'Physical object matching: not available — PHYSICAL_MATCH_NOT_SUPPORTED.',
+              'Canonical trust projection only. Tier is determined by PV and '
+              'cannot be selected here. Physical object matching: not available. '
+              'This list is local to your session — not a tenant inventory.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               semanticsLabel:
-                  'Professional mode: canonical trust projection only. Tier is server-determined. '
-                  'Physical object matching: not available — not supported in any mode.',
+                  'Tracked records: canonical trust projection only. Tier is '
+                  'determined by PV. Physical object matching: not available — '
+                  'not supported in any mode. This list is local to your session, '
+                  'not a tenant inventory.',
             ),
           ),
           // Track ID entry row
@@ -223,7 +234,7 @@ class _RemoveButton extends StatelessWidget {
       icon: const Icon(Icons.remove_circle_outline,
           size: 18, color: PvColors.muted),
       onPressed: onRemove,
-      tooltip: 'Remove from inventory',
+      tooltip: 'Remove from tracked records',
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
     );

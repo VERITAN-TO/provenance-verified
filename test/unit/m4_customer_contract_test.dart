@@ -3,6 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provenance_verified_app/submit/models/submit_models.dart';
 
+// R65 helper — strips '//' line comments so a source-text assertion can
+// distinguish "token exists in this file" (allowed in comments/tests, per
+// R65) from "token is reachable from customer-visible widget code" (not
+// allowed). Deliberately simple (no block-comment handling): every internal
+// control token in this codebase is annotated with a single-line comment.
+String _stripLineComments(String source) {
+  return source
+      .split('\n')
+      .where((line) => !line.trimLeft().startsWith('//'))
+      .join('\n');
+}
+
 void main() {
   group('M4 canonical customer contract', () {
     test('tier ladder is educational and settlement follows determination', () {
@@ -1691,6 +1703,95 @@ void main() {
           reason: 'lifecycleBlocked (REVOKED/SUSPENDED) must remain as hard block — R51 lifecycle gate preserved');
       expect(screen, contains('lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
           reason: 'Disable condition must preserve lifecycle gates alongside freshness gate — R51 not weakened');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // M2-50-10 — R65: Professional authority / non-authoritative collection closure
+  // Estate search (PR #3 comment history) found no server-authoritative
+  // "Professional" role/entitlement seam usable by this Flutter client — real
+  // server roles (OrganizationRole/Wave1Role) are B2B tenant-staff roles never
+  // exposed to the mobile consumer session. Branch B applies: demote the
+  // existing screens to bounded, non-authoritative customer utilities rather
+  // than inventing an authorization seam. C53/C54/C55/C44-5 remain preserved.
+  // ---------------------------------------------------------------------------
+  group('M2-50-10 Professional Authority Closure (C57)', () {
+    test('C57-1: no fabricated Professional authorization/role model — same generic _isAuthenticated gate as other protected routes', () {
+      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
+      expect(router, contains("'/professional'"),
+          reason: '/professional must remain in _protectedPrefixes (C53-4 preserved)');
+      expect(router, isNot(contains('isProfessional')),
+          reason: 'No fabricated isProfessional() authorization check');
+      expect(router, isNot(contains('ProfessionalRole')),
+          reason: 'No fabricated ProfessionalRole/entitlement type');
+      expect(router, isNot(contains('professionalEntitlement')),
+          reason: 'No fabricated professional entitlement seam');
+    });
+
+    test('C57-2: scanner_screen batch-verify entry point uses non-authoritative wording', () {
+      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
+      expect(scanner, contains('/professional/batch'),
+          reason: 'entry point route preserved (C53-4)');
+      expect(scanner, isNot(contains("tooltip: 'Professional")),
+          reason: 'tooltip must not claim Professional authorization');
+    });
+
+    test('C57-3: professional_batch_screen visible title uses non-authoritative wording', () {
+      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
+      expect(screen, isNot(contains("Text('Professional Batch Verification')")),
+          reason: 'AppBar title must not claim an authorized Professional mode');
+      expect(screen, contains("Text('Batch Verify')"),
+          reason: 'AppBar title must use bounded, non-authoritative wording');
+    });
+
+    test('C57-4: professional_inventory_screen visible title and tooltip use non-authoritative wording', () {
+      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      expect(screen, isNot(contains("Text('Professional Inventory')")),
+          reason: 'AppBar title must not claim an authorized tenant inventory');
+      expect(screen, contains("Text('Tracked Records')"),
+          reason: 'AppBar title must use local/session, non-authoritative wording');
+      expect(screen, isNot(contains("'Remove from inventory'")),
+          reason: 'tooltip must not imply a server inventory');
+      expect(screen, contains("'Remove from tracked records'"));
+    });
+
+    test('C57-5: PROFESSIONAL_CANNOT_SELECT_TIER and PHYSICAL_MATCH_NOT_SUPPORTED are not reachable from customer-visible widget code', () {
+      final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
+      final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      for (final screen in [batch, inventory]) {
+        final nonComment = _stripLineComments(screen);
+        expect(nonComment, isNot(contains('PROFESSIONAL_CANNOT_SELECT_TIER')),
+            reason: 'Internal control token must not be reachable from widget/build code');
+        expect(nonComment, isNot(contains('PHYSICAL_MATCH_NOT_SUPPORTED')),
+            reason: 'Internal control token must not be reachable from widget/build code');
+      }
+      // Tokens remain documented in source comments — C53-1/C54-1/C55-1/C55-2 preserved.
+      expect(batch, contains('PROFESSIONAL_CANNOT_SELECT_TIER'));
+      expect(batch, contains('PHYSICAL_MATCH_NOT_SUPPORTED'));
+      expect(inventory, contains('PROFESSIONAL_CANNOT_SELECT_TIER'));
+      expect(inventory, contains('PHYSICAL_MATCH_NOT_SUPPORTED'));
+    });
+
+    test('C57-6: tracked/batch public IDs never imply ownership, custody, title, or tenant membership', () {
+      final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
+      final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      for (final screen in [batch, inventory]) {
+        expect(screen, isNot(contains('ownership')), reason: 'no ownership authority implied');
+        expect(screen, isNot(contains('custody')), reason: 'no custody authority implied');
+        expect(screen, isNot(contains('tenant')), reason: 'no tenant-membership authority implied');
+        expect(screen, isNot(contains('membership')), reason: 'no membership authority implied');
+        expect(screen, isNot(contains('portfolio')), reason: 'no portfolio/tenant-inventory framing');
+      }
+    });
+
+    test('C57-7: no Transfer mutation action introduced — TRANSFER_MUTATION_AUTHORITY=NOT_PROVEN preserved', () {
+      final assetDetail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
+      final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      for (final screen in [assetDetail, batch, inventory]) {
+        expect(screen, isNot(contains('/transfer')), reason: 'No Transfer route introduced (C44-5 extended)');
+        expect(screen, isNot(contains("Text('Transfer")), reason: 'No Transfer action button introduced');
+      }
     });
   });
 }

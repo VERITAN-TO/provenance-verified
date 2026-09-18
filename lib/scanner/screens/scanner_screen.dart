@@ -64,7 +64,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.business_center_outlined),
-            tooltip: 'Professional batch verification',
+            // R65: non-authoritative — this is a bounded batch Verify utility,
+            // not a Professionally-authorized entry point. No server-authoritative
+            // Professional authorization seam exists to gate on (see estate search
+            // in PR #3 comment history); do not imply authorization here.
+            tooltip: 'Batch verify',
             onPressed: () => context.push('/professional/batch'),
           ),
         ],

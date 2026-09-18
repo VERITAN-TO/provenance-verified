@@ -38,23 +38,29 @@ class _ProfessionalBatchScreenState extends ConsumerState<ProfessionalBatchScree
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Professional Batch Verification'),
+        // R65: non-authoritative — "Batch Verify", not "Professional Batch
+        // Verification". No proven server-authoritative Professional
+        // authorization seam exists for this Flutter client to gate on.
+        title: const Text('Batch Verify'),
       ),
       body: Column(
         children: [
-          // Capability header — PROFESSIONAL_CANNOT_SELECT_TIER
+          // Capability header — plain-language disclosure, no internal control
+          // tokens in customer-visible text (tokens remain in the file header
+          // comment above and in tests — PROFESSIONAL_CANNOT_SELECT_TIER,
+          // PHYSICAL_MATCH_NOT_SUPPORTED).
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: PvColors.muted.withAlpha(20),
             child: Text(
-              'Canonical trust projection only. Tier is server-determined. '
-              'PROFESSIONAL_CANNOT_SELECT_TIER. '
-              'Physical object matching: not available — PHYSICAL_MATCH_NOT_SUPPORTED.',
+              'Canonical trust projection only. Tier is determined by PV and '
+              'cannot be selected here. Physical object matching: not available.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               semanticsLabel:
-                  'Professional mode: canonical trust projection only. Tier is server-determined. '
-                  'Physical object matching: not available — not supported in any mode.',
+                  'Batch verify: canonical trust projection only. Tier is '
+                  'determined by PV. Physical object matching: not available — '
+                  'not supported in any mode.',
             ),
           ),
           // ID entry row
