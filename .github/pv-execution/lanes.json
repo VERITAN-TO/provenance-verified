@@ -1,9 +1,15 @@
 {
-  "schema": "pv.execution-lanes.v1",
+  "schema": "pv.execution-lanes.v2",
   "authority": {
     "repository": "VERITAN-TO/provenance-verified-private",
     "pr": 17,
     "branch": "authority/pv-mission2-build-authority-v1"
+  },
+  "trigger_policy": {
+    "primary": "native_persistent_session_pr_subscription",
+    "fallback": "github_actions_event_router",
+    "fallback_state": "DEFERRED_WHILE_GITHUB_HOSTED_RUNNER_CAPACITY_UNAVAILABLE",
+    "rule": "A wake signal is never authority; every wake must cold-resolve live GitHub truth before action."
   },
   "lanes": {
     "C": {
@@ -11,8 +17,9 @@
       "pr": 3,
       "branch": "successor/m4-determination-first-r2",
       "role": "flutter_native_producer",
-      "credential_secret": "PV_CLAUDE_C_OAUTH_TOKEN",
-      "producer": true
+      "producer": true,
+      "primary_trigger": "native_pr_subscription",
+      "trigger_state": "PENDING_SUCCESSOR_ATTACHMENT"
     }
   }
 }
