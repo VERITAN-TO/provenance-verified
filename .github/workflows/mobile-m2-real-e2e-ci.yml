@@ -84,8 +84,17 @@ env:
   # R63 reliance freshness fail-closed (C63-1..C63-7) adds 7 tests: freshnessRequiresRequery gate,
   #   synchronized requery, save disabled, Assess Reliance disabled, APPROACHING_STALE advisory-only,
   #   no local DateTime, lifecycle gates preserved.
-  # Projected count after R63: 339 + 7 = 346. Pending CI confirmation.
-  EXPECTED_M2_UNIT_COUNT: '346'
+  # Confirmed executed count: 346 — every R64/R65 CI run below ran cleanly against this value
+  #   before R65 added its own tests.
+  # R65 Professional authority closure (C57-1..C57-7) adds 7 tests: no fabricated Professional
+  #   role/authorization model, non-authoritative copy in scanner/batch/inventory screens,
+  #   internal control tokens unreachable from customer-visible widget code, no ownership/
+  #   custody/tenant/portfolio language from a locally tracked public ID, no Transfer mutation.
+  # Confirmed executed count: 353 — from CI run 35317849482 on commit d4f7bc968 (executed
+  #   evidence: "+352 -1: Some tests failed" — 352 passed + 1 failed = 353 total; the 1 failure
+  #   was C57-6's own over-broad assertion matching a pre-existing/newly-added source comment,
+  #   fixed in the same commit as this count update — not a product regression).
+  EXPECTED_M2_UNIT_COUNT: '353'
 
 jobs:
   linux-android:

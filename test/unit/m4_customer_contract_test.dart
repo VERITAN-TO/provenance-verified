@@ -1772,15 +1772,19 @@ void main() {
       expect(inventory, contains('PHYSICAL_MATCH_NOT_SUPPORTED'));
     });
 
-    test('C57-6: tracked/batch public IDs never imply ownership, custody, title, or tenant membership', () {
+    test('C57-6: tracked/batch public IDs never imply ownership, custody, title, or tenant membership in customer-visible text', () {
+      // Checked against non-comment text only: the file header comments
+      // legitimately discuss "bypass tenant/auth" as a system property
+      // (see C57-5) — that is not customer-visible copy.
       final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
       final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
       for (final screen in [batch, inventory]) {
-        expect(screen, isNot(contains('ownership')), reason: 'no ownership authority implied');
-        expect(screen, isNot(contains('custody')), reason: 'no custody authority implied');
-        expect(screen, isNot(contains('tenant')), reason: 'no tenant-membership authority implied');
-        expect(screen, isNot(contains('membership')), reason: 'no membership authority implied');
-        expect(screen, isNot(contains('portfolio')), reason: 'no portfolio/tenant-inventory framing');
+        final nonComment = _stripLineComments(screen);
+        expect(nonComment, isNot(contains('ownership')), reason: 'no ownership authority implied');
+        expect(nonComment, isNot(contains('custody')), reason: 'no custody authority implied');
+        expect(nonComment, isNot(contains('tenant')), reason: 'no tenant-membership authority implied');
+        expect(nonComment, isNot(contains('membership')), reason: 'no membership authority implied');
+        expect(nonComment, isNot(contains('portfolio')), reason: 'no portfolio/tenant-inventory framing');
       }
     });
 

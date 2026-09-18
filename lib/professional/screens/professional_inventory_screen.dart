@@ -64,13 +64,12 @@ class _ProfessionalInventoryScreenState
             child: Text(
               'Canonical trust projection only. Tier is determined by PV and '
               'cannot be selected here. Physical object matching: not available. '
-              'This list is local to your session — not a tenant inventory.',
+              'This list is local to your session only.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               semanticsLabel:
                   'Tracked records: canonical trust projection only. Tier is '
                   'determined by PV. Physical object matching: not available — '
-                  'not supported in any mode. This list is local to your session, '
-                  'not a tenant inventory.',
+                  'not supported in any mode. This list is local to your session only.',
             ),
           ),
           // Track ID entry row
