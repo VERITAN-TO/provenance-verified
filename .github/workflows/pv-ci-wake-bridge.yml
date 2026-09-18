@@ -1,0 +1,33 @@
+name: PV CI Wake Bridge
+
+on:
+  workflow_run:
+    workflows: ["M2 Real E2E CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  dispatch:
+    if: ${{ vars.PV_EXECUTION_TRIGGER_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch native CI completion to Lead C
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$HEAD_BRANCH" != "successor/m4-determination-first-r2" ]; then
+            exit 0
+          fi
+
+          body="$(jq -n             --argjson pr "3"             --arg source "workflow_run"             --arg run_id "$RUN_ID"             --arg conclusion "$CONCLUSION"             --arg head_sha "$HEAD_SHA"             '{event_type:"pv-lane-wake",client_payload:{pr:$pr,source:$source,run_id:$run_id,conclusion:$conclusion,head_sha:$head_sha}}')"
+
+          gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input - <<< "$body"
