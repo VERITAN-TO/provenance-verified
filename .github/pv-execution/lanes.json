@@ -1,0 +1,18 @@
+{
+  "schema": "pv.execution-lanes.v1",
+  "authority": {
+    "repository": "VERITAN-TO/provenance-verified-private",
+    "pr": 17,
+    "branch": "authority/pv-mission2-build-authority-v1"
+  },
+  "lanes": {
+    "C": {
+      "repository": "VERITAN-TO/provenance-verified",
+      "pr": 3,
+      "branch": "successor/m4-determination-first-r2",
+      "role": "flutter_native_producer",
+      "credential_secret": "PV_CLAUDE_C_OAUTH_TOKEN",
+      "producer": true
+    }
+  }
+}
