@@ -93,6 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pubspec_lock_sha256: ${{ steps.post_pub.outputs.pubspec_lock_sha256 }}
+      pubspec_lock_sync: ${{ steps.pubspec_lock_sync.outputs.pubspec_lock_sync }}
       android_aab_sha256: ${{ steps.aab_hash.outputs.android_aab_sha256 }}
       android_aab_size: ${{ steps.aab_hash.outputs.android_aab_size }}
       flutter_version: ${{ steps.versions.outputs.flutter_version }}
@@ -161,6 +162,32 @@ jobs:
           LOCK=$(sha256sum pubspec.lock | cut -d' ' -f1)
           echo "pubspec_lock_sha256=$LOCK" >> $GITHUB_OUTPUT
           echo "pubspec.lock SHA256: $LOCK"
+
+      - name: PUBSPEC_LOCK_SYNC fail-closed gate
+        id: pubspec_lock_sync
+        run: |
+          # flutter pub get (above) resolves pubspec.lock from pubspec.yaml. If the
+          # committed pubspec.lock is stale/incomplete relative to pubspec.yaml (e.g. a
+          # declared dependency missing from the lock), `git diff` on pubspec.lock will
+          # be non-empty here. Fail closed rather than silently building/testing against
+          # a lockfile the runner rewrote but the repo never committed.
+          if git diff --quiet -- pubspec.lock; then
+            echo "pubspec_lock_sync=PASS" >> $GITHUB_OUTPUT
+            echo "PUBSPEC_LOCK_SYNC=PASS (committed pubspec.lock matches flutter pub get resolution)"
+          else
+            echo "pubspec_lock_sync=FAIL" >> $GITHUB_OUTPUT
+            echo "::error::PUBSPEC_LOCK_SYNC: committed pubspec.lock does not match the resolution flutter pub get produces from pubspec.yaml"
+            git --no-pager diff -- pubspec.lock
+            exit 1
+          fi
+
+      - name: Upload resolved pubspec.lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pv-mobile-m2-resolved-pubspec-lock
+          path: pubspec.lock
+          retention-days: 30
 
       - name: flutter analyze
         run: |
@@ -653,6 +680,7 @@ jobs:
             "java_version": "${{ needs.linux-android.outputs.java_version }}",
             "xcode_version": "${{ needs.macos-ios.outputs.xcode_version }}",
             "pubspec_lock_sha256": "${{ needs.linux-android.outputs.pubspec_lock_sha256 }}",
+            "pubspec_lock_sync": "${{ needs.linux-android.outputs.pubspec_lock_sync }}",
             "linux_flutter_analyze": "PASS",
             "linux_flutter_test_unit": "PASS",
             "linux_unit_test_count": ${{ needs.linux-android.outputs.test_count }},
