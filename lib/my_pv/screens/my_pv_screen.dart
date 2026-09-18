@@ -121,7 +121,7 @@ class _AssetGrid extends ConsumerWidget {
   }
 }
 
-class _AssetCard extends StatelessWidget {
+class _AssetCard extends ConsumerWidget {
   final CustomerAsset asset;
   const _AssetCard({required this.asset});
 
@@ -151,14 +151,17 @@ class _AssetCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final effectiveTier = _effectiveTier();
     final tierColor = _tierColor(effectiveTier);
     return Semantics(
       label: '${asset.assetName}, ${_tierLabel(effectiveTier)}${asset.hasStaledReceipts ? ', stale receipts' : ''}',
       button: true,
       child: InkWell(
-        onTap: () => context.push('/my-pv/asset/${asset.assetId}'),
+        onTap: () async {
+          await context.push('/my-pv/asset/${asset.assetId}');
+          if (context.mounted) ref.invalidate(customerAssetsProvider);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
