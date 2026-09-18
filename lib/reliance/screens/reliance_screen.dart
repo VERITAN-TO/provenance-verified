@@ -194,7 +194,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
               // R66: distinguish authority-unavailable/network failure from a
               // generic error, and never surface the raw exception text —
               // same pattern as trust_result_screen.dart's _ErrorView.
-              final apiError = e is ApiException ? e as ApiException : null;
+              final apiError = e is ApiException ? e : null;
               final isAuthorityUnavailable = apiError != null &&
                   (apiError.statusCode == 401 || apiError.statusCode == 403);
               final msg = e.toString().toLowerCase();
