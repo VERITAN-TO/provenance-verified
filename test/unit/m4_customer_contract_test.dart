@@ -1665,8 +1665,9 @@ void main() {
       final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
       expect(screen, contains('freshnessRequiresRequery'),
           reason: '_ActionButtons must compute freshnessRequiresRequery from record.freshness');
-      // Verify freshnessRequiresRequery guards a null onPressed immediately before Assess Reliance.
-      final assessIdx = screen.indexOf('Assess Reliance');
+      // Use the button label widget text to find the button, not the string 'Assess Reliance'
+      // which also appears in comments earlier in the file.
+      final assessIdx = screen.indexOf("const Text('Assess Reliance')");
       expect(assessIdx, isNot(-1), reason: 'Assess Reliance button must remain present');
       final onPressedNullIdx = screen.lastIndexOf('? null', assessIdx);
       expect(onPressedNullIdx, isNot(-1),
