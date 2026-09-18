@@ -12,19 +12,14 @@ import '../../my_pv/providers/my_pv_provider.dart';
 ///   2 My PV  — /my-pv
 ///   3 Submit — /submit
 ///   4 Activity — /activity
-class MainShell extends ConsumerStatefulWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  @override
-  ConsumerState<MainShell> createState() => _MainShellState();
-}
-
-class _MainShellState extends ConsumerState<MainShell> {
   static const int _myPvBranchIndex = 2;
 
-  void _onDestinationSelected(int index) {
+  void _onDestinationSelected(WidgetRef ref, int index) {
     // Invalidate My PV asset list on tab entry — StatefulShellRoute.indexedStack
     // keeps the branch mounted while hidden, so retained FutureProvider state can
     // silently present an older server projection. Invalidation forces a fresh
@@ -32,21 +27,21 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (index == _myPvBranchIndex) {
       ref.invalidate(customerAssetsProvider);
     }
-    widget.navigationShell.goBranch(
+    navigationShell.goBranch(
       index,
       // Tapping the active tab returns to its initial location (branch root).
-      initialLocation: index == widget.navigationShell.currentIndex,
+      initialLocation: index == navigationShell.currentIndex,
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: PvColors.background,
-      body: widget.navigationShell,
+      body: navigationShell,
       bottomNavigationBar: _PvNavigationBar(
-        currentIndex: widget.navigationShell.currentIndex,
-        onDestinationSelected: _onDestinationSelected,
+        currentIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) => _onDestinationSelected(ref, index),
       ),
     );
   }

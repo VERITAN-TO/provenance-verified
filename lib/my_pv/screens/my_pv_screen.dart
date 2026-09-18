@@ -114,20 +114,16 @@ class _AssetGrid extends ConsumerWidget {
             childAspectRatio: 0.85,
           ),
           itemCount: assets.length,
-          itemBuilder: (context, i) => _AssetCard(
-            asset: assets[i],
-            onNavigated: () => ref.invalidate(customerAssetsProvider),
-          ),
+          itemBuilder: (context, i) => _AssetCard(asset: assets[i]),
         );
       },
     );
   }
 }
 
-class _AssetCard extends StatelessWidget {
+class _AssetCard extends ConsumerWidget {
   final CustomerAsset asset;
-  final VoidCallback? onNavigated;
-  const _AssetCard({required this.asset, this.onNavigated});
+  const _AssetCard({required this.asset});
 
   // R44: effective tier is null when ineligible — never show a qualified tier label
   // for an ineligible asset. Must match asset_detail_screen.dart _TierBadge logic.
@@ -155,7 +151,7 @@ class _AssetCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final effectiveTier = _effectiveTier();
     final tierColor = _tierColor(effectiveTier);
     return Semantics(
@@ -164,7 +160,7 @@ class _AssetCard extends StatelessWidget {
       child: InkWell(
         onTap: () async {
           await context.push('/my-pv/asset/${asset.assetId}');
-          onNavigated?.call();
+          if (context.mounted) ref.invalidate(customerAssetsProvider);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
