@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/pv_colors.dart';
+import '../../my_pv/providers/my_pv_provider.dart';
 
 /// Five-tab bottom navigation shell for the PROVENANCE VERIFIED customer app.
 ///
@@ -10,12 +12,17 @@ import '../../design/pv_colors.dart';
 ///   2 My PV  — /my-pv
 ///   3 Submit — /submit
 ///   4 Activity — /activity
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  void _onDestinationSelected(int index) {
+  void _onDestinationSelected(WidgetRef ref, int index) {
+    // The indexed shell keeps branches mounted. Re-entering My PV must re-read
+    // the server projection instead of silently presenting a completed cache.
+    if (index == 2) {
+      ref.invalidate(customerAssetsProvider);
+    }
     navigationShell.goBranch(
       index,
       // Tapping the active tab returns to its initial location (branch root).
@@ -24,13 +31,13 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: PvColors.background,
       body: navigationShell,
       bottomNavigationBar: _PvNavigationBar(
         currentIndex: navigationShell.currentIndex,
-        onDestinationSelected: _onDestinationSelected,
+        onDestinationSelected: (index) => _onDestinationSelected(ref, index),
       ),
     );
   }
