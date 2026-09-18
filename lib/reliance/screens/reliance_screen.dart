@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../trust/providers/trust_provider.dart';
+import '../../trust/trust_models.dart';
 import '../../actionability/actionability_models.dart';
 import '../../actionability/providers/actionability_provider.dart';
 import '../providers/reliance_provider.dart';
@@ -38,6 +39,11 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
     final lifecycleBlocked = blockedLifecycles.contains(lifecycleStatus);
     final lifecycleWarning = lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED';
 
+    // Freshness fail-closed gate: STALE, REVERIFY_REQUIRED, and freshness-EXPIRED records
+    // must not reach reliance. Server determines freshness state — no local DateTime/age/threshold.
+    final freshness = trustAsync.valueOrNull?.freshness?.state ?? FreshnessState.unknown;
+    final freshnessRequiresRequery = freshness.requiresRequery;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Reliance Assessment')),
       body: ListView(
@@ -63,6 +69,51 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                         'RELIANCE BLOCKED — This record is $lifecycleStatus. '
                         'Do not use it as a basis for any reliance decision.',
                         style: PvTypography.body.copyWith(color: PvColors.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          // Freshness fail-closed: takes priority over lifecycleWarning to avoid duplicate banners.
+          // Synchronized requery invalidates both trust and actionability before reliance may resume.
+          else if (freshnessRequiresRequery)
+            Semantics(
+              label: 'Record requires requery: freshness is ${freshness.name}. Cannot assess reliance.',
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: PvColors.warning.withAlpha(30),
+                  border: Border.all(color: PvColors.warning),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.update, color: PvColors.warning, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'RECORD REQUIRES REQUERY — Cannot assess reliance on a ${freshness.name.toUpperCase()} record.',
+                            style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        ref.invalidate(trustRecordProvider(widget.publicId));
+                        ref.invalidate(simpleActionabilityProvider(args));
+                      },
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Requery for Current Status'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PvColors.warning,
+                        side: const BorderSide(color: PvColors.warning),
                       ),
                     ),
                   ],
@@ -242,7 +293,7 @@ class _RelianceScreenState extends ConsumerState<RelianceScreen> {
                     )
                   else
                     FilledButton.icon(
-                      onPressed: isUnknown || _saving || lifecycleBlocked || lifecycleWarning
+                      onPressed: isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning
                           ? null
                           : () => _saveReceipt(result, trustAsync.value),
                       icon: _saving

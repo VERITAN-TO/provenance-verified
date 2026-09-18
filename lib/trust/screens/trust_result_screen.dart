@@ -94,6 +94,9 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Freshness fail-closed: server-authored requiresRequery disables Assess Reliance.
+    // APPROACHING_STALE remains advisory — does not block (requiresRequery is false for it).
+    final freshnessRequiresRequery = record.freshness?.state.requiresRequery ?? false;
     return Semantics(
       label: 'Record actions',
       child: Wrap(
@@ -117,7 +120,9 @@ class _ActionButtons extends StatelessWidget {
           ),
           if (record.isQualified)
             FilledButton.icon(
-              onPressed: () => context.push('/verify/${record.publicId}/actionability'),
+              onPressed: freshnessRequiresRequery
+                  ? null
+                  : () => context.push('/verify/${record.publicId}/actionability'),
               icon: const Icon(Icons.gavel, size: 18),
               label: const Text('Assess Reliance'),
               style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),

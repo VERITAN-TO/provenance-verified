@@ -80,8 +80,12 @@ env:
   # M2-50-08 physical-match gate (C55-1..C55-2) adds 2 tests — confirmed at d9697c9.
   # M2-50-09 My PV freshness (C56-1..C56-3) adds 3 tests. Confirmed 331 at 417102a (run 35293738059).
   # R62 runtime dimensions (C62-1..C62-8) adds 8 tests: why/why-not, limitations, custody-vs-title.
-  # Projected count after R62: 331 + 8 = 339. Pending CI confirmation.
-  EXPECTED_M2_UNIT_COUNT: '339'
+  # Confirmed 339 at b5da613 (run 35297492381).
+  # R63 reliance freshness fail-closed (C63-1..C63-7) adds 7 tests: freshnessRequiresRequery gate,
+  #   synchronized requery, save disabled, Assess Reliance disabled, APPROACHING_STALE advisory-only,
+  #   no local DateTime, lifecycle gates preserved.
+  # Projected count after R63: 339 + 7 = 346. Pending CI confirmation.
+  EXPECTED_M2_UNIT_COUNT: '346'
 
 jobs:
   linux-android:

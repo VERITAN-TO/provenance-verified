@@ -1613,4 +1613,83 @@ void main() {
               'the title dimension; display-only, CUSTODY_IS_NOT_LEGAL_TITLE=TRUE preserved');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // M2-50-09 Reliance Freshness Fail-Closed — R63
+  // STALE, REVERIFY_REQUIRED, and freshness-EXPIRED records must not reach
+  // Save Reliance Receipt or Assess Reliance. Server determines freshness.
+  // No local DateTime/age/threshold staleness computation on native.
+  // ---------------------------------------------------------------------------
+  group('M2-50-09 Reliance Freshness Fail-Closed — R63 (C63 — STATIC_CONTRACT)', () {
+    test('C63-1 STATIC_CONTRACT: reliance_screen derives freshnessRequiresRequery from server freshness — no local clock', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      expect(screen, contains('freshnessRequiresRequery'),
+          reason: 'RelianceScreen must gate on freshnessRequiresRequery derived from server freshness state');
+      expect(screen, contains('freshness.requiresRequery'),
+          reason: 'freshnessRequiresRequery must be derived from FreshnessState.requiresRequery — server-authored only');
+    });
+
+    test('C63-2 STATIC_CONTRACT: freshness requery in reliance_screen invalidates both trustRecordProvider and simpleActionabilityProvider', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final freshnessIdx = screen.indexOf('freshnessRequiresRequery)');
+      expect(freshnessIdx, isNot(-1),
+          reason: 'freshnessRequiresRequery branch must be present in banner section');
+      final nextBranchIdx = screen.indexOf('else if (lifecycleWarning)', freshnessIdx);
+      expect(nextBranchIdx, isNot(-1),
+          reason: 'lifecycleWarning branch must follow freshnessRequiresRequery branch');
+      final freshnessSection = screen.substring(freshnessIdx, nextBranchIdx);
+      expect(freshnessSection, contains('ref.invalidate(trustRecordProvider('),
+          reason: 'Freshness requery must invalidate trustRecordProvider for synchronized trust refresh');
+      expect(freshnessSection, contains('ref.invalidate(simpleActionabilityProvider('),
+          reason: 'Freshness requery must invalidate simpleActionabilityProvider synchronized with trust — '
+              'actionability derived from stale trust state is not current server authority');
+    });
+
+    test('C63-3 STATIC_CONTRACT: Save Reliance Receipt is disabled when freshnessRequiresRequery', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      expect(screen, contains('freshnessRequiresRequery || lifecycleWarning'),
+          reason: 'Save Reliance Receipt onPressed must be null when freshnessRequiresRequery is true — '
+              'STALE/REVERIFY_REQUIRED/freshness-EXPIRED records must not produce a reliance receipt');
+    });
+
+    test('C63-4 STATIC_CONTRACT: FreshnessState.requiresRequery covers STALE, EXPIRED, REVERIFY_REQUIRED — APPROACHING_STALE is advisory only', () {
+      final models = File('lib/trust/trust_models.dart').readAsStringSync();
+      expect(models, contains('bool get requiresRequery'),
+          reason: 'FreshnessState.requiresRequery must be declared as a getter');
+      expect(models, contains('this == stale || this == expired || this == reverifyRequired'),
+          reason: 'requiresRequery must cover exactly stale, expired, and reverifyRequired — '
+              'APPROACHING_STALE must remain advisory and not be in this predicate');
+    });
+
+    test('C63-5 STATIC_CONTRACT: trust_result_screen Assess Reliance is disabled when server freshness requiresRequery', () {
+      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      expect(screen, contains('freshnessRequiresRequery'),
+          reason: '_ActionButtons must compute freshnessRequiresRequery from record.freshness');
+      // Verify freshnessRequiresRequery guards a null onPressed immediately before Assess Reliance.
+      final assessIdx = screen.indexOf('Assess Reliance');
+      expect(assessIdx, isNot(-1), reason: 'Assess Reliance button must remain present');
+      final onPressedNullIdx = screen.lastIndexOf('? null', assessIdx);
+      expect(onPressedNullIdx, isNot(-1),
+          reason: 'onPressed must evaluate to null when requiresRequery — Assess Reliance must not present as ready-to-rely');
+      final freshnessNearIdx = screen.lastIndexOf('freshnessRequiresRequery', onPressedNullIdx);
+      expect(freshnessNearIdx, isNot(-1),
+          reason: 'freshnessRequiresRequery must gate the null onPressed for Assess Reliance');
+    });
+
+    test('C63-6 STATIC_CONTRACT: reliance_screen contains no local DateTime or Duration for freshness — server-authored state only', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      expect(screen, isNot(contains('DateTime.now()')),
+          reason: 'No local clock staleness calculation — freshness is server-authored');
+      expect(screen, isNot(contains('Duration(')),
+          reason: 'No local age/threshold freshness computation — server FreshnessState is the sole authority');
+    });
+
+    test('C63-7 STATIC_CONTRACT: existing lifecycle gates preserved — lifecycleBlocked and lifecycleWarning still in disable condition', () {
+      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      expect(screen, contains('lifecycleBlocked'),
+          reason: 'lifecycleBlocked (REVOKED/SUSPENDED) must remain as hard block — R51 lifecycle gate preserved');
+      expect(screen, contains('lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
+          reason: 'Disable condition must preserve lifecycle gates alongside freshness gate — R51 not weakened');
+    });
+  });
 }
