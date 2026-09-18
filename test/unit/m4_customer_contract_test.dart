@@ -1518,4 +1518,31 @@ void main() {
           reason: 'Inventory screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED');
     });
   });
+
+  group('M2-50-09 My PV Freshness — STATIC_CONTRACT (C56)', () {
+    test('C56-1: asset detail projection disposes on route exit', () {
+      final provider = File('lib/my_pv/providers/my_pv_provider.dart').readAsStringSync();
+      expect(provider,
+          contains('FutureProvider.autoDispose.family<Map<String, dynamic>, String>'),
+          reason: 'Asset detail re-entry must re-read the server projection');
+    });
+
+    test('C56-2: My PV tab activation invalidates the retained asset projection', () {
+      final shell = File('lib/core/routing/main_shell.dart').readAsStringSync();
+      expect(shell, contains('if (index == 2)'),
+          reason: 'Indexed shell must identify My PV activation');
+      expect(shell, contains('ref.invalidate(customerAssetsProvider)'),
+          reason: 'My PV activation must invalidate retained server projection');
+    });
+
+    test('C56-3: return from asset detail invalidates the My PV list', () {
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      expect(screen,
+          contains("await context.push('/my-pv/asset/\${asset.assetId}')"),
+          reason: 'Asset navigation must await route return');
+      expect(screen, contains('ref.invalidate(customerAssetsProvider)'),
+          reason: 'Returning from detail must refresh the list projection');
+    });
+  });
+
 }
