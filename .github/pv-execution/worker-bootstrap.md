@@ -33,3 +33,14 @@ D is an independent verifier. D may inspect, test, and post verdict/evidence rec
 ## Executor replacement
 
 Old sessions do not regain mutation authority merely because their usage limit resets. The currently configured worker credential is the active executor for the lane until the CTO explicitly changes it.
+
+
+## Trigger architecture
+
+The primary wake mechanism is the replacement persistent Code-agent session's native subscription to its existing PR. The GitHub Actions router is fallback plumbing only and is not required for normal lane continuity while hosted-runner capacity is unavailable.
+
+Do not install or register a self-hosted GitHub Actions runner merely to preserve agent continuity. A self-hosted runner changes the infrastructure/security boundary and requires a separate explicit infrastructure decision.
+
+A lane is trigger-proven only after a new PR event autonomously wakes the subscribed successor session without a manual message to that session. Attachment alone is not proof.
+
+On session replacement: attach to the same PR/branch, subscribe natively to PR activity, cold-resolve live state, prove one autonomous wake, then continue the existing package. Never run old and successor mutation sessions concurrently on the same lane.
