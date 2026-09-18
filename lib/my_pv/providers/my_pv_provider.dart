@@ -56,7 +56,7 @@ final customerAssetsProvider = FutureProvider<List<CustomerAsset>>((ref) async {
   }
 });
 
-final assetDetailProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, assetId) async {
+final assetDetailProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, assetId) async {
   final uri = Uri.parse('$_baseUrl/api/v1/customer/assets/${Uri.encodeComponent(assetId)}');
   final client = http.Client();
   try {

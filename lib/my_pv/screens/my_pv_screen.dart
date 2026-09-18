@@ -114,7 +114,10 @@ class _AssetGrid extends ConsumerWidget {
             childAspectRatio: 0.85,
           ),
           itemCount: assets.length,
-          itemBuilder: (context, i) => _AssetCard(asset: assets[i]),
+          itemBuilder: (context, i) => _AssetCard(
+            asset: assets[i],
+            onNavigated: () => ref.invalidate(customerAssetsProvider),
+          ),
         );
       },
     );
@@ -123,7 +126,8 @@ class _AssetGrid extends ConsumerWidget {
 
 class _AssetCard extends StatelessWidget {
   final CustomerAsset asset;
-  const _AssetCard({required this.asset});
+  final VoidCallback? onNavigated;
+  const _AssetCard({required this.asset, this.onNavigated});
 
   // R44: effective tier is null when ineligible — never show a qualified tier label
   // for an ineligible asset. Must match asset_detail_screen.dart _TierBadge logic.
@@ -158,7 +162,10 @@ class _AssetCard extends StatelessWidget {
       label: '${asset.assetName}, ${_tierLabel(effectiveTier)}${asset.hasStaledReceipts ? ', stale receipts' : ''}',
       button: true,
       child: InkWell(
-        onTap: () => context.push('/my-pv/asset/${asset.assetId}'),
+        onTap: () async {
+          await context.push('/my-pv/asset/${asset.assetId}');
+          onNavigated?.call();
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(

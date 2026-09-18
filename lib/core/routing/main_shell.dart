@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/pv_colors.dart';
+import '../../my_pv/providers/my_pv_provider.dart';
 
 /// Five-tab bottom navigation shell for the PROVENANCE VERIFIED customer app.
 ///
@@ -10,16 +12,30 @@ import '../../design/pv_colors.dart';
 ///   2 My PV  — /my-pv
 ///   3 Submit — /submit
 ///   4 Activity — /activity
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  static const int _myPvBranchIndex = 2;
+
   void _onDestinationSelected(int index) {
-    navigationShell.goBranch(
+    // Invalidate My PV asset list on tab entry — StatefulShellRoute.indexedStack
+    // keeps the branch mounted while hidden, so retained FutureProvider state can
+    // silently present an older server projection. Invalidation forces a fresh
+    // /api/v1/customer/assets read whenever the user re-enters My PV.
+    if (index == _myPvBranchIndex) {
+      ref.invalidate(customerAssetsProvider);
+    }
+    widget.navigationShell.goBranch(
       index,
       // Tapping the active tab returns to its initial location (branch root).
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
@@ -27,9 +43,9 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: PvColors.background,
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: _PvNavigationBar(
-        currentIndex: navigationShell.currentIndex,
+        currentIndex: widget.navigationShell.currentIndex,
         onDestinationSelected: _onDestinationSelected,
       ),
     );

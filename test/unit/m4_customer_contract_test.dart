@@ -1518,4 +1518,32 @@ void main() {
           reason: 'Inventory screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED');
     });
   });
+
+  group('M2-50-09 My PV Freshness — Stale-Retention Boundary (C56 — STATIC_CONTRACT)', () {
+    test('C56-1 STATIC_CONTRACT: assetDetailProvider is autoDispose — fresh on same-ID re-entry', () {
+      final provider = File('lib/my_pv/providers/my_pv_provider.dart').readAsStringSync();
+      expect(provider, contains('FutureProvider.autoDispose.family'),
+          reason: 'assetDetailProvider must be autoDispose so re-entering the same asset ID '
+              'always fetches fresh server data, not retained in-memory state');
+    });
+
+    test('C56-2 STATIC_CONTRACT: main_shell invalidates customerAssetsProvider on My PV tab entry', () {
+      final shell = File('lib/core/routing/main_shell.dart').readAsStringSync();
+      expect(shell, contains('customerAssetsProvider'),
+          reason: 'MainShell must reference customerAssetsProvider for tab-entry invalidation');
+      expect(shell, contains('ref.invalidate'),
+          reason: 'MainShell must call ref.invalidate to discard retained list state on My PV tab entry');
+      expect(shell, contains('_myPvBranchIndex'),
+          reason: 'MainShell must name the My PV branch index constant for clarity and auditability');
+    });
+
+    test('C56-3 STATIC_CONTRACT: my_pv_screen invalidates list after returning from asset detail', () {
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      expect(screen, contains('await context.push'),
+          reason: 'Asset detail navigation must be awaited so list invalidation fires on return');
+      expect(screen, contains('ref.invalidate(customerAssetsProvider)'),
+          reason: 'customerAssetsProvider must be invalidated after returning from asset detail '
+              'so the list fetches fresh server state on reveal');
+    });
+  });
 }
