@@ -1500,4 +1500,22 @@ void main() {
           reason: 'named route professional-inventory must be registered');
     });
   });
+
+  group('M2-50-08 Physical-Match Gate — Professional Screens (C55)', () {
+    test('C55-1: professional_batch_screen has user-visible physical-match unavailability gate', () {
+      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
+      expect(screen, contains('Physical object matching: not available'),
+          reason: 'Batch screen must explicitly disclose physical match is unavailable — REQ-027');
+      expect(screen, contains('PHYSICAL_MATCH_NOT_SUPPORTED'),
+          reason: 'Batch screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED');
+    });
+
+    test('C55-2: professional_inventory_screen has user-visible physical-match unavailability gate', () {
+      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      expect(screen, contains('Physical object matching: not available'),
+          reason: 'Inventory screen must explicitly disclose physical match is unavailable — REQ-027');
+      expect(screen, contains('PHYSICAL_MATCH_NOT_SUPPORTED'),
+          reason: 'Inventory screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED');
+    });
+  });
 }

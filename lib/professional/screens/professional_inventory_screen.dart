@@ -54,10 +54,12 @@ class _ProfessionalInventoryScreenState
             color: PvColors.muted.withAlpha(20),
             child: Text(
               'Canonical trust projection only. Tier is server-determined. '
-              'PROFESSIONAL_CANNOT_SELECT_TIER.',
+              'PROFESSIONAL_CANNOT_SELECT_TIER. '
+              'Physical object matching: not available — PHYSICAL_MATCH_NOT_SUPPORTED.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               semanticsLabel:
-                  'Professional mode: canonical trust projection only. Tier is server-determined.',
+                  'Professional mode: canonical trust projection only. Tier is server-determined. '
+                  'Physical object matching: not available — not supported in any mode.',
             ),
           ),
           // Track ID entry row
