@@ -35,41 +35,99 @@ D is an independent verifier. D may inspect, test, and post verdict/evidence rec
 Old sessions do not regain mutation authority merely because their usage limit resets. The currently configured worker credential is the active executor for the lane until the CTO explicitly changes it.
 
 
-## Trigger architecture
+## Route 1 — Persistent Code Session Notification Loop
 
-The proven PV primary wake route is the **persistent Code session's native notification inbox**, not a repository-local router and not a requirement that the worker expose a separate `subscribe_pr_activity` API call.
+This is the primary PV execution route.
 
-Observed runtime pattern:
+It is the proven pre-September-17 continuity pattern observed in the live Lead sessions:
 
 ```text
-BOUND PR ACTIVITY
-  -> SAME PERSISTENT CODE SESSION RECEIVES NATIVE NOTIFICATION
-  -> ReadNotifications
-  -> SESSION RECONCILES THE BOUND PR TIMELINE / NEW CTO ORDER / CI OR REVIEW EVENT
-  -> COLD-RESOLVE CURRENT PR #17 AUTHORITY + EXACT LANE SHA
-  -> EXECUTE CURRENT VALID IN-LANE WORK
-  -> POST EXACT EVIDENCE
-  -> ReadNotifications / REMAIN ARMED FOR THE NEXT EVENT
+EXISTING PERSISTENT CODE SESSION
+        ↓
+NATIVE SESSION NOTIFICATION INBOX
+        ↓
+ReadNotifications
+        ↓
+BOUND PR / CTO ORDER / CI EVENT DISCOVERED
+        ↓
+COLD-RESOLVE PR #17 + CURRENT LANE SHA
+        ↓
+EXECUTE CURRENT AUTHORIZED PACKAGE
+        ↓
+POST RESULT / CUSTOS EVIDENCE
+        ↓
+ReadNotifications AGAIN
+        ↓
+RE-ARM SAME-SESSION SCHEDULED CHECK-IN
+        ↓
+CONTINUE
 ```
 
-A notification may be only an echo or signal. The worker must drain it, reconcile the PR timeline, deduplicate already-processed event IDs/SHAs, and act only when a new material event or valid work order exists. The notification itself is transport, never mission authority.
+### Route-1 laws
 
-The GitHub Actions router is fallback-only plumbing. Do not make it the primary wake mechanism while the persistent Code-session notification route is functioning. Do not install/register a self-hosted runner, custom webhook bridge, polling daemon, or duplicate control plane merely for continuity.
+- The existing persistent Code session is the execution seat.
+- The session's native notification inbox is the primary event intake.
+- `ReadNotifications` is the normal notification-drain operation.
+- GitHub PR activity, CTO comments, CI/check results, and evidence returns may surface through that inbox.
+- The session resolves the bound PR timeline and current authority after notification receipt; notification text itself is not authority.
+- The same session continues after each result. Do not replace it merely because one package completed.
+- The same-session scheduled trigger/check-in is the continuity backstop and may also wake the session to drain notifications.
+- A separately exposed `subscribe_pr_activity` primitive is optional implementation detail, not a prerequisite for Route 1 and not the definition of liveness.
+- A GitHub Actions router, webhook relay, polling daemon, or duplicate session is not the primary Route-1 mechanism.
+- Do not create a replacement lane while the current persistent seat remains usable.
+- On usage/session exhaustion, a successor inherits the same lane/PR/branch and must reproduce this same notification-loop behavior before taking mutation authority.
 
-A lane is wake-proven only when PR activity reaches the same persistent Code session without a manual user message to that session, and that session drains/reconciles the event and continues. Proof does **not** require a separately exposed `subscribe_pr_activity` tool.
+### Route-1 wake handling
 
-On session replacement: bind the successor persistent Code session to the same PR/branch and notification route, cold-resolve live state, prove autonomous notification pickup, continue the existing package, and keep one mutation seat per lane. Never run old and successor mutation sessions concurrently on the same lane.
+On each session wake:
 
+1. Run/read the session notification inbox first.
+2. Drain all pending notifications.
+3. Identify the newest material event for the bound lane.
+4. Fetch/reconcile the bound PR timeline if the notification is only an echo or summary.
+5. Cold-resolve PR #17 authority and the exact current lane SHA.
+6. Reconcile current work order against live state.
+7. Execute all dependency-ready in-lane work.
+8. Post exact result/evidence and route verifier evidence to CUSTOS where applicable.
+9. Drain notifications again before declaring the turn exhausted.
+10. Re-arm the same-session scheduled trigger/check-in.
+11. Remain in the same lane and continue on the next wake.
 
-## Native notification drain protocol
+### Route-1 blocker law
 
-On every autonomous wake or `ReadNotifications` event:
+A notification echo, CI runner loss, proxy block, dependency-install failure, moved SHA, or stale order is not by itself a reason to abandon the session.
 
-1. Drain the persistent Code session's native notifications.
-2. Fetch/reconcile the bound lane PR's current timeline, comments, reviews, checks, and head movement newer than the last processed event.
-3. Treat the newest valid CTO work order or material producer/verifier evidence on that bound lane as the actionable payload; an echo-only notification is NO_MATERIAL_ACTION.
-4. Cold-resolve current PR #17 authority and exact lane SHA before mutation or acceptance.
-5. Deduplicate by comment/review/run ID plus exact head SHA.
-6. Execute every currently authorized dependency-ready in-lane action; do not require a manual user prompt merely because the notification omitted the message body.
-7. Post exact result/evidence and continue draining/re-arm the same persistent session.
-8. Stop only at a reserved-human gate, genuinely ambiguous authority, exhausted package, or sole inaccessible external dependency after all other work is exhausted.
+The session must:
+
+```text
+READ NOTIFICATIONS
+→ RECONCILE LIVE STATE
+→ SOLVE / REBIND / ROUTE AROUND
+→ CONTINUE OTHER ELIGIBLE WORK
+→ POST EVIDENCE
+→ RE-ARM SAME SESSION
+```
+
+Only a reserved-human gate, genuinely inaccessible external surface after exhaustion, contradictory authority, or exhausted package may terminate active execution.
+
+### Do not substitute the September-17 subscription-first route
+
+The later pattern:
+
+```text
+attach successor
+→ create/verify explicit PR subscription
+→ prove subscription
+→ use subscription as liveness definition
+```
+
+is not the primary PV Route 1.
+
+It may exist as incidental transport support, but it must not displace the proven persistent-session notification loop or force replacement of a working Route-1 seat.
+
+### Session-end zero-drift handoff
+
+A worker approaching usage exhaustion must post a durable handoff to its existing lane PR with current authority SHA, lane SHA, work order, completed evidence, open defects, CUSTOS state, next executable action, and whether the same-session notification/check-in loop remains armed.
+
+A successor is replacement compute for the same lane, not a new lane or mission.
+
