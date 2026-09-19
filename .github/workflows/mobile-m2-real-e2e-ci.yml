@@ -9,6 +9,9 @@ env:
   FLUTTER_VERSION: '3.47.2'
   FLUTTER_CHANNEL: 'stable'
   PV_API_BASE_URL: 'https://provenance-verified-private.vercel.app'
+  # Non-production qualification target pinned to current canonical A candidate c3c250ae9b1971c12bcb34b8495dcfac89790a17.
+  # This is intentionally checked in so real-backend qualification does not depend on mutable repository-variable tooling.
+  PV_QUAL_API_BASE_URL: 'https://pv-r08-runtime-replay-rb4kly9v0-admin-56661436s-projects.vercel.app'
   # EXPECTED_M2_UNIT_COUNT: fail-closed gate — must match actual executed test count.
   # Confirmed executed count: 237 — from CI run 35165330574 on commit 32b3019 (R27).
   # R28 adds 5 tests: C28-1..C28-5 (public reliance failsafe + settlement null ambiguity).
@@ -522,7 +525,7 @@ jobs:
       - name: Probe bootstrap endpoint
         id: probe
         env:
-          PV_QUAL_API_BASE_URL: ${{ vars.PV_QUAL_API_BASE_URL }}
+          PV_QUAL_API_BASE_URL: ${{ env.PV_QUAL_API_BASE_URL }}
         run: |
           if [ -z "$PV_QUAL_API_BASE_URL" ]; then
             echo "endpoint_url_sha256=N/A" >> $GITHUB_OUTPUT
@@ -571,7 +574,7 @@ jobs:
           PV_API_KEY: ${{ secrets.PV_QUAL_API_KEY }}
           PV_TENANT_ID: ${{ vars.PV_QUAL_TENANT_ID }}
           PV_QUAL_SUBJECT_ID: ${{ vars.PV_QUAL_SUBJECT_ID }}
-          PV_QUAL_API_BASE_URL: ${{ vars.PV_QUAL_API_BASE_URL }}
+          PV_QUAL_API_BASE_URL: ${{ env.PV_QUAL_API_BASE_URL }}
         run: |
           flutter test test/integration/ --reporter expanded \
             --dart-define=PV_API_BASE_URL=$PV_QUAL_API_BASE_URL \
