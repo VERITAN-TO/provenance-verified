@@ -37,10 +37,39 @@ Old sessions do not regain mutation authority merely because their usage limit r
 
 ## Trigger architecture
 
-The primary wake mechanism is the replacement persistent Code-agent session's native subscription to its existing PR. The GitHub Actions router is fallback plumbing only and is not required for normal lane continuity while hosted-runner capacity is unavailable.
+The proven PV primary wake route is the **persistent Code session's native notification inbox**, not a repository-local router and not a requirement that the worker expose a separate `subscribe_pr_activity` API call.
 
-Do not install or register a self-hosted GitHub Actions runner merely to preserve agent continuity. A self-hosted runner changes the infrastructure/security boundary and requires a separate explicit infrastructure decision.
+Observed runtime pattern:
 
-A lane is trigger-proven only after a new PR event autonomously wakes the subscribed successor session without a manual message to that session. Attachment alone is not proof.
+```text
+BOUND PR ACTIVITY
+  -> SAME PERSISTENT CODE SESSION RECEIVES NATIVE NOTIFICATION
+  -> ReadNotifications
+  -> SESSION RECONCILES THE BOUND PR TIMELINE / NEW CTO ORDER / CI OR REVIEW EVENT
+  -> COLD-RESOLVE CURRENT PR #17 AUTHORITY + EXACT LANE SHA
+  -> EXECUTE CURRENT VALID IN-LANE WORK
+  -> POST EXACT EVIDENCE
+  -> ReadNotifications / REMAIN ARMED FOR THE NEXT EVENT
+```
 
-On session replacement: attach to the same PR/branch, subscribe natively to PR activity, cold-resolve live state, prove one autonomous wake, then continue the existing package. Never run old and successor mutation sessions concurrently on the same lane.
+A notification may be only an echo or signal. The worker must drain it, reconcile the PR timeline, deduplicate already-processed event IDs/SHAs, and act only when a new material event or valid work order exists. The notification itself is transport, never mission authority.
+
+The GitHub Actions router is fallback-only plumbing. Do not make it the primary wake mechanism while the persistent Code-session notification route is functioning. Do not install/register a self-hosted runner, custom webhook bridge, polling daemon, or duplicate control plane merely for continuity.
+
+A lane is wake-proven only when PR activity reaches the same persistent Code session without a manual user message to that session, and that session drains/reconciles the event and continues. Proof does **not** require a separately exposed `subscribe_pr_activity` tool.
+
+On session replacement: bind the successor persistent Code session to the same PR/branch and notification route, cold-resolve live state, prove autonomous notification pickup, continue the existing package, and keep one mutation seat per lane. Never run old and successor mutation sessions concurrently on the same lane.
+
+
+## Native notification drain protocol
+
+On every autonomous wake or `ReadNotifications` event:
+
+1. Drain the persistent Code session's native notifications.
+2. Fetch/reconcile the bound lane PR's current timeline, comments, reviews, checks, and head movement newer than the last processed event.
+3. Treat the newest valid CTO work order or material producer/verifier evidence on that bound lane as the actionable payload; an echo-only notification is NO_MATERIAL_ACTION.
+4. Cold-resolve current PR #17 authority and exact lane SHA before mutation or acceptance.
+5. Deduplicate by comment/review/run ID plus exact head SHA.
+6. Execute every currently authorized dependency-ready in-lane action; do not require a manual user prompt merely because the notification omitted the message body.
+7. Post exact result/evidence and continue draining/re-arm the same persistent session.
+8. Stop only at a reserved-human gate, genuinely ambiguous authority, exhausted package, or sole inaccessible external dependency after all other work is exhausted.
