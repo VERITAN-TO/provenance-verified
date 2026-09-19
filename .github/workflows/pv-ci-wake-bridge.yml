@@ -1,33 +1,20 @@
-name: PV CI Wake Bridge
+name: PV Native Route 2 CI Wake Bridge — DORMANT
 
+# ROUTE 2 IS PRESERVED FOR RECOVERY HISTORY ONLY.
+# ROUTE 1 persistent Lead-C session is the sole active native execution route.
 on:
-  workflow_run:
-    workflows: ["M2 Real E2E CI"]
-    types: [completed]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 jobs:
-  dispatch:
-    if: ${{ vars.PV_EXECUTION_TRIGGER_ENABLED == 'true' }}
+  dormant:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch native CI completion to Lead C
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        shell: bash
+      - name: Route 2 dormant receipt
         run: |
-          set -euo pipefail
-          if [ "$HEAD_BRANCH" != "successor/m4-determination-first-r2" ]; then
-            exit 0
-          fi
-
-          body="$(jq -n             --argjson pr "3"             --arg source "workflow_run"             --arg run_id "$RUN_ID"             --arg conclusion "$CONCLUSION"             --arg head_sha "$HEAD_SHA"             '{event_type:"pv-lane-wake",client_payload:{pr:$pr,source:$source,run_id:$run_id,conclusion:$conclusion,head_sha:$head_sha}}')"
-
-          gh api --method POST "repos/$GITHUB_REPOSITORY/dispatches" --input - <<< "$body"
+          echo "PV_ROUTE_2_STATE=DORMANT"
+          echo "PV_ACTIVE_EXECUTION_ROUTE=ROUTE_1"
+          echo "NO_LANE_DISPATCH_PERFORMED=YES"
