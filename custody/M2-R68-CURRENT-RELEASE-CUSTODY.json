@@ -2,16 +2,16 @@
   "schema_version": "1.1.0",
   "custody_type": "PV_MISSION2_CURRENT_NATIVE_RELEASE_HANDOFF",
   "status": "QUALIFICATION_ONLY",
-  "qualified_product_sha": "9ef4ec8f9bf07ecfa1349fb524996176604a0c20",
+  "qualified_product_sha": "304093a8116241b26f927f0454abed9babef2a20",
   "source_branch": "successor/m4-determination-first-r2",
-  "qualified_product_workflow_run": 35338256848,
-  "custody_overlay_parent_sha": "61a114a20ebcbf518105148154f28eef62e3bc17",
+  "qualified_product_workflow_run": 35459727898,
+  "custody_overlay_parent_sha": "ccf66925bf820531befb840d3b00c4cd3fb93a50",
   "custody_record_revision_rule": "The Git commit containing this file is the custody-record revision identity; do not embed a self-referential current commit SHA.",
   "control_vector": {
     "authority": {
       "repository": "VERITAN-TO/provenance-verified-private",
       "pull_request": 17,
-      "sha": "bb103717e0bdf1a0dce99531108c456856332244"
+      "sha": "820cd6a7b9a20bd1697c0d7e40302241087d6b79"
     },
     "web_customer": {
       "repository": "VERITAN-TO/provenance-verified-private",
@@ -21,7 +21,7 @@
     "backend_convergence": {
       "repository": "VERITAN-TO/provenance-verified-private",
       "pull_request": 48,
-      "sha": "c81e32e79c3eb687457a29df42f873f68128e0ea"
+      "sha": "9700ca51a1ba332fa037586e8d19c24ff837f27e"
     }
   },
   "toolchain": {
@@ -49,27 +49,27 @@
   },
   "artifacts": {
     "android_qualification_aab": {
-      "artifact_id": 10543683335,
-      "sha256": "90ef9a3d2de326b5d15bdd80651145eb6e7fdbdc6f6d0cfae72d40290557069b",
+      "artifact_id": 10589548032,
+      "sha256": "60efb7db2692e7d06d106a0d7481ccf567099766536adca3bb9ea58426c3cddc",
       "signing_state": "UNSIGNED_QUALIFICATION"
     },
     "ios_nocodesign_app": {
-      "artifact_id": 10544530370,
-      "sha256": "921780c920d34d17f97ec6acbdef732dae4b979dfde2afb0966402a400c4c8ac",
+      "artifact_id": 10589627830,
+      "sha256": "a160e8c93c1e81663e3b979d822b5796dc7a59a21b6149174ffb21fc47ef8a38",
       "signing_state": "NO_CODESIGN"
     },
     "evidence_package": {
-      "artifact_id": 10544042536,
-      "sha256": "fa5a1d50e926162cd8f6614e8a92970a9d18ffdd4503cc8e72487b38ff158bb4"
+      "artifact_id": 10589378129,
+      "sha256": "9efadf5e2d34be4596ded09e7179f99221e230a544d4b232e72b5db11d675ad0"
     },
     "resolved_pubspec_lock": {
-      "artifact_id": 10543269500,
+      "artifact_id": 10589836595,
       "sha256": "6c8f8434cd1eeeb3897f403e332f5821a874afee248577bf09af75b9a64d6540"
     }
   },
   "exact_head_requalification": {
-    "parent_custody_sha": "61a114a20ebcbf518105148154f28eef62e3bc17",
-    "parent_exact_head_run": 35358571191,
+    "parent_custody_sha": "ccf66925bf820531befb840d3b00c4cd3fb93a50",
+    "parent_exact_head_run": 35459727898,
     "parent_run_state": "COMPLETED_WITH_EXTERNAL_BACKEND_FAILURE_ONLY",
     "repo_owned_gates": {
       "linux_analyze_unit_android": "PASS",
@@ -77,7 +77,7 @@
       "evidence_assembly": "PASS"
     },
     "real_backend_integration": "EXECUTED_FAIL_EXTERNAL_BACKEND",
-    "next_revision_rule": "This custody repair commit must earn its own exact-head CI evidence before CUSTOS can bind SHA-specific release custody."
+    "next_revision_rule": "qualified_product_sha above is now bound to its own exact-head CI evidence (run 35459727898); this satisfies the prior revision's outstanding child-SHA-requalification requirement. CUSTOS must still independently verify and bind SHA-specific release custody before promotion beyond QUALIFICATION_ONLY status, and any further head movement reopens this requirement again."
   },
   "historical_custody": {
     "custody/M3-RELEASE-CANDIDATE.json": {
@@ -109,16 +109,18 @@
     "real_backend_integration": {
       "state": "EXECUTED_FAIL_EXTERNAL_BACKEND",
       "workflow_variable": "PV_QUAL_API_BASE_URL",
-      "observed_endpoint": "provenance-verified-qual-r9qsk1nyy-admin-56661436s-projects.vercel.app",
-      "observed_deployment_id": "dpl_2LrUphbSQA2cN152NxYLLKjXEZnX",
-      "observed_backend_sha": "767bd4f49bee56e3998fafe0791ad2bea8415b2f",
-      "required_backend_relation": "Must bind to the current lawful non-production API contract before Real Backend Integration can qualify.",
+      "observed_endpoint": "pv-r08-runtime-replay-8emjojrr2-admin-56661436s-projects.vercel.app",
+      "observed_deployment_id": "dpl_7mjCMKqkZKcqULDJHRWEHHopqkUi",
+      "observed_backend_sha": "4336e5587922ce3b73a904d0a1088bdc35465f58",
+      "observed_backend_target": "preview (target=null, non-production)",
+      "root_cause_verified": "Direct read of src/app/api/v1/mobile/token/route.ts at PR #48 head 9700ca51a1ba332fa037586e8d19c24ff837f27e confirms serviceHeaders() throws SERVICE_ROLE_BOUNDARY_UNAVAILABLE before any Supabase fetch when PV_SUPABASE_SECRET_KEY is unset; the surrounding try/catch maps this to 503 SERVICE_UNAVAILABLE. This is an A-lane preview-environment configuration gap (missing secret + redeploy), not a Native defect and not a URL-binding defect.",
+      "required_backend_relation": "Must bind to the current lawful non-production API contract, with PV_SUPABASE_SECRET_KEY configured on that preview, before Real Backend Integration can qualify.",
       "rule": "Do not patch Native around the backend failure."
     }
   },
   "rollback": {
     "strategy": "Revert only the custody overlay revision(s) to the prior custody parent.",
-    "prior_custody_parent": "61a114a20ebcbf518105148154f28eef62e3bc17",
+    "prior_custody_parent": "ccf66925bf820531befb840d3b00c4cd3fb93a50",
     "product_history_rewrite": false,
     "backend_mutation_required": false,
     "key_or_certificate_action_required": false
@@ -133,5 +135,5 @@
     "PRODUCTION_DB_OR_DATA_MUTATION",
     "LIVE_MONEY"
   ],
-  "maximum_truthful_state": "TESTED_QUALIFICATION_ARTIFACTS_PRESENT__EXACT_RELEASE_CUSTODY_REQUIRES_CHILD_SHA_REQUALIFICATION_AND_BACKEND_REBIND"
+  "maximum_truthful_state": "TESTED_QUALIFICATION_ARTIFACTS_PRESENT_AT_EXACT_HEAD__REAL_BACKEND_INTEGRATION_BLOCKED_ON_A_LANE_PREVIEW_MISSING_PV_SUPABASE_SECRET_KEY"
 }
