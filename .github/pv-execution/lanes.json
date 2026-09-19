@@ -6,17 +6,23 @@
     "branch": "authority/pv-mission2-build-authority-v1"
   },
   "peacp": {
-    "version": "1.2",
-    "source": "Google Drive / PEACP_README_v1.2.md",
-    "primary_trigger": "native_persistent_session_pr_subscription",
-    "fallback_trigger": "same_session_scheduled_trigger_when_supported_or_explicit_github_dispatch",
-    "prohibited_when_native_subscription_exists": [
-      "automatic_github_actions_relay_as_primary",
+    "version": "PV_PERSISTENT_CODE_SESSION_NOTIFICATION_ROUTE_V1",
+    "source": "Observed PV Code-session runtime + existing worker-bootstrap Native notification drain protocol",
+    "primary_wake_route": "persistent_code_session_notification_inbox",
+    "notification_drain": "ReadNotifications",
+    "event_source": "bound lane PR activity",
+    "same_session_continuation": true,
+    "cold_resolve_on_wake": true,
+    "authority_source": "private PR17 current authority",
+    "fallback_trigger": "scheduled same-session check only when the persistent session supports it",
+    "prohibited_primary_replacements": [
+      "github_actions_router",
       "custom_webhook_bridge",
       "polling_daemon",
-      "duplicate_control_plane"
+      "duplicate_control_plane",
+      "duplicate_lane_session"
     ],
-    "rule": "Wake transport is not authority. Every wake must cold-resolve current authority and exact lane state."
+    "rule": "PR activity is transport. The persistent Code session drains its native notification inbox, resolves the bound PR timeline and current authority/exact SHA, executes the newest valid in-lane work, posts evidence, then remains armed."
   },
   "lanes": {
     "C": {
@@ -27,10 +33,13 @@
       "producer": true,
       "write_scope": "existing_branch_only",
       "wake_port": "PR3",
-      "primary_trigger": "native_pr_subscription",
+      "primary_trigger": "persistent_session_native_notification_inbox",
       "trigger_proof": "C-LIVE-TRIGGER-001",
       "trigger_receipt_comment": 5725958687,
-      "trigger_state": "PROVEN"
+      "trigger_state": "PROVEN",
+      "notification_drain": "ReadNotifications",
+      "same_session_rearm": true,
+      "wake_proof_interpretation": "PR activity reached the existing persistent Code session and was drained from its native notifications; proof does not require a separately exposed subscribe_pr_activity API."
     }
   }
 }
