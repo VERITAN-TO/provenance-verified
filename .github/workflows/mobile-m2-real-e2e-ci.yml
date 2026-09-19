@@ -135,6 +135,12 @@ jobs:
           echo "head_sha=$HEAD" >> $GITHUB_OUTPUT
           echo "M2 HEAD SHA: $HEAD"
 
+      - name: Classifier regression self-test
+        run: |
+          # Runs unconditionally (unlike the real-backend-integration job, which is
+          # gated on vars.PV_QUAL_BACKEND_ENABLED) so this logic is always checked.
+          bash scripts/ci/classify_integration_result_test.sh
+
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -602,19 +608,17 @@ jobs:
         id: int_classify
         if: always()
         run: |
-          if [ "${{ steps.int_test.outcome }}" = "success" ]; then
-            echo "integration_state=EXECUTED_PASS" >> $GITHUB_OUTPUT
-          elif [ "${{ steps.int_test.outcome }}" = "failure" ]; then
-            BOOTSTRAP_CLASS="${{ steps.probe.outputs.bootstrap_classification }}"
-            if [ "$BOOTSTRAP_CLASS" = "HTML_RESPONSE" ] || [ "$BOOTSTRAP_CLASS" = "CONNECTION_FAILED" ]; then
-              echo "integration_state=EXECUTED_FAIL_EXTERNAL_BACKEND" >> $GITHUB_OUTPUT
-            else
-              echo "integration_state=EXECUTED_FAIL_NATIVE_OR_UNCLASSIFIED" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "integration_state=EXECUTED_FAIL_NATIVE_OR_UNCLASSIFIED" >> $GITHUB_OUTPUT
-          fi
-          echo "CLASSIFY: integration_state set (int_test outcome=${{ steps.int_test.outcome }})"
+          # See scripts/ci/classify_integration_result.sh for the classification logic
+          # and scripts/ci/classify_integration_result_test.sh for its regression coverage
+          # (also run unconditionally in the linux-android job's "Classifier regression
+          # self-test" step, so this logic is checked even when the real-backend job
+          # itself doesn't run).
+          STATE=$(INT_TEST_OUTCOME="${{ steps.int_test.outcome }}" \
+            BOOTSTRAP_CLASS="${{ steps.probe.outputs.bootstrap_classification }}" \
+            TEST_OUTPUT_FILE="flutter-test-integration.txt" \
+            bash scripts/ci/classify_integration_result.sh)
+          echo "integration_state=$STATE" >> $GITHUB_OUTPUT
+          echo "CLASSIFY: integration_state=$STATE (int_test outcome=${{ steps.int_test.outcome }})"
 
       - name: Upload integration test output
         if: always()
