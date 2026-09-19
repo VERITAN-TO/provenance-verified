@@ -1,35 +1,19 @@
-name: PV PEACP Native Fallback Dispatch
+name: PV Native Route 2 Dispatch — DORMANT RECOVERY ONLY
 
-# PEACP v1.2: native persistent-session PR subscription is the PRIMARY wake path.
-# This workflow is fallback-only for explicit recovery dispatch.
+# Preserved, not deleted. Route 2 may not execute concurrently with Route 1.
 on:
-  repository_dispatch:
-    types: [pv-lane-wake]
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-  actions: read
-  checks: read
 
 jobs:
-  validate:
+  dormant:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate explicit Lane C fallback dispatch
-        shell: bash
+      - name: Route 2 dormant receipt
         run: |
-          set -euo pipefail
-          lane="$(jq -r '.client_payload.lane // ""' "$GITHUB_EVENT_PATH")"
-          pr="$(jq -r '.client_payload.pr // 0' "$GITHUB_EVENT_PATH")"
-          reason="$(jq -r '.client_payload.reason // ""' "$GITHUB_EVENT_PATH")"
-
-          if [ "$lane" != "C" ] || [ "$pr" != "3" ] || [ -z "$reason" ]; then
-            echo "Fallback dispatch rejected"
-            exit 1
-          fi
-
-          echo "PEACP_FALLBACK_DISPATCH lane=C pr=3"
-          echo "Native persistent-session PR subscription remains primary."
-          echo "This workflow does not create or replace a persistent Code-agent session."
+          echo "PV_ROUTE_2_STATE=DORMANT"
+          echo "PV_ACTIVE_EXECUTION_ROUTE=ROUTE_1"
+          echo "RECOVERY_ACTIVATION_REQUIRES_EXPLICIT_CTO_ROUTE_SWITCH=YES"
+          echo "NO_LANE_DISPATCH_PERFORMED=YES"
