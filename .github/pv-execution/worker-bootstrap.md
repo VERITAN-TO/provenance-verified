@@ -35,6 +35,40 @@ D is an independent verifier. D may inspect, test, and post verdict/evidence rec
 Old sessions do not regain mutation authority merely because their usage limit resets. The currently configured worker credential is the active executor for the lane until the CTO explicitly changes it.
 
 
+
+## Single Active Route Mutex
+
+PV preserves both Route 1 and the previously built Route 2 artifacts, but only one execution route may be active at a time.
+
+Current binding:
+
+```text
+ACTIVE_ROUTE = ROUTE_1
+ROUTE_1 = ACTIVE
+ROUTE_2 = DORMANT_RECOVERY_ONLY
+OVERLAP_ALLOWED = NO
+```
+
+Route 1 is the existing persistent Code-session notification loop:
+
+```text
+WAKE / SAME-SESSION CHECK-IN
+→ ReadNotifications
+→ reconcile bound PR/timeline
+→ cold-resolve authority + exact SHA
+→ execute
+→ post evidence
+→ ReadNotifications
+→ re-arm same session
+```
+
+Route 2 artifacts are preserved for disaster recovery but may not automatically wake, dispatch, or mutate while Route 1 is active. If an old Route-2 explicit PR subscription still exists, disable/unsubscribe it when the current session tooling supports that safely. If it cannot be disabled, its events are transport noise only: deduplicate them and perform NO second execution.
+
+A route switch requires an explicit CTO route-switch order and must stop the old route before the new route receives mutation authority. Never run Route 1 and Route 2 concurrently for the same lane.
+
+One lane = one active persistent mutation/verifier seat = one active execution route.
+
+
 ## Route 1 — Persistent Code Session Notification Loop
 
 This is the primary PV execution route.
