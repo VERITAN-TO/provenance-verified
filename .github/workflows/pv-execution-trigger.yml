@@ -1,114 +1,35 @@
-name: PV Durable Execution Trigger
+name: PV PEACP Native Fallback Dispatch
 
+# PEACP v1.2: native persistent-session PR subscription is the PRIMARY wake path.
+# This workflow is fallback-only for explicit recovery dispatch.
 on:
-  issue_comment:
-    types: [created]
-  pull_request:
-    types: [synchronize, reopened, ready_for_review, converted_to_draft]
-  pull_request_review:
-    types: [submitted]
-  pull_request_review_comment:
-    types: [created]
   repository_dispatch:
     types: [pv-lane-wake]
 
 permissions:
-  id-token: write
-  contents: write
+  contents: read
   pull-requests: write
   issues: write
   actions: read
   checks: read
 
 jobs:
-  route:
+  validate:
     runs-on: ubuntu-latest
-    outputs:
-      lane: ${{ steps.route.outputs.lane }}
-      pr: ${{ steps.route.outputs.pr }}
-      authorized: ${{ steps.route.outputs.authorized }}
     steps:
-      - name: Route event to native lane
-        id: route
+      - name: Validate explicit Lane C fallback dispatch
         shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          EVENT_PATH="${GITHUB_EVENT_PATH:?GITHUB_EVENT_PATH not set}"
-          pr="0"
-          case "$EVENT_NAME" in
-            pull_request)
-              pr="$(jq -r '.pull_request.number // 0' "$EVENT_PATH")"
-              ;;
-            issue_comment)
-              is_pr="$(jq -r 'if .issue.pull_request then "yes" else "no" end' "$EVENT_PATH")"
-              if [ "$is_pr" = "yes" ]; then
-                pr="$(jq -r '.issue.number // 0' "$EVENT_PATH")"
-              fi
-              ;;
-            pull_request_review|pull_request_review_comment)
-              pr="$(jq -r '.pull_request.number // 0' "$EVENT_PATH")"
-              ;;
-            repository_dispatch)
-              pr="$(jq -r '.client_payload.pr // 0' "$EVENT_PATH")"
-              ;;
-          esac
+          lane="$(jq -r '.client_payload.lane // ""' "$GITHUB_EVENT_PATH")"
+          pr="$(jq -r '.client_payload.pr // 0' "$GITHUB_EVENT_PATH")"
+          reason="$(jq -r '.client_payload.reason // ""' "$GITHUB_EVENT_PATH")"
 
-          lane=""
-          if [ "$pr" = "3" ]; then lane="C"; fi
-
-          authorized="false"
-          if [ "$lane" = "C" ]; then
-            case "$EVENT_NAME" in
-              issue_comment|pull_request_review|pull_request_review_comment)
-                if [ "$ACTOR" = "VERITAN-TO" ]; then authorized="true"; fi
-                ;;
-              pull_request|repository_dispatch)
-                authorized="true"
-                ;;
-            esac
+          if [ "$lane" != "C" ] || [ "$pr" != "3" ] || [ -z "$reason" ]; then
+            echo "Fallback dispatch rejected"
+            exit 1
           fi
 
-          echo "lane=$lane" >> "$GITHUB_OUTPUT"
-          echo "pr=$pr" >> "$GITHUB_OUTPUT"
-          echo "authorized=$authorized" >> "$GITHUB_OUTPUT"
-
-  lead-c:
-    needs: route
-    if: ${{ needs.route.outputs.authorized == 'true' && needs.route.outputs.lane == 'C' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    concurrency:
-      group: pv-lane-C
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Wake successor Lead C
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.PV_CLAUDE_C_OAUTH_TOKEN }}
-          additional_permissions: |
-            actions: read
-            checks: read
-          prompt: |
-            REPO: VERITAN-TO/provenance-verified
-            PR NUMBER: 3
-            LANE: C
-            ROLE: Flutter/native producer
-            EXPECTED BRANCH: successor/m4-determination-first-r2
-            AUTHORITY: private VERITAN-TO/provenance-verified-private PR #17
-
-            This GitHub event is a WAKE SIGNAL, not authority.
-            Read .github/pv-execution/worker-bootstrap.md first.
-            Cold-resolve PR #3 current head, branch, latest CTO order, latest C return,
-            current CI/check state, current native artifacts, and relevant CUSTOS receipts.
-            Continue the existing native package only. Preserve server-truth parity and fail-closed release custody.
-            Do not create another PR, branch, roadmap, trust model, or permanent Lead.
-            If action is required: execute -> test -> exact-head Android/iOS qualification as applicable ->
-            bind exact SHA/evidence -> post result -> continue.
-            If there is no material action, post a compact NO_MATERIAL_ACTION receipt.
-            Do not merge, sign, submit to stores/TestFlight, or perform any reserved production/live-money/spend action.
+          echo "PEACP_FALLBACK_DISPATCH lane=C pr=3"
+          echo "Native persistent-session PR subscription remains primary."
+          echo "This workflow does not create or replace a persistent Code-agent session."
