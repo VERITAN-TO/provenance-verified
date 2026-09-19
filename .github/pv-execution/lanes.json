@@ -1,15 +1,22 @@
 {
-  "schema": "pv.execution-lanes.v2",
+  "schema": "pv.execution-lanes.v3",
   "authority": {
     "repository": "VERITAN-TO/provenance-verified-private",
     "pr": 17,
     "branch": "authority/pv-mission2-build-authority-v1"
   },
-  "trigger_policy": {
-    "primary": "native_persistent_session_pr_subscription",
-    "fallback": "github_actions_event_router",
-    "fallback_state": "DEFERRED_WHILE_GITHUB_HOSTED_RUNNER_CAPACITY_UNAVAILABLE",
-    "rule": "A wake signal is never authority; every wake must cold-resolve live GitHub truth before action."
+  "peacp": {
+    "version": "1.2",
+    "source": "Google Drive / PEACP_README_v1.2.md",
+    "primary_trigger": "native_persistent_session_pr_subscription",
+    "fallback_trigger": "same_session_scheduled_trigger_when_supported_or_explicit_github_dispatch",
+    "prohibited_when_native_subscription_exists": [
+      "automatic_github_actions_relay_as_primary",
+      "custom_webhook_bridge",
+      "polling_daemon",
+      "duplicate_control_plane"
+    ],
+    "rule": "Wake transport is not authority. Every wake must cold-resolve current authority and exact lane state."
   },
   "lanes": {
     "C": {
@@ -18,8 +25,12 @@
       "branch": "successor/m4-determination-first-r2",
       "role": "flutter_native_producer",
       "producer": true,
+      "write_scope": "existing_branch_only",
+      "wake_port": "PR3",
       "primary_trigger": "native_pr_subscription",
-      "trigger_state": "PENDING_SUCCESSOR_ATTACHMENT"
+      "trigger_proof": "C-LIVE-TRIGGER-001",
+      "trigger_receipt_comment": 5725958687,
+      "trigger_state": "PROVEN"
     }
   }
 }
