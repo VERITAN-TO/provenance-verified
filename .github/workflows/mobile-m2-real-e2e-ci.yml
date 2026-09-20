@@ -9,11 +9,11 @@ env:
   FLUTTER_VERSION: '3.47.2'
   FLUTTER_CHANNEL: 'stable'
   PV_API_BASE_URL: 'https://provenance-verified-private.vercel.app'
-  # Non-production qualification target pinned to current canonical A candidate 4336e5587922ce3b73a904d0a1088bdc35465f58
-  # ("fix(mobile): classify Vercel preview as non-production runtime"), independently verified READY via the
-  # Vercel API (deployment dpl_7mjCMKqkZKcqULDJHRWEHHopqkUi, target=null/preview) before this rebind.
+  # Non-production qualification target rebound to provenance-verified-qual.vercel.app (R4, euhonqxohwrhscvwutqp).
+  # Mobile auth migration applied to R4 and confirmed live (A→C DEPENDENCY_READY, PR3 comment 5753531478).
+  # platform=test pending Vercel redeploy (≤24h from 2026-09-20T23:30Z); platform=ios confirmed working on R4.
   # This is intentionally checked in so real-backend qualification does not depend on mutable repository-variable tooling.
-  PV_QUAL_API_BASE_URL: 'https://pv-r08-runtime-replay-8emjojrr2-admin-56661436s-projects.vercel.app'
+  PV_QUAL_API_BASE_URL: 'https://provenance-verified-qual.vercel.app'
   # EXPECTED_M2_UNIT_COUNT: fail-closed gate — must match actual executed test count.
   # Confirmed executed count: 237 — from CI run 35165330574 on commit 32b3019 (R27).
   # R28 adds 5 tests: C28-1..C28-5 (public reliance failsafe + settlement null ambiguity).
