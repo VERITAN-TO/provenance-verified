@@ -157,6 +157,14 @@ class SubmissionDetailScreen extends ConsumerWidget {
               // A Verify CTA may render only when the server supplies canonical
               // public-record / registry-active authority. MONEY_CONTROLS_TRUST = FALSE.
 
+              // ── Custody / legal-title boundary ──────────────────────────
+              // Custody is a server-authored chain-of-record. Native must not
+              // imply that a custody event transfers or proves legal title.
+              if (detail.custodyEvents.isNotEmpty) ...[
+                const _CustodyLegalTitleBoundary(),
+                const SizedBox(height: 16),
+              ],
+
               // ── Status timeline ──────────────────────────────────────────
               _SectionHeader('STATUS TIMELINE'),
               const SizedBox(height: 8),
@@ -820,6 +828,38 @@ class _SupportLink extends StatelessWidget {
 // ────────────────────────────────────────────────────────────────────────────
 // Section header
 // ────────────────────────────────────────────────────────────────────────────
+
+class _CustodyLegalTitleBoundary extends StatelessWidget {
+  const _CustodyLegalTitleBoundary();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          'Custody record notice. Custody transfers do not confer legal title or ownership.',
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          border: Border.all(color: PvColors.border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('CUSTODY RECORD', style: PvTypography.label),
+            SizedBox(height: 6),
+            Text(
+              'Custody events record physical possession and chain-of-record only. '
+              'A custody transfer does not confer, prove, or replace legal title or ownership.',
+              style: PvTypography.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _SectionHeader extends StatelessWidget {
   final String text;
