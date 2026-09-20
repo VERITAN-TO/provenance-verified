@@ -1388,6 +1388,61 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // M2-50-06 — CUSTODY_IS_NOT_LEGAL_TITLE=TRUE behavioral boundary
+  // Custody confirmation is a physical-possession assertion only; it does not
+  // create, transfer, or assert legal title. Source, models, and UI must never
+  // conflate confirmed custody with legal ownership.
+  // ---------------------------------------------------------------------------
+  group('M2-50-06 Custody-Not-Legal-Title Boundary (C64 — STATIC_CONTRACT)', () {
+    test('C64-1 STATIC_CONTRACT: trust_models annotates CUSTODY_IS_NOT_LEGAL_TITLE=TRUE on TrustRecord.continuity', () {
+      final models = File('lib/trust/trust_models.dart').readAsStringSync();
+      expect(models, contains('CUSTODY_IS_NOT_LEGAL_TITLE'),
+          reason: 'TrustRecord must annotate the custody boundary invariant on the continuity field '
+              'so the model itself carries the semantic constraint at the source level');
+      expect(models, contains('continuity/custody projection is display-only'),
+          reason: 'TrustRecord.continuity comment must state display-only scope — '
+              'custody projection carries no legal-title authority');
+    });
+
+    test('C64-2 STATIC_CONTRACT: TrustContinuity.currentOwner is annotated display-only with no ownership authority assertion', () {
+      final models = File('lib/trust/trust_models.dart').readAsStringSync();
+      expect(models, contains('display-only, no ownership authority assertion'),
+          reason: 'TrustContinuity.currentOwner must be annotated as display-only with explicit '
+              'denial of ownership authority — custody display does not assert legal title');
+    });
+
+    test('C64-3 STATIC_CONTRACT: machine_trust_response annotates CUSTODY_IS_NOT_LEGAL_TITLE and no legalTitle field produced', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('CUSTODY_IS_NOT_LEGAL_TITLE'),
+          reason: 'MachineTrustResponse must carry the custody boundary annotation '
+              'so the parser contract is explicit at source level');
+      expect(mtr, isNot(contains("'legalTitle'")),
+          reason: 'MachineTrustResponse must not carry a legalTitle JSON key — '
+              'title assertions are outside the machine trust schema scope');
+    });
+
+    test('C64-4 STATIC_CONTRACT: trust_badge carries no legal-title language for any tier', () {
+      final badge = File('lib/trust/widgets/trust_badge.dart').readAsStringSync();
+      expect(badge, isNot(contains('legal title')),
+          reason: 'Trust badge must not label any tier with legal-title language');
+      expect(badge, isNot(contains('title confirmed')),
+          reason: 'Trust badge must not claim title confirmed — '
+              'custody confirmation is physical possession only, not title transfer');
+      expect(badge, isNot(contains('custodyIsTitle')),
+          reason: 'Trust badge must not contain a custodyIsTitle identifier');
+    });
+
+    test('C64-5 STATIC_CONTRACT: machine_trust_response marks current_owner and current_custodian display-only with no authority assertion', () {
+      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      expect(mtr, contains('display-only, no authority assertion'),
+          reason: 'MachineTrustResponse must annotate current_owner as display-only with '
+              'explicit no-authority constraint — CUSTODY_IS_NOT_LEGAL_TITLE=TRUE enforced at parser');
+      expect(mtr, contains('display-only'),
+          reason: 'Both current_custodian and current_owner annotations must carry display-only scope');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // M2-50-08 — Physical-object matching gate
   // PHYSICAL_MATCH_NOT_SUPPORTED: no approved physical proof method is operational.
   // ---------------------------------------------------------------------------
