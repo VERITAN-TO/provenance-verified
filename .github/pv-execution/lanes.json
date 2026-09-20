@@ -47,11 +47,11 @@
   },
   "execution_route_control": {
     "mutex": "SINGLE_ACTIVE_ROUTE",
-    "active_route": "ROUTE_2",
-    "route_1_state": "UNAVAILABLE_THIS_CYCLE",
-    "route_2_state": "ACTIVE_RECOVERY",
+    "active_route": "ROUTE_1",
+    "route_1_state": "ACTIVE",
+    "route_2_state": "DORMANT_RECOVERY_ONLY",
     "overlap_allowed": false,
-    "automatic_route_2_dispatch_allowed": true,
+    "automatic_route_2_dispatch_allowed": false,
     "route_switch_rule": "Route 2 may activate only after Route 1 is explicitly declared unavailable/exhausted and CTO issues an explicit route-switch order. Before Route 2 activation, Route 1 mutation/check-in execution for that lane must be stopped. Never run both.",
     "preserve_route_2_artifacts": true,
     "rebuild_existing_route": false
