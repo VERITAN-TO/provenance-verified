@@ -107,7 +107,8 @@ env:
   # Confirmed executed count: 360 — from CI run 35338113891 on commit 147e5f316 (executed
   #   evidence: "+360: All tests passed!"; the sole prior failure on this commit's predecessor
   #   run was flutter analyze's unnecessary_cast, fixed in 147e5f316 — not a test failure).
-  EXPECTED_M2_UNIT_COUNT: '370'
+  # M2-50-06 (C64-1..C64-5) adds 5 tests. Confirmed 375 from CI run 35542197695 on b0f4ade4.
+  EXPECTED_M2_UNIT_COUNT: '375'
 
 jobs:
   linux-android:
