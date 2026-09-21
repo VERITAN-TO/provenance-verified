@@ -49,6 +49,16 @@ class Env {
     defaultValue: '',
   );
 
+  // CI/qual device UUID override — set via --dart-define=PV_QUAL_DEVICE_ID=<uuid> in CI.
+  // When non-empty, MobileTokenService uses this as device_id for bootstrap,
+  // bypassing secure-storage lookup. Semantically distinct from PV_QUAL_SUBJECT_ID
+  // (determination subject/public_id). Production: empty — device ID managed by
+  // MobileTokenService secure storage.
+  static const String qualDeviceId = String.fromEnvironment(
+    'PV_QUAL_DEVICE_ID',
+    defaultValue: '',
+  );
+
   // Supabase — customer auth only. Not a secret (anon key is public by design).
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
