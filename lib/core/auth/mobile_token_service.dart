@@ -92,7 +92,7 @@ class MobileTokenService {
 
     // Use CI/qual device UUID override when provided; otherwise use persisted/generated device ID.
     final deviceId = (_deviceIdOverride != null)
-        ? _deviceIdOverride!
+        ? _deviceIdOverride
         : await _getOrCreateDeviceId();
     // Use PV_MOBILE_PLATFORM dart-define when set (CI/test bootstrap with non-UUID tenant IDs).
     // Server guards against test platform in production runtime (TEST_PLATFORM_IN_PRODUCTION).
@@ -134,7 +134,7 @@ class MobileTokenService {
     try {
       final errBody = jsonDecode(response.body) as Map<String, dynamic>;
       errorCode = (errBody['error'] as Map<String, dynamic>?)?['code'] as String? ?? errorCode;
-    } catch (_) {};
+    } catch (_) {}
     throw ApiException(
       response.statusCode,
       'Mobile token bootstrap failed ($errorCode).',
