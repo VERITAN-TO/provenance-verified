@@ -16,6 +16,10 @@ env:
   PV_QUAL_API_BASE_URL: 'https://provenance-verified-qual.vercel.app'
   # Non-secret canonical QUAL fixture UUID, proven live by A runtime probe and kept checked-in to avoid mutable repo-variable drift.
   PV_QUAL_TENANT_ID: '00000000-0000-4000-a000-000000000100'
+  # Canonical QUAL device UUID — distinct from PV_QUAL_SUBJECT_ID (determination subject/public_id).
+  # Registered in qual Supabase euhonqxohwrhscvwutqp; bound to PV_QUAL_API_KEY (key_id=uuid-tenant-prod-qual-v2).
+  # DEPENDENCY_READY_C (PR3 comment 5768552274): A-lane rotated PV_QUAL_API_KEY; TEST_CREDENTIAL_IN_PRODUCTION RESOLVED.
+  PV_QUAL_DEVICE_ID: '00000000-0000-4000-c000-000000000001'
   # EXPECTED_M2_UNIT_COUNT: fail-closed gate — must match actual executed test count.
   # Confirmed executed count: 237 — from CI run 35165330574 on commit 32b3019 (R27).
   # R28 adds 5 tests: C28-1..C28-5 (public reliance failsafe + settlement null ambiguity).
@@ -560,7 +564,7 @@ jobs:
             -H 'Accept: application/json' \
             --connect-timeout 10 --max-time 15 \
             "$PV_QUAL_API_BASE_URL/api/v1/mobile/token" \
-            -d '{"tenant_id":"ci-diagnostic-probe","device_id":"ci-probe-device","platform":"test","app_version":"0.0.0"}' \
+            -d "{\"tenant_id\":\"$PV_QUAL_TENANT_ID\",\"device_id\":\"$PV_QUAL_DEVICE_ID\",\"platform\":\"test\",\"app_version\":\"0.0.0\"}" \
             2>/dev/null || echo "000")
           echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
           CONTENT_TYPE=$(grep -i '^content-type:' /tmp/probe-headers.txt 2>/dev/null | \
@@ -585,6 +589,7 @@ jobs:
           PV_API_KEY: ${{ secrets.PV_QUAL_API_KEY }}
           PV_TENANT_ID: ${{ env.PV_QUAL_TENANT_ID }}
           PV_QUAL_SUBJECT_ID: ${{ vars.PV_QUAL_SUBJECT_ID }}
+          PV_QUAL_DEVICE_ID: ${{ env.PV_QUAL_DEVICE_ID }}
           PV_QUAL_API_BASE_URL: ${{ env.PV_QUAL_API_BASE_URL }}
         run: |
           flutter test test/integration/ --reporter expanded \
@@ -592,6 +597,7 @@ jobs:
             --dart-define=PV_API_KEY=$PV_API_KEY \
             --dart-define=PV_TENANT_ID=$PV_TENANT_ID \
             --dart-define=PV_QUAL_SUBJECT_ID=$PV_QUAL_SUBJECT_ID \
+            --dart-define=PV_QUAL_DEVICE_ID=$PV_QUAL_DEVICE_ID \
             --dart-define=PV_MOBILE_PLATFORM=test \
             2>&1 | tee flutter-test-integration.txt
           grep -q "All tests passed" flutter-test-integration.txt || \
