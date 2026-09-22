@@ -14,8 +14,9 @@ env:
   # platform=test pending Vercel redeploy (≤24h from 2026-09-20T23:30Z); platform=ios confirmed working on R4.
   # This is intentionally checked in so real-backend qualification does not depend on mutable repository-variable tooling.
   PV_QUAL_API_BASE_URL: 'https://provenance-verified-qual.vercel.app'
-  # Non-secret canonical QUAL fixture UUID, proven live by A runtime probe and kept checked-in to avoid mutable repo-variable drift.
-  PV_QUAL_TENANT_ID: '00000000-0000-4000-a000-000000000100'
+  # Non-secret canonical QUAL tenant slug — TEXT per pv_mobile_consumer_tenants.tenant_id schema (no UUID constraint).
+  # A-lane bootstrap UUID gate removed at a92ad8c (D-verified); slug accepted; checked-in to avoid repo-variable drift.
+  PV_QUAL_TENANT_ID: 'm2-qual-tenant-1'
   # Canonical QUAL device UUID — distinct from PV_QUAL_SUBJECT_ID (determination subject/public_id).
   # Registered in qual Supabase euhonqxohwrhscvwutqp; bound to PV_QUAL_API_KEY (key_id=uuid-tenant-prod-qual-v2).
   # DEPENDENCY_READY_C (PR3 comment 5768552274): A-lane rotated PV_QUAL_API_KEY; TEST_CREDENTIAL_IN_PRODUCTION RESOLVED.
