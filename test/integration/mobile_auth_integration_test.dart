@@ -36,19 +36,36 @@ const _qualSubjectId = String.fromEnvironment(
   defaultValue: 'PV-TEST-S1-001',
 );
 
+// Fallback UUID when Env.qualDeviceId is not set (must be a valid UUID).
+const _fallbackIntegrationDeviceId = '00000000-0000-4000-c000-000000000001';
+
+// UUID format assertion — guards _callBootstrap from emitting non-UUID device_id.
+final _uuidPattern = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+  caseSensitive: false,
+);
+
 /// Calls the real bootstrap endpoint and returns the raw response.
+/// deviceId must be a valid UUID — asserted at runtime. When omitted, uses
+/// Env.qualDeviceId (from PV_QUAL_DEVICE_ID dart-define) or the fallback UUID.
 Future<http.Response> _callBootstrap({
   required String tenantId,
-  String deviceId = 'test-device-ma-001',
+  String? deviceId,
   String platform = 'ios',
   String appVersion = '3.0.0',
 }) async {
+  final effectiveDeviceId = deviceId ??
+      (Env.qualDeviceId.isNotEmpty ? Env.qualDeviceId : _fallbackIntegrationDeviceId);
+  assert(
+    _uuidPattern.hasMatch(effectiveDeviceId),
+    '_callBootstrap device_id must be a valid UUID; got: $effectiveDeviceId',
+  );
   return http.post(
     Uri.parse('$_baseUrl/api/v1/mobile/token'),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
       'tenant_id':   tenantId,
-      'device_id':   deviceId,
+      'device_id':   effectiveDeviceId,
       'platform':    platform,
       'app_version': appVersion,
     }),
@@ -225,7 +242,7 @@ void main() {
         return;
       }
       // Use a fixed device ID to accumulate rate limit hits.
-      const rateLimitDeviceId = 'rate-limit-test-device-ma08-fixed';
+      const rateLimitDeviceId = '00000000-0000-4000-c000-000000000008';
       http.Response? lastResponse;
       int attempt = 0;
 
@@ -274,6 +291,7 @@ void main() {
       final tokenService = MobileTokenService(
         client: http.Client(),
         tenantId: Env.pvTenantId,
+        deviceIdOverride: Env.qualDeviceId.isNotEmpty ? Env.qualDeviceId : null,
       );
       final token = await tokenService.getToken();
       tokenService.dispose();
