@@ -810,3 +810,55 @@ jobs:
             mobile-m2-ci-evidence.json
             checksum-manifest-m2.txt
           retention-days: 90
+
+
+  cto-internal-token-custody:
+    name: CTO Internal Token Custody Probe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check sealed internal token availability without disclosure
+        shell: bash
+        env:
+          INTERNAL_TOKEN: ${{ secrets.PV_INTERNAL_BUILD_TOKEN }}
+        run: |
+          if [ -z "$INTERNAL_TOKEN" ]; then
+            echo "::error::PV_INTERNAL_BUILD_TOKEN_NOT_PRESENT_ON_REGISTERED_RUNNER"
+            exit 1
+          fi
+          echo "PV_INTERNAL_BUILD_TOKEN_PRESENT=YES"
+      - name: Check QUAL reconstruction auth boundary
+        shell: bash
+        env:
+          INTERNAL_TOKEN: ${{ secrets.PV_INTERNAL_BUILD_TOKEN }}
+        run: |
+          STATUS=$(curl -sS -o /tmp/recon.json -w '%{http_code}' \
+            -X POST "https://provenance-verified-qual.vercel.app/api/internal/v1/reconstruction/reconstruct" \
+            -H 'content-type: application/json' \
+            -H "x-pv-internal-token: $INTERNAL_TOKEN" \
+            -d '{"determination_public_id":"PV-TEST-S1-001","reconstruction_purpose":"gate31-qualification","requested_by":"cto-qualification"}')
+          echo "RECON_HTTP_STATUS=$STATUS"
+          test "$STATUS" = "200" || { cat /tmp/recon.json; exit 1; }
+          python3 - <<'PY'
+import json
+d=json.load(open('/tmp/recon.json'))
+assert d.get('ok') is True
+print('GP11_RECONSTRUCTION_AUTH_PATH=PASS')
+PY
+      - name: Check QUAL replay auth boundary
+        shell: bash
+        env:
+          INTERNAL_TOKEN: ${{ secrets.PV_INTERNAL_BUILD_TOKEN }}
+        run: |
+          STATUS=$(curl -sS -o /tmp/replay.json -w '%{http_code}' \
+            -X POST "https://provenance-verified-qual.vercel.app/api/internal/v1/reconstruction/replay" \
+            -H 'content-type: application/json' \
+            -H "x-pv-internal-token: $INTERNAL_TOKEN" \
+            -d '{"determination_public_id":"PV-TEST-S1-001"}')
+          echo "REPLAY_HTTP_STATUS=$STATUS"
+          test "$STATUS" = "200" || { cat /tmp/replay.json; exit 1; }
+          python3 - <<'PY'
+import json
+d=json.load(open('/tmp/replay.json'))
+assert d.get('ok') is True
+print('GP12_REPLAY_AUTH_PATH=PASS')
+PY
