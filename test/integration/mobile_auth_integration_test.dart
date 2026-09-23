@@ -48,12 +48,16 @@ final _uuidPattern = RegExp(
 /// Calls the real bootstrap endpoint and returns the raw response.
 /// deviceId must be a valid UUID — asserted at runtime. When omitted, uses
 /// Env.qualDeviceId (from PV_QUAL_DEVICE_ID dart-define) or the fallback UUID.
+/// platform defaults to Env.mobilePlatform when set (PV_MOBILE_PLATFORM dart-define),
+/// otherwise 'ios'. This matches the workflow shell probe which sends platform=test in CI.
 Future<http.Response> _callBootstrap({
   required String tenantId,
   String? deviceId,
-  String platform = 'ios',
+  String? platform,
   String appVersion = '3.0.0',
 }) async {
+  final effectivePlatform =
+      platform ?? (Env.mobilePlatform.isNotEmpty ? Env.mobilePlatform : 'ios');
   final effectiveDeviceId = deviceId ??
       (Env.qualDeviceId.isNotEmpty ? Env.qualDeviceId : _fallbackIntegrationDeviceId);
   assert(
@@ -66,7 +70,7 @@ Future<http.Response> _callBootstrap({
     body: jsonEncode({
       'tenant_id':   tenantId,
       'device_id':   effectiveDeviceId,
-      'platform':    platform,
+      'platform':    effectivePlatform,
       'app_version': appVersion,
     }),
   ).timeout(const Duration(seconds: 20));
