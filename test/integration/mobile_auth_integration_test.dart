@@ -21,6 +21,7 @@
 
 // ignore_for_file: avoid_print
 import 'dart:convert';
+import 'dart:math';
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -39,9 +40,26 @@ const _qualSubjectId = String.fromEnvironment(
 // Fallback UUID when Env.qualDeviceId is not set (must be a valid UUID).
 const _fallbackIntegrationDeviceId = '00000000-0000-4000-c000-000000000001';
 
-// Distinct device ID for MA-09 so its MobileTokenService bootstrap call does not
-// share the rate-limit window used by the CI probe and the MA-01/MA-06 shared call.
-const _ma09DeviceId = '00000000-0000-4000-c000-000000000009';
+/// Generates a random UUID v4. Used to create per-run device IDs so that
+/// no device accumulates rate-limit hits across consecutive CI runs.
+String _randomUuid() {
+  final rng = Random();
+  final b = List<int>.generate(16, (_) => rng.nextInt(256));
+  b[6] = (b[6] & 0x0f) | 0x40; // version 4
+  b[8] = (b[8] & 0x3f) | 0x80; // variant 1
+  String h(int v) => v.toRadixString(16).padLeft(2, '0');
+  return '${h(b[0])}${h(b[1])}${h(b[2])}${h(b[3])}'
+      '-${h(b[4])}${h(b[5])}'
+      '-${h(b[6])}${h(b[7])}'
+      '-${h(b[8])}${h(b[9])}'
+      '-${h(b[10])}${h(b[11])}${h(b[12])}${h(b[13])}${h(b[14])}${h(b[15])}';
+}
+
+// Per-run unique device IDs — each a fresh UUID so no CI run inherits rate-limit
+// debt from a previous run on the same fixture device.
+final _runBootstrapDeviceId  = _randomUuid(); // setUpAll + MA-01 + MA-06
+final _ma08RateLimitDeviceId = _randomUuid(); // MA-08 rate-limit probe
+final _ma09DeviceId          = _randomUuid(); // MA-09 actionability auth
 
 // Shared bootstrap response — fetched once in setUpAll to avoid multiple
 // bootstrap calls on the same device within a single CI run.
@@ -90,7 +108,10 @@ void main() {
   // rate-limit window as the CI shell probe.
   setUpAll(() async {
     if (!Env.isConfigured) return;
-    _sharedBootstrapResp = await _callBootstrap(tenantId: Env.pvTenantId);
+    _sharedBootstrapResp = await _callBootstrap(
+      tenantId: Env.pvTenantId,
+      deviceId: _runBootstrapDeviceId,
+    );
   });
 
   // ── MA-01: VALID_BOOTSTRAP ────────────────────────────────────────────────
@@ -261,8 +282,9 @@ void main() {
         print('SKIP MA-08: PV_TENANT_ID not set.');
         return;
       }
-      // Use a fixed device ID to accumulate rate limit hits.
-      const rateLimitDeviceId = '00000000-0000-4000-c000-000000000008';
+      // Use a per-run unique device ID so rate-limit state from previous runs
+      // does not carry over. The device is exhausted within this test, intentionally.
+      final rateLimitDeviceId = _ma08RateLimitDeviceId;
       http.Response? lastResponse;
       int attempt = 0;
 

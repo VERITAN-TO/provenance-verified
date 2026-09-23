@@ -15,8 +15,11 @@
 //   M2-INT-08: Freshness state is CURRENT or known state
 
 // ignore_for_file: avoid_print
+import 'dart:math';
 import 'package:test/test.dart';
+import 'package:http/http.dart' as http;
 import 'package:provenance_verified_app/core/config/environment.dart';
+import 'package:provenance_verified_app/core/auth/mobile_token_service.dart';
 import 'package:provenance_verified_app/core/network/api_client.dart';
 import 'package:provenance_verified_app/reliance/receipt_models.dart';
 import 'package:provenance_verified_app/actionability/actionability_models.dart';
@@ -27,6 +30,21 @@ const _qualSubjectId = String.fromEnvironment(
   'PV_QUAL_SUBJECT_ID',
   defaultValue: 'PV-TEST-S1-001',
 );
+
+/// Generates a random UUID v4. Used to create a per-run device ID so this
+/// test file does not accumulate rate-limit debt on a shared fixture device.
+String _randomUuid() {
+  final rng = Random();
+  final b = List<int>.generate(16, (_) => rng.nextInt(256));
+  b[6] = (b[6] & 0x0f) | 0x40; // version 4
+  b[8] = (b[8] & 0x3f) | 0x80; // variant 1
+  String h(int v) => v.toRadixString(16).padLeft(2, '0');
+  return '${h(b[0])}${h(b[1])}${h(b[2])}${h(b[3])}'
+      '-${h(b[4])}${h(b[5])}'
+      '-${h(b[6])}${h(b[7])}'
+      '-${h(b[8])}${h(b[9])}'
+      '-${h(b[10])}${h(b[11])}${h(b[12])}${h(b[13])}${h(b[14])}${h(b[15])}';
+}
 
 void main() {
   // Skip all integration tests when PV_TENANT_ID is not configured.
@@ -39,7 +57,14 @@ void main() {
   late ApiClient client;
 
   setUpAll(() {
-    client = ApiClient(baseUrl: Env.pvApiBaseUrl);
+    // Use a per-run unique device ID so this file's MobileTokenService bootstrap
+    // does not share a rate-limit window with the CI probe or mobile_auth tests.
+    final tokenService = MobileTokenService(
+      client: http.Client(),
+      tenantId: Env.pvTenantId,
+      deviceIdOverride: _randomUuid(),
+    );
+    client = ApiClient(baseUrl: Env.pvApiBaseUrl, tokenService: tokenService);
   });
 
   tearDownAll(() => client.dispose());
