@@ -39,6 +39,14 @@ const _qualSubjectId = String.fromEnvironment(
 // Fallback UUID when Env.qualDeviceId is not set (must be a valid UUID).
 const _fallbackIntegrationDeviceId = '00000000-0000-4000-c000-000000000001';
 
+// Distinct device ID for MA-09 so its MobileTokenService bootstrap call does not
+// share the rate-limit window used by the CI probe and the MA-01/MA-06 shared call.
+const _ma09DeviceId = '00000000-0000-4000-c000-000000000009';
+
+// Shared bootstrap response — fetched once in setUpAll to avoid multiple
+// bootstrap calls on the same device within a single CI run.
+http.Response? _sharedBootstrapResp;
+
 // UUID format assertion — guards _callBootstrap from emitting non-UUID device_id.
 final _uuidPattern = RegExp(
   r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
@@ -77,6 +85,14 @@ Future<http.Response> _callBootstrap({
 }
 
 void main() {
+  // Fetch one shared bootstrap response for MA-01 and MA-06 so those groups
+  // do not each make an independent call on the same device within the same
+  // rate-limit window as the CI shell probe.
+  setUpAll(() async {
+    if (!Env.isConfigured) return;
+    _sharedBootstrapResp = await _callBootstrap(tenantId: Env.pvTenantId);
+  });
+
   // ── MA-01: VALID_BOOTSTRAP ────────────────────────────────────────────────
 
   group('MA-01: VALID_BOOTSTRAP — enrolled tenant → 201 + valid token', () {
@@ -85,7 +101,7 @@ void main() {
         print('SKIP MA-01: PV_TENANT_ID not set.');
         return;
       }
-      final resp = await _callBootstrap(tenantId: Env.pvTenantId);
+      final resp = _sharedBootstrapResp!;
       expect(
         resp.statusCode,
         anyOf(200, 201),
@@ -104,7 +120,7 @@ void main() {
         print('SKIP MA-01b: PV_TENANT_ID not set.');
         return;
       }
-      final resp = await _callBootstrap(tenantId: Env.pvTenantId);
+      final resp = _sharedBootstrapResp!;
       expect(resp.statusCode, anyOf(200, 201));
       final body       = jsonDecode(resp.body) as Map<String, dynamic>;
       final expiresStr = body['expires_at'] as String?;
@@ -205,7 +221,7 @@ void main() {
         print('SKIP MA-06: PV_TENANT_ID not set.');
         return;
       }
-      final resp = await _callBootstrap(tenantId: Env.pvTenantId);
+      final resp = _sharedBootstrapResp!;
       expect(resp.statusCode, anyOf(200, 201));
       final body   = jsonDecode(resp.body) as Map<String, dynamic>;
       final scopes = (body['scopes'] as List<dynamic>?)?.cast<String>();
@@ -292,10 +308,12 @@ void main() {
         return;
       }
       // Get a live token via MobileTokenService (mock storage; real bootstrap).
+      // Uses _ma09DeviceId (not the shared probe device) to avoid exhausting the
+      // per-device rate limit window consumed by the CI probe and the setUpAll call.
       final tokenService = MobileTokenService(
         client: http.Client(),
         tenantId: Env.pvTenantId,
-        deviceIdOverride: Env.qualDeviceId.isNotEmpty ? Env.qualDeviceId : null,
+        deviceIdOverride: _ma09DeviceId,
       );
       final token = await tokenService.getToken();
       tokenService.dispose();
