@@ -839,11 +839,11 @@ jobs:
           echo "RECON_HTTP_STATUS=$STATUS"
           test "$STATUS" = "200" || { cat /tmp/recon.json; exit 1; }
           python3 - <<'PY'
-import json
-d=json.load(open('/tmp/recon.json'))
-assert d.get('ok') is True
-print('GP11_RECONSTRUCTION_AUTH_PATH=PASS')
-PY
+          import json
+          d=json.load(open('/tmp/recon.json'))
+          assert d.get('ok') is True
+          print('GP11_RECONSTRUCTION_AUTH_PATH=PASS')
+          PY
       - name: Check QUAL replay auth boundary
         shell: bash
         env:
@@ -857,8 +857,8 @@ PY
           echo "REPLAY_HTTP_STATUS=$STATUS"
           test "$STATUS" = "200" || { cat /tmp/replay.json; exit 1; }
           python3 - <<'PY'
-import json
-d=json.load(open('/tmp/replay.json'))
-assert d.get('ok') is True
-print('GP12_REPLAY_AUTH_PATH=PASS')
-PY
+          import json
+          d=json.load(open('/tmp/replay.json'))
+          assert d.get('ok') is True
+          print('GP12_REPLAY_AUTH_PATH=PASS')
+          PY
