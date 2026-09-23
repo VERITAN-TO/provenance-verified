@@ -21,6 +21,7 @@
 
 // ignore_for_file: avoid_print
 import 'dart:convert';
+import 'dart:math';
 import 'package:test/test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -28,7 +29,7 @@ import 'package:provenance_verified_app/core/config/environment.dart';
 import 'package:provenance_verified_app/core/auth/mobile_token_service.dart';
 import 'package:provenance_verified_app/core/network/api_client.dart';
 
-const _baseUrl = 'https://provenance-verified-private.vercel.app';
+const _baseUrl = Env.pvApiBaseUrl;
 
 // Stable qual subject ID — override via --dart-define if needed.
 const _qualSubjectId = String.fromEnvironment(
@@ -36,26 +37,83 @@ const _qualSubjectId = String.fromEnvironment(
   defaultValue: 'PV-TEST-S1-001',
 );
 
+// Fallback UUID when Env.qualDeviceId is not set (must be a valid UUID).
+const _fallbackIntegrationDeviceId = '00000000-0000-4000-c000-000000000001';
+
+/// Generates a random UUID v4. Used to create per-run device IDs so that
+/// no device accumulates rate-limit hits across consecutive CI runs.
+String _randomUuid() {
+  final rng = Random();
+  final b = List<int>.generate(16, (_) => rng.nextInt(256));
+  b[6] = (b[6] & 0x0f) | 0x40; // version 4
+  b[8] = (b[8] & 0x3f) | 0x80; // variant 1
+  String h(int v) => v.toRadixString(16).padLeft(2, '0');
+  return '${h(b[0])}${h(b[1])}${h(b[2])}${h(b[3])}'
+      '-${h(b[4])}${h(b[5])}'
+      '-${h(b[6])}${h(b[7])}'
+      '-${h(b[8])}${h(b[9])}'
+      '-${h(b[10])}${h(b[11])}${h(b[12])}${h(b[13])}${h(b[14])}${h(b[15])}';
+}
+
+// Per-run unique device IDs — each a fresh UUID so no CI run inherits rate-limit
+// debt from a previous run on the same fixture device.
+final _runBootstrapDeviceId  = _randomUuid(); // setUpAll + MA-01 + MA-06
+final _ma08RateLimitDeviceId = _randomUuid(); // MA-08 rate-limit probe
+final _ma09DeviceId          = _randomUuid(); // MA-09 actionability auth
+
+// Shared bootstrap response — fetched once in setUpAll to avoid multiple
+// bootstrap calls on the same device within a single CI run.
+http.Response? _sharedBootstrapResp;
+
+// UUID format assertion — guards _callBootstrap from emitting non-UUID device_id.
+final _uuidPattern = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+  caseSensitive: false,
+);
+
 /// Calls the real bootstrap endpoint and returns the raw response.
+/// deviceId must be a valid UUID — asserted at runtime. When omitted, uses
+/// Env.qualDeviceId (from PV_QUAL_DEVICE_ID dart-define) or the fallback UUID.
+/// platform defaults to Env.mobilePlatform when set (PV_MOBILE_PLATFORM dart-define),
+/// otherwise 'ios'. This matches the workflow shell probe which sends platform=test in CI.
 Future<http.Response> _callBootstrap({
   required String tenantId,
-  String deviceId = 'test-device-ma-001',
-  String platform = 'ios',
+  String? deviceId,
+  String? platform,
   String appVersion = '3.0.0',
 }) async {
+  final effectivePlatform =
+      platform ?? (Env.mobilePlatform.isNotEmpty ? Env.mobilePlatform : 'ios');
+  final effectiveDeviceId = deviceId ??
+      (Env.qualDeviceId.isNotEmpty ? Env.qualDeviceId : _fallbackIntegrationDeviceId);
+  assert(
+    _uuidPattern.hasMatch(effectiveDeviceId),
+    '_callBootstrap device_id must be a valid UUID; got: $effectiveDeviceId',
+  );
   return http.post(
     Uri.parse('$_baseUrl/api/v1/mobile/token'),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
       'tenant_id':   tenantId,
-      'device_id':   deviceId,
-      'platform':    platform,
+      'device_id':   effectiveDeviceId,
+      'platform':    effectivePlatform,
       'app_version': appVersion,
     }),
   ).timeout(const Duration(seconds: 20));
 }
 
 void main() {
+  // Fetch one shared bootstrap response for MA-01 and MA-06 so those groups
+  // do not each make an independent call on the same device within the same
+  // rate-limit window as the CI shell probe.
+  setUpAll(() async {
+    if (!Env.isConfigured) return;
+    _sharedBootstrapResp = await _callBootstrap(
+      tenantId: Env.pvTenantId,
+      deviceId: _runBootstrapDeviceId,
+    );
+  });
+
   // ── MA-01: VALID_BOOTSTRAP ────────────────────────────────────────────────
 
   group('MA-01: VALID_BOOTSTRAP — enrolled tenant → 201 + valid token', () {
@@ -64,7 +122,7 @@ void main() {
         print('SKIP MA-01: PV_TENANT_ID not set.');
         return;
       }
-      final resp = await _callBootstrap(tenantId: Env.pvTenantId);
+      final resp = _sharedBootstrapResp!;
       expect(
         resp.statusCode,
         anyOf(200, 201),
@@ -83,7 +141,7 @@ void main() {
         print('SKIP MA-01b: PV_TENANT_ID not set.');
         return;
       }
-      final resp = await _callBootstrap(tenantId: Env.pvTenantId);
+      final resp = _sharedBootstrapResp!;
       expect(resp.statusCode, anyOf(200, 201));
       final body       = jsonDecode(resp.body) as Map<String, dynamic>;
       final expiresStr = body['expires_at'] as String?;
@@ -184,7 +242,7 @@ void main() {
         print('SKIP MA-06: PV_TENANT_ID not set.');
         return;
       }
-      final resp = await _callBootstrap(tenantId: Env.pvTenantId);
+      final resp = _sharedBootstrapResp!;
       expect(resp.statusCode, anyOf(200, 201));
       final body   = jsonDecode(resp.body) as Map<String, dynamic>;
       final scopes = (body['scopes'] as List<dynamic>?)?.cast<String>();
@@ -224,8 +282,9 @@ void main() {
         print('SKIP MA-08: PV_TENANT_ID not set.');
         return;
       }
-      // Use a fixed device ID to accumulate rate limit hits.
-      const rateLimitDeviceId = 'rate-limit-test-device-ma08-fixed';
+      // Use a per-run unique device ID so rate-limit state from previous runs
+      // does not carry over. The device is exhausted within this test, intentionally.
+      final rateLimitDeviceId = _ma08RateLimitDeviceId;
       http.Response? lastResponse;
       int attempt = 0;
 
@@ -271,9 +330,12 @@ void main() {
         return;
       }
       // Get a live token via MobileTokenService (mock storage; real bootstrap).
+      // Uses _ma09DeviceId (not the shared probe device) to avoid exhausting the
+      // per-device rate limit window consumed by the CI probe and the setUpAll call.
       final tokenService = MobileTokenService(
         client: http.Client(),
         tenantId: Env.pvTenantId,
+        deviceIdOverride: _ma09DeviceId,
       );
       final token = await tokenService.getToken();
       tokenService.dispose();

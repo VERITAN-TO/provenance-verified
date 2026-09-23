@@ -6,6 +6,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>PROVENANCE VERIFIED needs camera access to scan QR codes on gemstone documentation and certificates.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PROVENANCE VERIFIED needs photo library access to attach gemstone photos to your submission.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>PROVENANCE VERIFIED may save captured gemstone images to your photo library.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>PROVENANCE VERIFIED uses Face ID to protect your reliance receipts.</string>
 	<key>CFBundleURLTypes</key>

@@ -3,20 +3,20 @@
 // MONEY_CONTROLS_TRUST = FALSE
 // CLIENT_CLAIMED_LAB_CONFIRMED = ZERO
 //
-// Payment is a prerequisite to BEGIN processing, not a factor in trust
-// determination.  The selected service tier is a REQUESTED SERVICE.
-// The determined trust tier is set exclusively by the backend after review.
-// Uploading a document does not guarantee any specific trust tier.
+// Determination-first: evidence is submitted and evaluated; tier is determined
+// by evidence and policy; price is derived from the determined tier; payment,
+// if any, is collected only after determination via CustomerSubmissionDetail.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/submit_models.dart';
 import '../providers/submit_provider.dart';
-import '../widgets/service_tier_card.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
-import '../../core/config/environment.dart';
 
 // ---------------------------------------------------------------------------
 // Total wizard steps
@@ -34,8 +34,6 @@ class SubmitScreen extends ConsumerStatefulWidget {
 class _SubmitScreenState extends ConsumerState<SubmitScreen> {
   bool _loading  = false;
   String? _error;
-
-  // Quote fetched in step 4
   SubmissionQuote? _quote;
 
   @override
@@ -45,6 +43,8 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       final draft = ref.read(submitProvider);
       if (draft == null) {
         ref.read(submitProvider.notifier).beginNew();
+      } else if (draft.step >= 4 && _quote == null) {
+        _reloadDetermination();
       }
     });
   }
@@ -64,12 +64,8 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
 
     try {
       switch (draft.step) {
-        case 0: // Service selection → start submission on backend
-          if (draft.selectedTier == null) {
-            _setError('Please select a service tier before continuing.');
-            return;
-          }
-          await notifier.startSubmission();
+        case 0: // Trust ladder education complete → start submission on backend
+          await notifier.startSubmission(); // sets state.step = 1
           break;
 
         case 1: // Asset info → save to backend
@@ -90,31 +86,39 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
           notifier.goToStep(3);
           break;
 
-        case 3: // Declarations → save to backend
+        case 3: // Declarations → save, evaluate, fetch canonical determination → goto 4
           final d = ref.read(submitProvider);
           if (d == null || !d.declarationsComplete) {
             _setError('Please complete all declarations before continuing.');
             return;
           }
           await notifier.saveDeclarations();
-          // Fetch quote immediately for step 4
-          final quote = await notifier.fetchQuote();
-          setState(() => _quote = quote);
+          await notifier.submitForEvaluation();
+          final q = await notifier.fetchQuote();
+          setState(() => _quote = q);
           notifier.goToStep(4);
           break;
 
-        case 4: // Review & Pricing — user taps "Proceed to Payment"
+        case 4: // Determination result reviewed → proceed to settlement
           notifier.goToStep(5);
           break;
 
-        case 5: // Checkout step — handled by button handlers, not here
+        case 5: // Settlement → bind order (FREE/PAID) → goto confirmation
+          await notifier.settleDeterminedResult();
+          notifier.goToStep(6);
           break;
 
         default:
           break;
       }
     } on SubmitApiException catch (e) {
-      _setError('Server error (${e.statusCode}): ${e.message}');
+      if (e.statusCode == 401) {
+        // Terminal auth failure — refresh path exhausted in the API client.
+        // Redirect to sign-in with /submit as the return destination.
+        if (mounted) context.push('/sign-in?from=${Uri.encodeComponent('/submit')}');
+      } else {
+        _setError('Server error (${e.statusCode}): ${e.message}');
+      }
     } catch (e) {
       _setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -128,6 +132,22 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     ref.read(submitProvider.notifier).goToStep(draft.step - 1);
     setState(() => _error = null);
   }
+
+  Future<void> _reloadDetermination() async {
+    _setLoading(true);
+    try {
+      final q = await ref.read(submitProvider.notifier).fetchQuote();
+      if (mounted) setState(() => _quote = q);
+    } on SubmitApiException catch (e) {
+      if (mounted) _setError('Could not reload determination (${e.statusCode}): ${e.message}');
+    } catch (_) {
+      if (mounted) _setError('Could not reload determination result. Please retry.');
+    } finally {
+      if (mounted) _setLoading(false);
+    }
+  }
+
+  Future<void> _refetchQuote() async { await _reloadDetermination(); }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -166,6 +186,10 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
                     child: CircularProgressIndicator(
                       color: PvColors.cyan,
                       strokeWidth: 2,
+                      // R66: async save/evaluate/quote/upload/settlement calls
+                      // all route through this shared indicator — it needs an
+                      // accessible label of its own.
+                      semanticsLabel: 'Processing — please wait',
                     ),
                   )
                 : _buildStep(draft, step),
@@ -177,54 +201,25 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
 
   Widget _buildStep(SubmissionDraft? draft, int step) {
     switch (step) {
-      case 0: return _Step0ServiceSelection(
-                  draft:     draft,
-                  onNext:    _next,
-                  loading:   _loading,
-                );
+      case 0: return _Step0TrustLadder(onNext: _next, loading: _loading);
       case 1: return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
       case 2: return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
       case 3: return _Step3Declarations(draft: draft, onNext: _next, loading: _loading);
-      case 4: return _Step4ReviewPricing(
-                  draft:   draft,
-                  quote:   _quote,
-                  onNext:  _next,
-                  loading: _loading,
-                );
-      case 5: return _Step5Checkout(
-                  draft:      draft,
-                  onComplete: _handleCheckoutComplete,
-                  loading:    _loading,
-                );
+      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _refetchQuote);
+      case 5: return _Step5Settlement(quote: _quote, onNext: _next, loading: _loading);
       case 6: return _Step6Confirmation(draft: draft);
       default: return const SizedBox.shrink();
     }
   }
 
-  Future<void> _handleCheckoutComplete() async {
-    _setLoading(true);
-    _setError(null);
-    try {
-      final isQual = Env.isQualification || Env.isDevelopment;
-      await ref.read(submitProvider.notifier).checkout(testMode: isQual);
-      ref.read(submitProvider.notifier).goToStep(6);
-    } on SubmitApiException catch (e) {
-      _setError('Checkout error (${e.statusCode}): ${e.message}');
-    } catch (e) {
-      _setError('Checkout failed. Please try again.');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   String _stepTitle(int step) {
     const titles = [
-      'SELECT SERVICE',
+      'PV TRUST LADDER',
       'ASSET INFORMATION',
       'EVIDENCE UPLOAD',
       'DECLARATIONS',
-      'REVIEW & PRICING',
-      'CHECKOUT',
+      'DETERMINATION & PRICING',
+      'SETTLEMENT',
       'SUBMISSION CONFIRMED',
     ];
     if (step < titles.length) return titles[step];
@@ -293,24 +288,17 @@ class _ErrorBanner extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Step 0 — Service Selection
+// Step 0 — Trust Ladder Education
 // ────────────────────────────────────────────────────────────────────────────
 
-class _Step0ServiceSelection extends ConsumerWidget {
-  final SubmissionDraft? draft;
+class _Step0TrustLadder extends StatelessWidget {
   final Future<void> Function() onNext;
   final bool loading;
 
-  const _Step0ServiceSelection({
-    required this.draft,
-    required this.onNext,
-    required this.loading,
-  });
+  const _Step0TrustLadder({required this.onNext, required this.loading});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedTier = draft?.selectedTier;
-
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Expanded(
@@ -318,36 +306,94 @@ class _Step0ServiceSelection extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Select Requested Service',
+                'How Trust Determination Works',
                 style: PvTypography.headline.copyWith(color: PvColors.onBackground),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
-                'This is your requested service tier — it is not a guaranteed outcome. '
-                'The trust determination is made exclusively by the PROVENANCE VERIFIED™ '
-                'team after evidence review.',
+                'Your trust tier is determined by the evidence you submit and '
+                'PROVENANCE VERIFIED™ policy. You do not select a tier — '
+                'evidence and policy determine the highest supported tier.',
                 style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               ),
-              const SizedBox(height: 20),
-              ...ServiceTier.values.map(
-                (tier) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ServiceTierCard(
-                    tier:       tier,
-                    isSelected: selectedTier == tier,
-                    onSelect:   () => ref.read(submitProvider.notifier).selectTier(tier),
-                  ),
+              const SizedBox(height: 24),
+              const _TrustTierRow(
+                label: 'T1 — Accountable Existence',
+                description: 'A verified accountable person registers a specific '
+                    'physical subject. Does not prove origin, source, custody '
+                    'history, or provenance. No cost.',
+              ),
+              const SizedBox(height: 12),
+              const _TrustTierRow(
+                label: 'T2 — Accountable Declaration',
+                description: 'A known accountable person makes a bounded '
+                    'declaration supported by documentation. Declaration is '
+                    'not independent verification.',
+              ),
+              const SizedBox(height: 12),
+              const _TrustTierRow(
+                label: 'T3 — Evidence-Established Trust',
+                description: 'Evidence, source authentication, corroboration, '
+                    'contradiction analysis, and qualified review produce a '
+                    'deterministic determination. Limitations are surfaced.',
+              ),
+              const SizedBox(height: 12),
+              // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE
+              const _TrustTierRow(
+                label: 'T4 — Highest Governed Provenance Authority',
+                description: 'Multi-source evidence convergence with physical '
+                    'custody review. Determination alone does not grant the '
+                    'official T4 credential, Gold Seal, certification mark, '
+                    'signing, issuance, or registry activation.',
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: PvColors.surface,
+                  border: Border.all(color: PvColors.border),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Submit your evidence and we will evaluate what tier it supports. '
+                  'Payment, if applicable, is collected only after your tier is determined.',
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                 ),
               ),
             ],
           ),
         ),
-        _BottomBar(
-          onNext: selectedTier != null ? onNext : null,
-          nextLabel: 'Continue',
-          loading: loading,
-        ),
+        _BottomBar(onNext: onNext, nextLabel: 'Begin Submission', loading: loading),
       ],
+    );
+  }
+}
+
+class _TrustTierRow extends StatelessWidget {
+  final String label;
+  final String description;
+  const _TrustTierRow({required this.label, required this.description});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label. $description',
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: PvColors.surface,
+          border: Border.all(color: PvColors.border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: PvTypography.label.copyWith(color: PvColors.cyan)),
+            const SizedBox(height: 4),
+            Text(description, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -513,7 +559,7 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
         _BottomBar(
           onNext: () async {
             _syncToProvider();
-            await onNext();
+            await widget.onNext();
           },
           nextLabel: 'Continue',
           loading: widget.loading,
@@ -524,7 +570,7 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Photo section (file-based; image_picker not in pubspec — placeholder UI)
+// Photo section — image_picker wired; uses ImagePicker.pickImage(gallery)
 // ────────────────────────────────────────────────────────────────────────────
 
 class _PhotoSection extends ConsumerWidget {
@@ -563,19 +609,22 @@ class _PhotoSection extends ConsumerWidget {
                 .toList(),
           ),
         const SizedBox(height: 12),
-        // Note: image_picker is not in pubspec. This button is the integration
-        // point. Add image_picker to pubspec and replace this with picker logic.
         OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Photo capture: add image_picker to pubspec to enable.',
-                  style: TextStyle(color: Colors.white),
-                ),
-                backgroundColor: PvColors.surface,
-              ),
-            );
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              final picker = ImagePicker();
+              final XFile? picked =
+                  await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+              if (picked != null) {
+                ref.read(submitProvider.notifier).addPhoto(picked.path);
+              }
+            } catch (_) {
+              // PlatformException or provider exception — resolve to error UI, not crash.
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Could not access photo library. Please try again.')),
+              );
+            }
           },
           icon: const Icon(Icons.add_a_photo_outlined, size: 18),
           label: const Text('Add Photo'),
@@ -606,7 +655,17 @@ class _PhotoTile extends StatelessWidget {
             border: Border.all(color: PvColors.border),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.image_outlined, color: PvColors.muted, size: 32),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              File(path),
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.broken_image_outlined, color: PvColors.muted, size: 32),
+            ),
+          ),
         ),
         Positioned(
           top: -4,
@@ -658,28 +717,59 @@ class _Step2Evidence extends ConsumerWidget {
               const SizedBox(height: 6),
 
               // Trust-neutrality notice — evidence review is server-authoritative
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: PvColors.surface,
-                  border: Border.all(color: PvColors.border),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Uploaded documents are reviewed by our team. '
-                        'Uploading a document does not guarantee any specific trust tier. '
-                        'Trust determination is made exclusively by PROVENANCE VERIFIED™ '
-                        'after review.',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              Semantics(
+                label: 'Evidence upload policy notice.',
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PvColors.surface,
+                    border: Border.all(color: PvColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Uploaded documents are reviewed by our team. '
+                          'Uploading a document does not guarantee any specific trust tier. '
+                          'Trust determination is made exclusively by PROVENANCE VERIFIED™ '
+                          'after review.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // B delta: SHA-256 identity binding + CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE
+              Semantics(
+                label: 'SHA-256 binding and evidence credit notice.',
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PvColors.surface,
+                    border: Border.all(color: PvColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.fingerprint, color: PvColors.silver, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Documents are SHA-256 fingerprinted at upload. '
+                          'Upload does not automatically credit any trust tier — '
+                          'PROVENANCE VERIFIED™ governs evidence credit independently.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -716,19 +806,30 @@ class _Step2Evidence extends ConsumerWidget {
 
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: () {
-                  // Integration point: add file_picker to pubspec to enable
-                  // real file picking. The backend endpoint accepts multipart
-                  // POST /api/v1/customer/submissions/:id/evidence.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Document upload: add file_picker to pubspec to enable.',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: PvColors.surface,
-                    ),
-                  );
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      allowMultiple: false,
+                      type: FileType.any,
+                    );
+                    if (result != null && result.files.isNotEmpty) {
+                      final file = result.files.first;
+                      final path = file.path;
+                      if (path != null) {
+                        ref.read(submitProvider.notifier).addDocument(EvidenceDocument(
+                          filePath: path,
+                          fileName: file.name,
+                          docType: EvidenceDocumentType.other,
+                        ));
+                      }
+                    }
+                  } catch (_) {
+                    // PlatformException or provider exception — resolve to error UI, not crash.
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Could not access files. Please try again.')),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.attach_file, size: 18),
                 label: const Text('Add Document'),
@@ -867,8 +968,8 @@ class _Step3Declarations extends ConsumerWidget {
                 onChanged: notifier.setDeclaredTierMayDiffer,
                 // Core constraint: client cannot over-claim tier
                 text:      'I understand the determined trust tier may differ from my '
-                           'requested service tier. The final determination is made '
-                           'exclusively by the PROVENANCE VERIFIED™ review team.',
+                           'submitted information. The final determination is made '
+                           'by evidence and PROVENANCE VERIFIED™ policy.',
               ),
               const SizedBox(height: 12),
               _DeclarationCheckbox(
@@ -897,101 +998,193 @@ class _DeclarationCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onChanged(!value),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Checkbox(
-            value: value,
-            onChanged: (v) => onChanged(v ?? false),
-            activeColor: PvColors.cyan,
-            side: const BorderSide(color: PvColors.border),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                text,
-                style: PvTypography.body.copyWith(color: PvColors.onSurface),
+    return Semantics(
+      label: text,
+      checked: value,
+      button: true,
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: (v) => onChanged(v ?? false),
+              activeColor: PvColors.cyan,
+              side: const BorderSide(color: PvColors.border),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  text,
+                  style: PvTypography.body.copyWith(color: PvColors.onSurface),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Step 4 — Review & Pricing
+// Step 4 — Determination & Pricing
 // ────────────────────────────────────────────────────────────────────────────
 
-class _Step4ReviewPricing extends StatelessWidget {
-  final SubmissionDraft? draft;
+class _Step4DeterminationPricing extends StatelessWidget {
   final SubmissionQuote? quote;
   final Future<void> Function() onNext;
   final bool loading;
+  final VoidCallback? onRetry;
 
-  const _Step4ReviewPricing({
-    required this.draft,
+  const _Step4DeterminationPricing({
     required this.quote,
     required this.onNext,
     required this.loading,
+    this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (quote == null) {
+      return Center(
+        child: Semantics(
+          label: 'Determination result not available.',
+          child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.hourglass_empty, color: PvColors.muted, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Determination result not available.',
+                style: TextStyle(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ],
+          ),
+          ),
+        ),
+      );
+    }
+
+    final q = quote!;
+    final tierColor = _tierColor(q.tier);
+    final priceText = q.paymentRequired
+        ? '\$${q.price.toStringAsFixed(2)}'
+        : 'No charge — T1 record';
+
     return Column(
       children: [
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Review & Pricing',
+              Text('Determination Result',
                   style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
               const SizedBox(height: 16),
 
-              // Submission summary
-              if (draft != null) ...[
-                _ReviewRow('Asset', draft!.assetName),
-                _ReviewRow('Type', draft!.assetType),
-                _ReviewRow('Requested Service', draft!.selectedTier?.displayName ?? '—'),
-                const Divider(color: PvColors.border, height: 24),
-              ],
-
-              // Quote
-              if (quote != null) ...[
-                _ReviewRow('Service', quote!.serviceDescription),
-                _ReviewRow(
-                  'Price',
-                  '${quote!.currency} ${quote!.price.toStringAsFixed(2)}',
-                  valueStyle: PvTypography.title.copyWith(color: PvColors.onBackground),
-                ),
-                _ReviewRow(
-                  'Estimated Turnaround',
-                  '${quote!.turnaroundDays} business days',
-                ),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
+              // Tier badge
+              Semantics(
+                label: 'Determined tier: ${q.tier.isEmpty ? 'DETERMINED' : q.tier}',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: PvColors.surface,
+                    color: tierColor.withAlpha(30),
+                    border: Border.all(color: tierColor),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: PvColors.border),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: PvColors.cyan)),
-                      SizedBox(width: 12),
-                      Text('Loading quote…', style: PvTypography.body),
+                      Icon(Icons.verified_outlined, color: tierColor, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        q.tier.isEmpty ? 'DETERMINED' : q.tier,
+                        style: PvTypography.label.copyWith(color: tierColor),
+                      ),
                     ],
                   ),
                 ),
+              ),
+              if (q.tier == 'T4') ...[
+                const SizedBox(height: 10),
+                Semantics(
+                  label: 'T4 authority notice: T4 determination does not issue a Gold Seal or credential.',
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: PvColors.surface,
+                      border: Border.all(color: PvColors.border),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'T4 determination does not itself issue a Gold Seal, '
+                            'signing authority, credential, or registry activation. '
+                            'Gold Seal requires a separate authority chain.',
+                            style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              if (q.whyThisTier != null && q.whyThisTier!.isNotEmpty) ...[
+                _SectionLabel('WHY THIS TIER'),
+                const SizedBox(height: 6),
+                Text(q.whyThisTier!,
+                    style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                const SizedBox(height: 14),
               ],
 
-              const SizedBox(height: 16),
+              if (q.whyNotNextTier != null && q.whyNotNextTier!.isNotEmpty) ...[
+                _SectionLabel('WHY NOT HIGHER'),
+                const SizedBox(height: 6),
+                Text(q.whyNotNextTier!,
+                    style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                const SizedBox(height: 14),
+              ],
+
+              if (q.limitations.isNotEmpty) ...[
+                _SectionLabel('LIMITATIONS'),
+                const SizedBox(height: 6),
+                ...q.limitations.map((l) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('• ', style: PvTypography.body.copyWith(color: PvColors.muted)),
+                          Expanded(
+                            child: Text(l.toString(),
+                                style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 14),
+              ],
+
+              // Server-derived price
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -999,19 +1192,129 @@ class _Step4ReviewPricing extends StatelessWidget {
                   border: Border.all(color: PvColors.border),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  'Payment is required to begin processing your submission. '
-                  'Payment is not a factor in the trust determination — '
-                  'all determinations are made solely by the review team based on evidence.',
-                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('DETERMINATION FEE',
+                        style: PvTypography.label.copyWith(color: PvColors.muted)),
+                    Text(priceText,
+                        style: PvTypography.label.copyWith(color: PvColors.onBackground)),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 12),
+
+              // Settlement-cannot-change-trust notice
+              Text(
+                'Settlement pays for the service but cannot change or strengthen '
+                'this trust determination.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               ),
             ],
           ),
         ),
         _BottomBar(
-          onNext: quote != null ? onNext : null,
-          nextLabel: 'Proceed to Payment',
+          onNext: onNext,
+          nextLabel: 'Continue to Settlement',
+          loading: loading,
+        ),
+      ],
+    );
+  }
+
+  static Color _tierColor(String tier) {
+    switch (tier) {
+      case 'T4': return const Color(0xFFFFD700);
+      case 'T3': return PvColors.cyan;
+      case 'T2': return PvColors.silver;
+      default:   return PvColors.muted;
+    }
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Step 5 — Settlement
+// ────────────────────────────────────────────────────────────────────────────
+
+class _Step5Settlement extends StatelessWidget {
+  final SubmissionQuote? quote;
+  final Future<void> Function() onNext;
+  final bool loading;
+
+  const _Step5Settlement({
+    required this.quote,
+    required this.onNext,
+    required this.loading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final q = quote;
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text('Settlement',
+                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              const SizedBox(height: 8),
+              Text(
+                'Settlement occurs after determination and cannot change or strengthen '
+                'the trust tier assigned to your submission.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+              const SizedBox(height: 20),
+
+              if (q != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: PvColors.surface,
+                    border: Border.all(color: PvColors.border),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ReviewRow('Determined Tier', q.tier.isEmpty ? '—' : q.tier),
+                      _ReviewRow('Fee',
+                          q.paymentRequired
+                              ? '\$${q.price.toStringAsFixed(2)}'
+                              : 'No charge'),
+                      if (!q.paymentRequired) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'T1 registration is free. Tapping "Finalize" binds the record '
+                          'without any payment.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tapping "Proceed to Payment" opens a secure checkout. '
+                          'Return to this screen after payment to finalize your record.',
+                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 16),
+              Text(
+                'T4 determination does not itself issue a Gold Seal, credential, '
+                'signing authority, registry activation, or certification mark.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+            ],
+          ),
+        ),
+        _BottomBar(
+          onNext: onNext,
+          nextLabel: (q?.paymentRequired == true) ? 'Proceed to Payment' : 'Finalize Record',
           loading: loading,
         ),
       ],
@@ -1022,150 +1325,30 @@ class _Step4ReviewPricing extends StatelessWidget {
 class _ReviewRow extends StatelessWidget {
   final String label;
   final String value;
-  final TextStyle? valueStyle;
-  const _ReviewRow(this.label, this.value, {this.valueStyle});
+  const _ReviewRow(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-          const SizedBox(width: 16),
-          Flexible(
-            child: Text(
-              value,
-              style: valueStyle ?? PvTypography.body.copyWith(color: PvColors.onBackground),
-              textAlign: TextAlign.right,
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            const SizedBox(width: 16),
+            Flexible(
+              child: Text(
+                value,
+                style: PvTypography.body.copyWith(color: PvColors.onBackground),
+                textAlign: TextAlign.right,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Step 5 — Checkout
-// ────────────────────────────────────────────────────────────────────────────
-
-class _Step5Checkout extends StatelessWidget {
-  final SubmissionDraft? draft;
-  final Future<void> Function() onComplete;
-  final bool loading;
-
-  const _Step5Checkout({
-    required this.draft,
-    required this.onComplete,
-    required this.loading,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isQual = Env.isQualification || Env.isDevelopment;
-
-    return Column(
-      children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('Checkout',
-                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
-              const SizedBox(height: 16),
-
-              if (isQual) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: PvColors.warning.withAlpha(20),
-                    border: Border.all(color: PvColors.warning),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'TEST MODE — QUALIFICATION ENVIRONMENT',
-                        style: PvTypography.label.copyWith(color: PvColors.warning),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No real payment will be processed. Tap "Test Payment" '
-                        'to simulate a successful payment for testing purposes.',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: PvColors.surface,
-                    border: Border.all(color: PvColors.border),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.payment_outlined, color: PvColors.muted, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Payment Gateway Placeholder',
-                        style: PvTypography.title.copyWith(color: PvColors.silver),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Production: Stripe or approved payment gateway',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Submission ID: ${draft?.submissionId ?? "—"}',
-                        style: PvTypography.mono.copyWith(color: PvColors.muted),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: PvColors.surface,
-                    border: Border.all(color: PvColors.border),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.payment_outlined, color: PvColors.muted, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Payment Gateway',
-                        style: PvTypography.title.copyWith(color: PvColors.silver),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Secure payment processing via approved gateway.',
-                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        _BottomBar(
-          onNext: loading ? null : onComplete,
-          nextLabel: isQual ? 'Test Payment (Simulated)' : 'Complete Payment',
-          loading: loading,
-        ),
-      ],
     );
   }
 }
@@ -1183,7 +1366,10 @@ class _Step6Confirmation extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const Icon(Icons.check_circle, color: PvColors.success, size: 64),
+        Semantics(
+          label: 'Submission confirmed successfully',
+          child: const Icon(Icons.check_circle, color: PvColors.success, size: 64),
+        ),
         const SizedBox(height: 20),
 
         Text(
@@ -1266,7 +1452,7 @@ class _Step6Confirmation extends ConsumerWidget {
           child: OutlinedButton.icon(
             onPressed: () {
               ref.read(submitProvider.notifier).reset();
-              context.go('/home');
+              context.go('/my-pv');
             },
             icon: const Icon(Icons.home_outlined),
             label: const Text('Back to Home'),
@@ -1404,12 +1590,16 @@ class _BottomBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: loading
-                  ? const SizedBox(
+                  // R66: the button's own accessible name (nextLabel) is
+                  // replaced by a bare spinner while loading — give it an
+                  // explicit label so the busy state is still announced.
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.black,
+                        semanticsLabel: '$nextLabel — loading',
                       ),
                     )
                   : Text(nextLabel),

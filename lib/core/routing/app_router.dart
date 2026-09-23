@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../design/pv_colors.dart';
+import '../../design/pv_typography.dart';
+
 // Shell
 import 'main_shell.dart';
 
@@ -29,6 +32,11 @@ import '../../submit/screens/submit_screen.dart';
 
 // Branch 4 — Activity (auth required)
 import '../../activity/screens/activity_screen.dart';
+import '../../activity/screens/submission_detail_screen.dart';
+
+// Professional tools (auth required)
+import '../../professional/screens/professional_batch_screen.dart';
+import '../../professional/screens/professional_inventory_screen.dart';
 
 // Auth screens (no auth required)
 import '../../auth/screens/sign_in_screen.dart';
@@ -42,7 +50,7 @@ const String _sessionKey = 'pv_customer_session';
 const _storage = FlutterSecureStorage();
 
 /// Paths that require the user to be signed in.
-const _protectedPrefixes = ['/my-pv', '/submit', '/activity'];
+const _protectedPrefixes = ['/my-pv', '/submit', '/activity', '/professional'];
 
 Future<bool> _isAuthenticated() async {
   try {
@@ -223,8 +231,51 @@ final GoRouter appRouter = GoRouter(
               path: '/activity',
               name: 'activity',
               builder: (context, state) => const ActivityScreen(),
+              routes: [
+                GoRoute(
+                  path: ':submissionId',
+                  name: 'submission-detail',
+                  builder: (context, state) {
+                    final submissionId =
+                        state.pathParameters['submissionId'] ?? '';
+                    return SubmissionDetailScreen(submissionId: submissionId);
+                  },
+                ),
+              ],
             ),
           ],
+        ),
+      ],
+    ),
+
+    // ------------------------------------------------------------------
+    // Batch verify / tracked records — outside shell, auth required (via
+    // _protectedPrefixes). Gated only by the same generic _isAuthenticated()
+    // check as /my-pv, /submit, /activity — deliberately: no server-authoritative
+    // Professional authorization/entitlement seam exists for this client to
+    // reuse (R65 estate search), so none is fabricated here. These screens are
+    // non-authoritative customer utilities, not an authorized "Professional
+    // mode" or tenant inventory.
+    // PROFESSIONAL_CANNOT_SELECT_TIER — no tier selection, no issuance, no marks.
+    // ------------------------------------------------------------------
+    GoRoute(
+      path: '/professional',
+      name: 'professional',
+      redirect: (_, __) async {
+        final authenticated = await _isAuthenticated();
+        return authenticated ? '/professional/batch' : null;
+      },
+      builder: (context, state) => const ProfessionalBatchScreen(),
+      routes: [
+        GoRoute(
+          path: 'batch',
+          name: 'professional-batch',
+          builder: (context, state) => const ProfessionalBatchScreen(),
+        ),
+        GoRoute(
+          path: 'inventory',
+          name: 'professional-inventory',
+          builder: (context, state) => const ProfessionalInventoryScreen(),
         ),
       ],
     ),
@@ -248,11 +299,37 @@ final GoRouter appRouter = GoRouter(
   ],
 
   errorBuilder: (context, state) => Scaffold(
-    backgroundColor: Colors.transparent,
+    appBar: AppBar(title: const Text('Not Found')),
     body: Center(
-      child: Text(
-        'Page not found: ${state.uri}',
-        style: const TextStyle(color: Colors.white70),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off, color: PvColors.muted, size: 48),
+            const SizedBox(height: 16),
+            const Text('Page not found', style: PvTypography.title),
+            const SizedBox(height: 8),
+            Semantics(
+              label: 'Unknown route: ${state.uri}',
+              child: Text(
+                '${state.uri}',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.go('/verify'),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Go to Verify'),
+              style: FilledButton.styleFrom(
+                backgroundColor: PvColors.cyan,
+                foregroundColor: Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   ),

@@ -22,8 +22,8 @@ class _ActivityApiClient {
     required Future<String?> Function() refreshToken,
   })  : _client = client ?? http.Client(),
         _baseUrl = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _getToken = getToken,
-        _refreshToken = refreshToken;
+        _getToken = getToken, // ignore: prefer_initializing_formals
+        _refreshToken = refreshToken; // ignore: prefer_initializing_formals
 
   Future<Map<String, String>> _authHeaders() async {
     final token = _getToken();
@@ -77,6 +77,11 @@ class _ActivityApiClient {
       final raw = jsonDecode(res.body) as Map<String, dynamic>;
       final data = (raw['data'] as Map<String, dynamic>?) ?? raw;
       return SubmissionDetail.fromJson(data);
+    }
+    if (res.statusCode == 503) {
+      // Determination authority is temporarily unavailable. Must not silently
+      // downgrade to a null/unknown determination — surface the exact state.
+      throw const SubmitApiException(503, 'DETERMINATION_AUTHORITY_UNAVAILABLE: The trust determination authority is temporarily unavailable. Prior determination data has not changed. Please retry.');
     }
     final err = _parseError(res);
     throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'Could not load submission');
