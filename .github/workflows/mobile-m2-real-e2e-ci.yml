@@ -3,7 +3,7 @@ name: M2 Real E2E CI
 on:
   workflow_dispatch:
   push:
-    branches: ['mobile/m2-real-e2e', 'successor/m4-determination-first-r2']
+    branches: ['mobile/m2-real-e2e', 'successor/m4-determination-first-r2', 'cto/gp-credential-path-20260923']
 
 env:
   FLUTTER_VERSION: '3.47.2'
