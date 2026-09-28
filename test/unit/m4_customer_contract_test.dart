@@ -1994,5 +1994,76 @@ void main() {
       expect(coord, contains('launchClaimantIdentityVerification()'),
           reason: 'launchClaimantIdentityVerification must be present in coordinator for UI to call');
     });
+
+    test('PI-7: ClaimantIdentityStatus parser only treats status==VERIFIED as verified (PENDING/FAILED blocked)', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
+      // Scope check to ClaimantIdentityStatus class only — coordinator also holds payment-status
+      // strings ('PENDING') unrelated to identity, so narrowing avoids false matches.
+      final classStart = coord.indexOf('class ClaimantIdentityStatus');
+      final classEnd   = coord.indexOf('class CanonicalOrderResult');
+      expect(classStart, isNot(-1), reason: 'ClaimantIdentityStatus must be present');
+      expect(classEnd,   isNot(-1), reason: 'CanonicalOrderResult must follow it');
+      final identityClass = coord.substring(classStart, classEnd);
+      expect(identityClass, contains("data['status'] == 'VERIFIED'"),
+          reason: 'VERIFIED must be the sole status-string that gates verified=true in parser');
+      expect(identityClass, isNot(contains("'PENDING'")),
+          reason: 'PENDING must not be aliased as a verified state in ClaimantIdentityStatus');
+      expect(identityClass, isNot(contains("'FAILED'")),
+          reason: 'FAILED must not be aliased as a verified state in ClaimantIdentityStatus');
+    });
+
+    test('PI-8: REQUIRES_INPUT and EXPIRED not aliased as verified in ClaimantIdentityStatus', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
+      final classStart = coord.indexOf('class ClaimantIdentityStatus');
+      final classEnd   = coord.indexOf('class CanonicalOrderResult');
+      final identityClass = coord.substring(classStart, classEnd);
+      expect(identityClass, isNot(contains("'REQUIRES_INPUT'")),
+          reason: 'REQUIRES_INPUT must not appear as a verified-state alias in ClaimantIdentityStatus');
+      expect(identityClass, isNot(contains("'EXPIRED'")),
+          reason: 'EXPIRED must not appear as a verified-state alias in ClaimantIdentityStatus');
+    });
+
+    test('PI-9: step 0 gate uses idStatus.verified (bool) — all non-VERIFIED statuses blocked', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // The gate must use the boolean .verified property produced by the parser,
+      // not a raw string comparison, so PENDING/FAILED/REQUIRES_INPUT/EXPIRED are all blocked.
+      expect(screen, contains('idStatus.verified'),
+          reason: 'step 0 gate must check idStatus.verified (bool), blocking all non-VERIFIED statuses');
+      expect(screen, isNot(contains("idStatus.status == 'VERIFIED'")),
+          reason: 'gate must not bypass the parser with a direct status-string comparison');
+    });
+
+    test('PI-10: ensureClaimantIdentity throws 428 for verified=false (defence-in-depth for all negative states)', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
+      // ensureClaimantIdentity: if (status.verified) return status;
+      //                          throw const SubmitApiException(428, ...);
+      // Any non-verified status (PENDING, FAILED, REQUIRES_INPUT, EXPIRED) hits the throw.
+      expect(coord, contains('if (status.verified) return status'),
+          reason: 'ensureClaimantIdentity must short-circuit only on verified=true');
+      final throwPos         = coord.indexOf('throw const SubmitApiException(428');
+      expect(throwPos, isNot(-1),
+          reason: 'ensureClaimantIdentity must throw 428 for non-verified claimant');
+      final verifiedCheckPos = coord.indexOf('if (status.verified)');
+      expect(verifiedCheckPos, lessThan(throwPos),
+          reason: '428 throw must follow the verified check, not precede it');
+    });
+
+    test('PI-11: no bypass path or wrong-principal shortcut in submit_screen or submit_provider', () {
+      final screen   = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      // Coordinator must be obtained via Riverpod (auth-bound bearer token).
+      // A wrong-principal would supply their own token and get their own (unverified) status.
+      expect(screen, contains('ref.read(paymentCoordinatorProvider)'),
+          reason: 'coordinator must be injected via Riverpod (auth-bound), not constructed ad-hoc');
+      // No bypass flags must be present.
+      expect(screen,   isNot(contains('bypassIdentityCheck')),
+          reason: 'no identity-check bypass flag must exist in submit_screen');
+      expect(provider, isNot(contains('bypassIdentityCheck')),
+          reason: 'no identity-check bypass flag must exist in submit_provider');
+      final providerStartPos = provider.indexOf('Future<void> startSubmission()');
+      expect(providerStartPos, isNot(-1),
+          reason: 'startSubmission() must remain in provider as the server-call wrapper');
+    });
+
   });
 }
