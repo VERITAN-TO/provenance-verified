@@ -116,7 +116,8 @@ env:
   #   run was flutter analyze's unnecessary_cast, fixed in 147e5f316 — not a test failure).
   # M2-50-06 (C64-1..C64-5) adds 5 tests. Confirmed 375 from CI run 35542197695 on b0f4ade4.
   # R17/R18 (PI-1..PI-6) adds 6 tests (pre-intake identity parity). Count: 375 + 6 = 381.
-  EXPECTED_M2_UNIT_COUNT: '381'
+  # R29 (19bd9c1) dart-format compliance + format-agnostic static assertions adds 5 tests. Count: 381 + 5 = 386.
+  EXPECTED_M2_UNIT_COUNT: '386'
 
 jobs:
   linux-android:
