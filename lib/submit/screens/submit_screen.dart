@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/submit_models.dart';
+import '../providers/payment_coordinator.dart';
 import '../providers/submit_provider.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
@@ -65,6 +66,17 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
     try {
       switch (draft.step) {
         case 0: // Trust ladder education complete → start submission on backend
+          // Pre-check identity: server enforces VERIFIED_HUMAN_CLAIMANT at intake START.
+          final coord = ref.read(paymentCoordinatorProvider);
+          final idStatus = await coord.claimantIdentityStatus();
+          if (!idStatus.verified) {
+            final launched = await coord.launchClaimantIdentityVerification();
+            _setError(launched
+                ? 'Government-ID and selfie verification is required before starting a submission. '
+                  'Complete verification in your browser, then return and tap "Begin Submission" again.'
+                : 'Identity verification required. Please complete your government-ID verification and return.');
+            return;
+          }
           await notifier.startSubmission(); // sets state.step = 1
           break;
 
@@ -116,6 +128,19 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
         // Terminal auth failure — refresh path exhausted in the API client.
         // Redirect to sign-in with /submit as the return destination.
         if (mounted) context.push('/sign-in?from=${Uri.encodeComponent('/submit')}');
+      } else if (e.statusCode == 428) {
+        // CLAIMANT_IDENTITY_REQUIRED — server rejected because identity is not verified.
+        // Route to identity verification rather than showing a generic error string.
+        try {
+          final coord = ref.read(paymentCoordinatorProvider);
+          final launched = await coord.launchClaimantIdentityVerification();
+          _setError(launched
+              ? 'Government-ID and selfie verification is required. '
+                'Complete verification in your browser, then return and try again.'
+              : 'Identity verification required. Please complete your government-ID verification and return.');
+        } catch (_) {
+          _setError('Government-ID and selfie verification is required before continuing.');
+        }
       } else {
         _setError('Server error (${e.statusCode}): ${e.message}');
       }

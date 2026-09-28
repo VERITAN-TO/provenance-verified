@@ -1934,4 +1934,65 @@ void main() {
       expect(screen, contains("message: 'Check your connection and retry.'"));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // R17 Pre-Intake Identity Parity
+  // VERIFIED_HUMAN_CLAIMANT_REQUIRED=TRUE at intake START.
+  // Server enforces requireVerifiedClaimantIdentity at all 5 intake mutation
+  // endpoints. Flutter must pre-check at step 0 and route 428s to identity
+  // verification rather than generic error copy.
+  // ---------------------------------------------------------------------------
+  group('R17 Pre-Intake Identity Parity', () {
+    test('PI-1: submit_screen imports payment_coordinator (identity coordinator wired)', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      expect(screen, contains("import '../providers/payment_coordinator.dart'"),
+          reason: 'submit_screen must import payment_coordinator to access identity verification');
+    });
+
+    test('PI-2: step 0 pre-checks claimantIdentityStatus before startSubmission', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final identityCheckPos = screen.indexOf('claimantIdentityStatus()');
+      final startPos         = screen.indexOf('startSubmission()');
+      expect(identityCheckPos, isNot(-1),
+          reason: 'claimantIdentityStatus() must be called in submit_screen (step 0 pre-check)');
+      expect(startPos, isNot(-1),
+          reason: 'startSubmission() must still be present');
+      expect(identityCheckPos, lessThan(startPos),
+          reason: 'identity pre-check must precede startSubmission() — server enforces VERIFIED_HUMAN at intake START');
+    });
+
+    test('PI-3: launchClaimantIdentityVerification is called when identity not verified', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      expect(screen, contains('launchClaimantIdentityVerification()'),
+          reason: 'submit_screen must route unverified users to identity verification, not only set error');
+    });
+
+    test('PI-4: 428 catch handler routes to identity verification, not generic error copy', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final catch428Pos = screen.indexOf('e.statusCode == 428');
+      expect(catch428Pos, isNot(-1),
+          reason: '428 must be handled as a distinct case (not folded into generic error)');
+      final launchAfter428 = screen.indexOf('launchClaimantIdentityVerification', catch428Pos);
+      expect(launchAfter428, isNot(-1),
+          reason: 'launchClaimantIdentityVerification must be called in the 428 handler');
+    });
+
+    test('PI-5: 428 user-visible copy never exposes internal status code or CLAIMANT_IDENTITY_REQUIRED token', () {
+      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      // Strip line comments so the check targets runtime-reachable strings, not inline documentation.
+      final nonComment = _stripLineComments(screen);
+      expect(nonComment, isNot(contains('Server error (428)')),
+          reason: 'CLAIMANT_IDENTITY_REQUIRED must not surface as "Server error (428)" to the user');
+      expect(nonComment, isNot(contains('CLAIMANT_IDENTITY_REQUIRED')),
+          reason: 'internal server error code must not appear in user-visible copy');
+    });
+
+    test('PI-6: payment_coordinator exposes ensureClaimantIdentity and launchClaimantIdentityVerification', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
+      expect(coord, contains('ensureClaimantIdentity()'),
+          reason: 'ensureClaimantIdentity must remain in coordinator');
+      expect(coord, contains('launchClaimantIdentityVerification()'),
+          reason: 'launchClaimantIdentityVerification must be present in coordinator for UI to call');
+    });
+  });
 }
