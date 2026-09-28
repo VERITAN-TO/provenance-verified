@@ -68,14 +68,14 @@ void main() {
       final record = _makeRecord(eligible: true, qualState: QualificationState.qualified, tier: 1);
       await tester.pumpWidget(_wrap(TrustBadge(record: record)));
 
-      expect(find.text('T1 ASSET FINGERPRINT'), findsOneWidget);
+      expect(find.text('T1 — ACCOUNTABLE EXISTENCE'), findsOneWidget);
     });
 
     testWidgets('T4 Gold shows correct label', (tester) async {
       final record = _makeRecord(eligible: true, qualState: QualificationState.qualified, tier: 4);
       await tester.pumpWidget(_wrap(TrustBadge(record: record)));
 
-      expect(find.text('T4 GOLD STANDARD'), findsOneWidget);
+      expect(find.text('T4 — GOVERNED AUTHORITY'), findsOneWidget);
     });
 
     testWidgets('record with material conflict shows MATERIAL CONFLICT indicator', (tester) async {
