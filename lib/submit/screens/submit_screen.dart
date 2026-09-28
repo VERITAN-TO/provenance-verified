@@ -8,11 +8,13 @@
 // if any, is collected only after determination via CustomerSubmissionDetail.
 
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+
 import '../models/submit_models.dart';
 import '../providers/payment_coordinator.dart';
 import '../providers/submit_provider.dart';
@@ -33,7 +35,7 @@ class SubmitScreen extends ConsumerStatefulWidget {
 }
 
 class _SubmitScreenState extends ConsumerState<SubmitScreen> {
-  bool _loading  = false;
+  bool _loading = false;
   String? _error;
   SubmissionQuote? _quote;
 
@@ -53,11 +55,14 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
   // ── Navigation helpers ────────────────────────────────────────────────────
 
   void _setError(String? msg) => setState(() => _error = msg);
-  void _setLoading(bool v)    => setState(() { _loading = v; if (v) _error = null; });
+  void _setLoading(bool v) => setState(() {
+    _loading = v;
+    if (v) _error = null;
+  });
 
   Future<void> _next() async {
     final notifier = ref.read(submitProvider.notifier);
-    final draft    = ref.read(submitProvider);
+    final draft = ref.read(submitProvider);
     if (draft == null) return;
 
     _setLoading(true);
@@ -71,10 +76,12 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
           final idStatus = await coord.claimantIdentityStatus();
           if (!idStatus.verified) {
             final launched = await coord.launchClaimantIdentityVerification();
-            _setError(launched
-                ? 'Government-ID and selfie verification is required before starting a submission. '
-                  'Complete verification in your browser, then return and tap "Begin Submission" again.'
-                : 'Identity verification required. Please complete your government-ID verification and return.');
+            _setError(
+              launched
+                  ? 'Government-ID and selfie verification is required before starting a submission. '
+                        'Complete verification in your browser, then return and tap "Begin Submission" again.'
+                  : 'Identity verification required. Please complete your government-ID verification and return.',
+            );
             return;
           }
           await notifier.startSubmission(); // sets state.step = 1
@@ -127,19 +134,24 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       if (e.statusCode == 401) {
         // Terminal auth failure — refresh path exhausted in the API client.
         // Redirect to sign-in with /submit as the return destination.
-        if (mounted) context.push('/sign-in?from=${Uri.encodeComponent('/submit')}');
+        if (mounted)
+          context.push('/sign-in?from=${Uri.encodeComponent('/submit')}');
       } else if (e.statusCode == 428) {
         // CLAIMANT_IDENTITY_REQUIRED — server rejected because identity is not verified.
         // Route to identity verification rather than showing a generic error string.
         try {
           final coord = ref.read(paymentCoordinatorProvider);
           final launched = await coord.launchClaimantIdentityVerification();
-          _setError(launched
-              ? 'Government-ID and selfie verification is required. '
-                'Complete verification in your browser, then return and try again.'
-              : 'Identity verification required. Please complete your government-ID verification and return.');
+          _setError(
+            launched
+                ? 'Government-ID and selfie verification is required. '
+                      'Complete verification in your browser, then return and try again.'
+                : 'Identity verification required. Please complete your government-ID verification and return.',
+          );
         } catch (_) {
-          _setError('Government-ID and selfie verification is required before continuing.');
+          _setError(
+            'Government-ID and selfie verification is required before continuing.',
+          );
         }
       } else {
         _setError('Server error (${e.statusCode}): ${e.message}');
@@ -164,22 +176,28 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       final q = await ref.read(submitProvider.notifier).fetchQuote();
       if (mounted) setState(() => _quote = q);
     } on SubmitApiException catch (e) {
-      if (mounted) _setError('Could not reload determination (${e.statusCode}): ${e.message}');
+      if (mounted)
+        _setError(
+          'Could not reload determination (${e.statusCode}): ${e.message}',
+        );
     } catch (_) {
-      if (mounted) _setError('Could not reload determination result. Please retry.');
+      if (mounted)
+        _setError('Could not reload determination result. Please retry.');
     } finally {
       if (mounted) _setLoading(false);
     }
   }
 
-  Future<void> _refetchQuote() async { await _reloadDetermination(); }
+  Future<void> _refetchQuote() async {
+    await _reloadDetermination();
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(submitProvider);
-    final step  = draft?.step ?? 0;
+    final step = draft?.step ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -226,14 +244,35 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
 
   Widget _buildStep(SubmissionDraft? draft, int step) {
     switch (step) {
-      case 0: return _Step0TrustLadder(onNext: _next, loading: _loading);
-      case 1: return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
-      case 2: return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
-      case 3: return _Step3Declarations(draft: draft, onNext: _next, loading: _loading);
-      case 4: return _Step4DeterminationPricing(quote: _quote, onNext: _next, loading: _loading, onRetry: _refetchQuote);
-      case 5: return _Step5Settlement(quote: _quote, onNext: _next, loading: _loading);
-      case 6: return _Step6Confirmation(draft: draft);
-      default: return const SizedBox.shrink();
+      case 0:
+        return _Step0TrustLadder(onNext: _next, loading: _loading);
+      case 1:
+        return _Step1AssetInfo(draft: draft, onNext: _next, loading: _loading);
+      case 2:
+        return _Step2Evidence(draft: draft, onNext: _next, loading: _loading);
+      case 3:
+        return _Step3Declarations(
+          draft: draft,
+          onNext: _next,
+          loading: _loading,
+        );
+      case 4:
+        return _Step4DeterminationPricing(
+          quote: _quote,
+          onNext: _next,
+          loading: _loading,
+          onRetry: _refetchQuote,
+        );
+      case 5:
+        return _Step5Settlement(
+          quote: _quote,
+          onNext: _next,
+          loading: _loading,
+        );
+      case 6:
+        return _Step6Confirmation(draft: draft);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
@@ -332,7 +371,9 @@ class _Step0TrustLadder extends StatelessWidget {
             children: [
               Text(
                 'How Trust Determination Works',
-                style: PvTypography.headline.copyWith(color: PvColors.onBackground),
+                style: PvTypography.headline.copyWith(
+                  color: PvColors.onBackground,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -344,21 +385,24 @@ class _Step0TrustLadder extends StatelessWidget {
               const SizedBox(height: 24),
               const _TrustTierRow(
                 label: 'T1 — Accountable Existence',
-                description: 'A verified accountable person registers a specific '
+                description:
+                    'A verified accountable person registers a specific '
                     'physical subject. Does not prove origin, source, custody '
                     'history, or provenance. No cost.',
               ),
               const SizedBox(height: 12),
               const _TrustTierRow(
                 label: 'T2 — Accountable Declaration',
-                description: 'A known accountable person makes a bounded '
+                description:
+                    'A known accountable person makes a bounded '
                     'declaration supported by documentation. Declaration is '
                     'not independent verification.',
               ),
               const SizedBox(height: 12),
               const _TrustTierRow(
                 label: 'T3 — Evidence-Established Trust',
-                description: 'Evidence, source authentication, corroboration, '
+                description:
+                    'Evidence, source authentication, corroboration, '
                     'contradiction analysis, and qualified review produce a '
                     'deterministic determination. Limitations are surfaced.',
               ),
@@ -366,7 +410,8 @@ class _Step0TrustLadder extends StatelessWidget {
               // T4_DETERMINATION_IS_OFFICIAL_T4=FALSE
               const _TrustTierRow(
                 label: 'T4 — Highest Governed Provenance Authority',
-                description: 'Multi-source evidence convergence with physical '
+                description:
+                    'Multi-source evidence convergence with physical '
                     'custody review. Determination alone does not grant the '
                     'official T4 credential, Gold Seal, certification mark, '
                     'signing, issuance, or registry activation.',
@@ -388,7 +433,11 @@ class _Step0TrustLadder extends StatelessWidget {
             ],
           ),
         ),
-        _BottomBar(onNext: onNext, nextLabel: 'Begin Submission', loading: loading),
+        _BottomBar(
+          onNext: onNext,
+          nextLabel: 'Begin Submission',
+          loading: loading,
+        ),
       ],
     );
   }
@@ -413,9 +462,15 @@ class _TrustTierRow extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: PvTypography.label.copyWith(color: PvColors.cyan)),
+            Text(
+              label,
+              style: PvTypography.label.copyWith(color: PvColors.cyan),
+            ),
             const SizedBox(height: 4),
-            Text(description, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            Text(
+              description,
+              style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+            ),
           ],
         ),
       ),
@@ -465,15 +520,15 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
   @override
   void initState() {
     super.initState();
-    final d    = widget.draft;
+    final d = widget.draft;
     final attrs = d?.gemstoneAttributes ?? const GemstoneAttributes();
-    _nameCtrl         = TextEditingController(text: d?.assetName ?? '');
-    _speciesCtrl      = TextEditingController(text: attrs.species);
-    _varietyCtrl      = TextEditingController(text: attrs.variety);
-    _weightCtrl       = TextEditingController(text: attrs.weight);
-    _dimensionsCtrl   = TextEditingController(text: attrs.dimensions);
-    _originCtrl       = TextEditingController(text: attrs.origin);
-    _treatmentsCtrl   = TextEditingController(text: attrs.treatments);
+    _nameCtrl = TextEditingController(text: d?.assetName ?? '');
+    _speciesCtrl = TextEditingController(text: attrs.species);
+    _varietyCtrl = TextEditingController(text: attrs.variety);
+    _weightCtrl = TextEditingController(text: attrs.weight);
+    _dimensionsCtrl = TextEditingController(text: attrs.dimensions);
+    _originCtrl = TextEditingController(text: attrs.origin);
+    _treatmentsCtrl = TextEditingController(text: attrs.treatments);
     _selectedAssetType = d?.assetType.isEmpty == true ? null : d?.assetType;
   }
 
@@ -493,14 +548,16 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
     final notifier = ref.read(submitProvider.notifier);
     notifier.updateAssetName(_nameCtrl.text.trim());
     notifier.updateAssetType(_selectedAssetType ?? '');
-    notifier.updateGemstoneAttributes(GemstoneAttributes(
-      species:    _speciesCtrl.text.trim(),
-      variety:    _varietyCtrl.text.trim(),
-      weight:     _weightCtrl.text.trim(),
-      dimensions: _dimensionsCtrl.text.trim(),
-      origin:     _originCtrl.text.trim(),
-      treatments: _treatmentsCtrl.text.trim(),
-    ));
+    notifier.updateGemstoneAttributes(
+      GemstoneAttributes(
+        species: _speciesCtrl.text.trim(),
+        variety: _varietyCtrl.text.trim(),
+        weight: _weightCtrl.text.trim(),
+        dimensions: _dimensionsCtrl.text.trim(),
+        origin: _originCtrl.text.trim(),
+        treatments: _treatmentsCtrl.text.trim(),
+      ),
+    );
   }
 
   @override
@@ -511,8 +568,12 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Asset Information',
-                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              Text(
+                'Asset Information',
+                style: PvTypography.headline.copyWith(
+                  color: PvColors.onBackground,
+                ),
+              ),
               const SizedBox(height: 16),
 
               _PvTextField(
@@ -536,11 +597,15 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _selectedAssetType,
-                    hint: Text('Select type',
-                        style: PvTypography.body.copyWith(color: PvColors.muted)),
+                    hint: Text(
+                      'Select type',
+                      style: PvTypography.body.copyWith(color: PvColors.muted),
+                    ),
                     isExpanded: true,
                     dropdownColor: PvColors.surfaceElevated,
-                    style: PvTypography.body.copyWith(color: PvColors.onSurface),
+                    style: PvTypography.body.copyWith(
+                      color: PvColors.onSurface,
+                    ),
                     onChanged: (v) => setState(() => _selectedAssetType = v),
                     items: _assetTypes
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -557,18 +622,41 @@ class _Step1AssetInfoState extends ConsumerState<_Step1AssetInfo> {
               ),
               const SizedBox(height: 12),
 
-              _PvTextField(controller: _speciesCtrl,    label: 'Species',    hint: 'e.g. Corundum'),
+              _PvTextField(
+                controller: _speciesCtrl,
+                label: 'Species',
+                hint: 'e.g. Corundum',
+              ),
               const SizedBox(height: 12),
-              _PvTextField(controller: _varietyCtrl,    label: 'Variety',    hint: 'e.g. Ruby'),
+              _PvTextField(
+                controller: _varietyCtrl,
+                label: 'Variety',
+                hint: 'e.g. Ruby',
+              ),
               const SizedBox(height: 12),
-              _PvTextField(controller: _weightCtrl,     label: 'Weight',     hint: 'e.g. 3.45 ct'),
+              _PvTextField(
+                controller: _weightCtrl,
+                label: 'Weight',
+                hint: 'e.g. 3.45 ct',
+              ),
               const SizedBox(height: 12),
-              _PvTextField(controller: _dimensionsCtrl, label: 'Dimensions', hint: 'e.g. 9.2 × 7.1 × 4.3 mm'),
+              _PvTextField(
+                controller: _dimensionsCtrl,
+                label: 'Dimensions',
+                hint: 'e.g. 9.2 × 7.1 × 4.3 mm',
+              ),
               const SizedBox(height: 12),
-              _PvTextField(controller: _originCtrl,     label: 'Declared Origin', hint: 'e.g. Mogok, Myanmar (declared)'),
+              _PvTextField(
+                controller: _originCtrl,
+                label: 'Declared Origin',
+                hint: 'e.g. Mogok, Myanmar (declared)',
+              ),
               const SizedBox(height: 12),
-              _PvTextField(controller: _treatmentsCtrl, label: 'Declared Treatments',
-                  hint: 'e.g. None declared, or Heat treated (declared)'),
+              _PvTextField(
+                controller: _treatmentsCtrl,
+                label: 'Declared Treatments',
+                hint: 'e.g. None declared, or Heat treated (declared)',
+              ),
 
               const SizedBox(height: 20),
               _SectionLabel('PHOTOS'),
@@ -610,15 +698,24 @@ class _PhotoSection extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              border: Border.all(color: PvColors.border, style: BorderStyle.solid),
+              border: Border.all(
+                color: PvColors.border,
+                style: BorderStyle.solid,
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               children: [
-                const Icon(Icons.camera_alt_outlined, color: PvColors.muted, size: 32),
+                const Icon(
+                  Icons.camera_alt_outlined,
+                  color: PvColors.muted,
+                  size: 32,
+                ),
                 const SizedBox(height: 8),
-                Text('No photos added',
-                    style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+                Text(
+                  'No photos added',
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                ),
               ],
             ),
           )
@@ -627,10 +724,13 @@ class _PhotoSection extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: photoPaths
-                .map((p) => _PhotoTile(
-                      path: p,
-                      onRemove: () => ref.read(submitProvider.notifier).removePhoto(p),
-                    ))
+                .map(
+                  (p) => _PhotoTile(
+                    path: p,
+                    onRemove: () =>
+                        ref.read(submitProvider.notifier).removePhoto(p),
+                  ),
+                )
                 .toList(),
           ),
         const SizedBox(height: 12),
@@ -639,15 +739,21 @@ class _PhotoSection extends ConsumerWidget {
             final messenger = ScaffoldMessenger.of(context);
             try {
               final picker = ImagePicker();
-              final XFile? picked =
-                  await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+              final XFile? picked = await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 90,
+              );
               if (picked != null) {
                 ref.read(submitProvider.notifier).addPhoto(picked.path);
               }
             } catch (_) {
               // PlatformException or provider exception — resolve to error UI, not crash.
               messenger.showSnackBar(
-                const SnackBar(content: Text('Could not access photo library. Please try again.')),
+                const SnackBar(
+                  content: Text(
+                    'Could not access photo library. Please try again.',
+                  ),
+                ),
               );
             }
           },
@@ -687,8 +793,11 @@ class _PhotoTile extends StatelessWidget {
               width: 80,
               height: 80,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.broken_image_outlined, color: PvColors.muted, size: 32),
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_outlined,
+                color: PvColors.muted,
+                size: 32,
+              ),
             ),
           ),
         ),
@@ -737,8 +846,12 @@ class _Step2Evidence extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Evidence Upload',
-                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              Text(
+                'Evidence Upload',
+                style: PvTypography.headline.copyWith(
+                  color: PvColors.onBackground,
+                ),
+              ),
               const SizedBox(height: 6),
 
               // Trust-neutrality notice — evidence review is server-authoritative
@@ -754,7 +867,11 @@ class _Step2Evidence extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
+                      const Icon(
+                        Icons.info_outline,
+                        color: PvColors.silver,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -762,7 +879,9 @@ class _Step2Evidence extends ConsumerWidget {
                           'Uploading a document does not guarantee any specific trust tier. '
                           'Trust determination is made exclusively by PROVENANCE VERIFIED™ '
                           'after review.',
-                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                          style: PvTypography.bodySmall.copyWith(
+                            color: PvColors.muted,
+                          ),
                         ),
                       ),
                     ],
@@ -783,14 +902,20 @@ class _Step2Evidence extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.fingerprint, color: PvColors.silver, size: 16),
+                      const Icon(
+                        Icons.fingerprint,
+                        color: PvColors.silver,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Documents are SHA-256 fingerprinted at upload. '
                           'Upload does not automatically credit any trust tier — '
                           'PROVENANCE VERIFIED™ governs evidence credit independently.',
-                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                          style: PvTypography.bodySmall.copyWith(
+                            color: PvColors.muted,
+                          ),
                         ),
                       ),
                     ],
@@ -809,25 +934,37 @@ class _Step2Evidence extends ConsumerWidget {
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.upload_file_outlined, color: PvColors.muted, size: 32),
+                      const Icon(
+                        Icons.upload_file_outlined,
+                        color: PvColors.muted,
+                        size: 32,
+                      ),
                       const SizedBox(height: 8),
-                      Text('No documents added',
-                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+                      Text(
+                        'No documents added',
+                        style: PvTypography.bodySmall.copyWith(
+                          color: PvColors.muted,
+                        ),
+                      ),
                     ],
                   ),
                 )
               else
                 ...documents.asMap().entries.map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _DocumentTile(
-                          doc:      e.value,
-                          index:    e.key,
-                          onRemove: () => ref.read(submitProvider.notifier).removeDocument(e.key),
-                          onTypeChanged: (t) => ref.read(submitProvider.notifier).updateDocumentType(e.key, t),
-                        ),
-                      ),
+                  (e) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _DocumentTile(
+                      doc: e.value,
+                      index: e.key,
+                      onRemove: () => ref
+                          .read(submitProvider.notifier)
+                          .removeDocument(e.key),
+                      onTypeChanged: (t) => ref
+                          .read(submitProvider.notifier)
+                          .updateDocumentType(e.key, t),
                     ),
+                  ),
+                ),
 
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -842,17 +979,25 @@ class _Step2Evidence extends ConsumerWidget {
                       final file = result.files.first;
                       final path = file.path;
                       if (path != null) {
-                        ref.read(submitProvider.notifier).addDocument(EvidenceDocument(
-                          filePath: path,
-                          fileName: file.name,
-                          docType: EvidenceDocumentType.other,
-                        ));
+                        ref
+                            .read(submitProvider.notifier)
+                            .addDocument(
+                              EvidenceDocument(
+                                filePath: path,
+                                fileName: file.name,
+                                docType: EvidenceDocumentType.other,
+                              ),
+                            );
                       }
                     }
                   } catch (_) {
                     // PlatformException or provider exception — resolve to error UI, not crash.
                     messenger.showSnackBar(
-                      const SnackBar(content: Text('Could not access files. Please try again.')),
+                      const SnackBar(
+                        content: Text(
+                          'Could not access files. Please try again.',
+                        ),
+                      ),
                     );
                   }
                 },
@@ -904,29 +1049,43 @@ class _DocumentTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.description_outlined, color: PvColors.silver, size: 20),
+          const Icon(
+            Icons.description_outlined,
+            color: PvColors.silver,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(doc.fileName,
-                    style: PvTypography.body.copyWith(color: PvColors.onBackground),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  doc.fileName,
+                  style: PvTypography.body.copyWith(
+                    color: PvColors.onBackground,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
                 DropdownButton<EvidenceDocumentType>(
                   value: doc.docType,
                   isDense: true,
                   dropdownColor: PvColors.surfaceElevated,
-                  style: PvTypography.bodySmall.copyWith(color: PvColors.silver),
+                  style: PvTypography.bodySmall.copyWith(
+                    color: PvColors.silver,
+                  ),
                   underline: const SizedBox.shrink(),
-                  onChanged: (v) { if (v != null) onTypeChanged(v); },
+                  onChanged: (v) {
+                    if (v != null) onTypeChanged(v);
+                  },
                   items: EvidenceDocumentType.values
-                      .map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text(t.displayName),
-                          ))
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t.displayName),
+                        ),
+                      )
                       .toList(),
                 ),
               ],
@@ -964,8 +1123,8 @@ class _Step3Declarations extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(submitProvider.notifier);
-    final d        = draft;
-    final ready    = d?.declarationsComplete == true;
+    final d = draft;
+    final ready = d?.declarationsComplete == true;
 
     return Column(
       children: [
@@ -973,8 +1132,12 @@ class _Step3Declarations extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Declarations',
-                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              Text(
+                'Declarations',
+                style: PvTypography.headline.copyWith(
+                  color: PvColors.onBackground,
+                ),
+              ),
               const SizedBox(height: 6),
               Text(
                 'Please read and confirm each declaration before continuing.',
@@ -983,24 +1146,25 @@ class _Step3Declarations extends ConsumerWidget {
               const SizedBox(height: 20),
 
               _DeclarationCheckbox(
-                value:     d?.declaredAccurate ?? false,
+                value: d?.declaredAccurate ?? false,
                 onChanged: notifier.setDeclaredAccurate,
-                text:      'I declare the above information is accurate to the best of my knowledge.',
+                text: 'I declare the above information is accurate to the best of my knowledge.',
               ),
               const SizedBox(height: 12),
               _DeclarationCheckbox(
-                value:     d?.declaredTierMayDiffer ?? false,
+                value: d?.declaredTierMayDiffer ?? false,
                 onChanged: notifier.setDeclaredTierMayDiffer,
                 // Core constraint: client cannot over-claim tier
-                text:      'I understand the determined trust tier may differ from my '
-                           'submitted information. The final determination is made '
-                           'by evidence and PROVENANCE VERIFIED™ policy.',
+                text:
+                    'I understand the determined trust tier may differ from my '
+                    'submitted information. The final determination is made '
+                    'by evidence and PROVENANCE VERIFIED™ policy.',
               ),
               const SizedBox(height: 12),
               _DeclarationCheckbox(
-                value:     d?.declaredTermsAgreed ?? false,
+                value: d?.declaredTermsAgreed ?? false,
                 onChanged: notifier.setDeclaredTermsAgreed,
-                text:      'I agree to the Terms of Service and Privacy Policy.',
+                text: 'I agree to the Terms of Service and Privacy Policy.',
               ),
             ],
           ),
@@ -1019,7 +1183,11 @@ class _DeclarationCheckbox extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
   final String text;
-  const _DeclarationCheckbox({required this.value, required this.onChanged, required this.text});
+  const _DeclarationCheckbox({
+    required this.value,
+    required this.onChanged,
+    required this.text,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1079,27 +1247,31 @@ class _Step4DeterminationPricing extends StatelessWidget {
         child: Semantics(
           label: 'Determination result not available.',
           child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.hourglass_empty, color: PvColors.muted, size: 48),
-              const SizedBox(height: 16),
-              const Text(
-                'Determination result not available.',
-                style: TextStyle(color: PvColors.muted),
-                textAlign: TextAlign.center,
-              ),
-              if (onRetry != null) ...[
-                const SizedBox(height: 20),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.hourglass_empty,
+                  color: PvColors.muted,
+                  size: 48,
                 ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Determination result not available.',
+                  style: TextStyle(color: PvColors.muted),
+                  textAlign: TextAlign.center,
+                ),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
               ],
-            ],
-          ),
+            ),
           ),
         ),
       );
@@ -1117,15 +1289,23 @@ class _Step4DeterminationPricing extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Determination Result',
-                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              Text(
+                'Determination Result',
+                style: PvTypography.headline.copyWith(
+                  color: PvColors.onBackground,
+                ),
+              ),
               const SizedBox(height: 16),
 
               // Tier badge
               Semantics(
-                label: 'Determined tier: ${q.tier.isEmpty ? 'DETERMINED' : q.tier}',
+                label:
+                    'Determined tier: ${q.tier.isEmpty ? 'DETERMINED' : q.tier}',
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: tierColor.withAlpha(30),
                     border: Border.all(color: tierColor),
@@ -1157,14 +1337,20 @@ class _Step4DeterminationPricing extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.info_outline, color: PvColors.silver, size: 16),
+                        const Icon(
+                          Icons.info_outline,
+                          color: PvColors.silver,
+                          size: 16,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'T4 determination does not itself issue a Gold Seal, '
                             'signing authority, credential, or registry activation. '
                             'Gold Seal requires a separate authority chain.',
-                            style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                            style: PvTypography.bodySmall.copyWith(
+                              color: PvColors.muted,
+                            ),
                           ),
                         ),
                       ],
@@ -1177,35 +1363,50 @@ class _Step4DeterminationPricing extends StatelessWidget {
               if (q.whyThisTier != null && q.whyThisTier!.isNotEmpty) ...[
                 _SectionLabel('WHY THIS TIER'),
                 const SizedBox(height: 6),
-                Text(q.whyThisTier!,
-                    style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                Text(
+                  q.whyThisTier!,
+                  style: PvTypography.body.copyWith(color: PvColors.onSurface),
+                ),
                 const SizedBox(height: 14),
               ],
 
               if (q.whyNotNextTier != null && q.whyNotNextTier!.isNotEmpty) ...[
                 _SectionLabel('WHY NOT HIGHER'),
                 const SizedBox(height: 6),
-                Text(q.whyNotNextTier!,
-                    style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                Text(
+                  q.whyNotNextTier!,
+                  style: PvTypography.body.copyWith(color: PvColors.onSurface),
+                ),
                 const SizedBox(height: 14),
               ],
 
               if (q.limitations.isNotEmpty) ...[
                 _SectionLabel('LIMITATIONS'),
                 const SizedBox(height: 6),
-                ...q.limitations.map((l) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('• ', style: PvTypography.body.copyWith(color: PvColors.muted)),
-                          Expanded(
-                            child: Text(l.toString(),
-                                style: PvTypography.body.copyWith(color: PvColors.onSurface)),
+                ...q.limitations.map(
+                  (l) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• ',
+                          style: PvTypography.body.copyWith(
+                            color: PvColors.muted,
                           ),
-                        ],
-                      ),
-                    )),
+                        ),
+                        Expanded(
+                          child: Text(
+                            l.toString(),
+                            style: PvTypography.body.copyWith(
+                              color: PvColors.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 14),
               ],
 
@@ -1220,10 +1421,16 @@ class _Step4DeterminationPricing extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('DETERMINATION FEE',
-                        style: PvTypography.label.copyWith(color: PvColors.muted)),
-                    Text(priceText,
-                        style: PvTypography.label.copyWith(color: PvColors.onBackground)),
+                    Text(
+                      'DETERMINATION FEE',
+                      style: PvTypography.label.copyWith(color: PvColors.muted),
+                    ),
+                    Text(
+                      priceText,
+                      style: PvTypography.label.copyWith(
+                        color: PvColors.onBackground,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1249,10 +1456,14 @@ class _Step4DeterminationPricing extends StatelessWidget {
 
   static Color _tierColor(String tier) {
     switch (tier) {
-      case 'T4': return const Color(0xFFFFD700);
-      case 'T3': return PvColors.cyan;
-      case 'T2': return PvColors.silver;
-      default:   return PvColors.muted;
+      case 'T4':
+        return const Color(0xFFFFD700);
+      case 'T3':
+        return PvColors.cyan;
+      case 'T2':
+        return PvColors.silver;
+      default:
+        return PvColors.muted;
     }
   }
 }
@@ -1282,8 +1493,12 @@ class _Step5Settlement extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Settlement',
-                  style: PvTypography.headline.copyWith(color: PvColors.onBackground)),
+              Text(
+                'Settlement',
+                style: PvTypography.headline.copyWith(
+                  color: PvColors.onBackground,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 'Settlement occurs after determination and cannot change or strengthen '
@@ -1303,24 +1518,33 @@ class _Step5Settlement extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ReviewRow('Determined Tier', q.tier.isEmpty ? '—' : q.tier),
-                      _ReviewRow('Fee',
-                          q.paymentRequired
-                              ? '\$${q.price.toStringAsFixed(2)}'
-                              : 'No charge'),
+                      _ReviewRow(
+                        'Determined Tier',
+                        q.tier.isEmpty ? '—' : q.tier,
+                      ),
+                      _ReviewRow(
+                        'Fee',
+                        q.paymentRequired
+                            ? '\$${q.price.toStringAsFixed(2)}'
+                            : 'No charge',
+                      ),
                       if (!q.paymentRequired) ...[
                         const SizedBox(height: 8),
                         Text(
                           'T1 registration is free. Tapping "Finalize" binds the record '
                           'without any payment.',
-                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                          style: PvTypography.bodySmall.copyWith(
+                            color: PvColors.muted,
+                          ),
                         ),
                       ] else ...[
                         const SizedBox(height: 8),
                         Text(
                           'Tapping "Proceed to Payment" opens a secure checkout. '
                           'Return to this screen after payment to finalize your record.',
-                          style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                          style: PvTypography.bodySmall.copyWith(
+                            color: PvColors.muted,
+                          ),
                         ),
                       ],
                     ],
@@ -1339,7 +1563,9 @@ class _Step5Settlement extends StatelessWidget {
         ),
         _BottomBar(
           onNext: onNext,
-          nextLabel: (q?.paymentRequired == true) ? 'Proceed to Payment' : 'Finalize Record',
+          nextLabel: (q?.paymentRequired == true)
+              ? 'Proceed to Payment'
+              : 'Finalize Record',
           loading: loading,
         ),
       ],
@@ -1362,7 +1588,10 @@ class _ReviewRow extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            Text(
+              label,
+              style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+            ),
             const SizedBox(width: 16),
             Flexible(
               child: Text(
@@ -1393,7 +1622,11 @@ class _Step6Confirmation extends ConsumerWidget {
       children: [
         Semantics(
           label: 'Submission confirmed successfully',
-          child: const Icon(Icons.check_circle, color: PvColors.success, size: 64),
+          child: const Icon(
+            Icons.check_circle,
+            color: PvColors.success,
+            size: 64,
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -1413,7 +1646,10 @@ class _Step6Confirmation extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             draft!.submissionId!,
-            style: PvTypography.mono.copyWith(color: PvColors.cyan, fontSize: 14),
+            style: PvTypography.mono.copyWith(
+              color: PvColors.cyan,
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -1441,7 +1677,8 @@ class _Step6Confirmation extends ConsumerWidget {
               const SizedBox(height: 10),
               _NextStep(
                 icon: Icons.inventory_outlined,
-                text: 'Ship your gemstone using the provided instructions. '
+                text:
+                    'Ship your gemstone using the provided instructions. '
                     'Custody transfer will be recorded on receipt.',
               ),
               const SizedBox(height: 10),
@@ -1506,8 +1743,10 @@ class _NextStep extends StatelessWidget {
         Icon(icon, color: PvColors.silver, size: 18),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(text,
-              style: PvTypography.bodySmall.copyWith(color: PvColors.onSurface)),
+          child: Text(
+            text,
+            style: PvTypography.bodySmall.copyWith(color: PvColors.onSurface),
+          ),
         ),
       ],
     );
@@ -1559,7 +1798,10 @@ class _PvTextField extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: PvColors.cyan),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
           ),
         ),
       ],
@@ -1572,10 +1814,8 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
 
   @override
-  Widget build(BuildContext context) => Text(
-        text,
-        style: PvTypography.label.copyWith(color: PvColors.muted),
-      );
+  Widget build(BuildContext context) =>
+      Text(text, style: PvTypography.label.copyWith(color: PvColors.muted));
 }
 
 class _BottomBar extends StatelessWidget {
@@ -1607,7 +1847,9 @@ class _BottomBar extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: loading ? null : (onNext != null ? () => onNext!() : null),
+              onPressed: loading
+                  ? null
+                  : (onNext != null ? () => onNext!() : null),
               style: FilledButton.styleFrom(
                 backgroundColor: PvColors.cyan,
                 foregroundColor: Colors.black,
