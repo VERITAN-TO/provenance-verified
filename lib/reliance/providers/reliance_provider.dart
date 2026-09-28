@@ -1,10 +1,13 @@
 // M2: Reliance receipt provider.
 // Primary: server-side receipt via POST /api/v1/reliance-receipts (reliance:create scope).
-// Fallback: local-only receipt in PvSecureStorage (when no server endpoint or offline).
+// Fallback: local-only receipt in PvSecureStorage (true offline only — network unreachable).
+// B delta: server fails closed on internal service failure. ApiException propagates; no local fabrication.
 // M1 Security Law: receipts are immutable once issued. Never cache for re-use.
 // MTA1_CONTRACT: c446198e5ef4eb96cfe84c8c280a0ba94e4eac52
 
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../receipt_models.dart';
@@ -69,8 +72,8 @@ class ReceiptNotifier extends Notifier<AsyncValue<List<RelianceReceipt>>> {
           prohibitedInferences: prohibitedInferences,
           policyVersion: policyVersion,
         );
-      } catch (_) {
-        // Fallback to local receipt on server failure.
+      } on SocketException catch (_) {
+        // Network unreachable — local fallback only for true offline.
         receipt = _buildLocalReceipt(
           publicId: publicId,
           physicalSubjectId: physicalSubjectId,
@@ -81,6 +84,19 @@ class ReceiptNotifier extends Notifier<AsyncValue<List<RelianceReceipt>>> {
           prohibitedInferences: prohibitedInferences,
           policyVersion: policyVersion,
         );
+      } on TimeoutException catch (_) {
+        // Network timeout — local fallback only for true offline.
+        receipt = _buildLocalReceipt(
+          publicId: publicId,
+          physicalSubjectId: physicalSubjectId,
+          trustStateDigest: trustStateDigest,
+          purpose: purpose,
+          decision: decision,
+          limitations: limitations,
+          prohibitedInferences: prohibitedInferences,
+          policyVersion: policyVersion,
+        );
+        // ApiException (server 4xx/5xx) propagates — fails closed per B delta.
       }
     } else {
       receipt = _buildLocalReceipt(
@@ -149,7 +165,7 @@ class ReceiptNotifier extends Notifier<AsyncValue<List<RelianceReceipt>>> {
     limitations: limitations,
     prohibitedInferences: prohibitedInferences,
     createdAt: DateTime.now().toUtc(),
-    validityState: ReceiptValidityState.valid,
+    validityState: ReceiptValidityState.unknown,
     policyVersion: policyVersion,
     isServerIssued: false,
   );

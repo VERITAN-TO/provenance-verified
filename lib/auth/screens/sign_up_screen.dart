@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
@@ -48,7 +49,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             _displayNameController.text.trim(),
           );
       if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/my-pv');
+      context.go('/my-pv');
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = e.message);
@@ -194,8 +195,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         TextButton(
                           onPressed: _loading
                               ? null
-                              : () => Navigator.of(context)
-                                  .pushReplacementNamed('/sign-in'),
+                              : () => context.go('/sign-in'),
                           child: Text(
                             'Sign In',
                             style: PvTypography.bodySmall.copyWith(

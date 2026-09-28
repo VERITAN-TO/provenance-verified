@@ -2,6 +2,10 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- image_picker uses system PhotoPicker (API 33+) and ACTION_PICK (API ≤ 32):
+         no broad-media storage permission required in app manifest.
+         file_picker uses Storage Access Framework: no READ permission required.
+         Plugins inject their own manifest entries via merger if needed. -->
     <application
         android:label="PROVENANCE VERIFIED"
         android:name="${applicationName}"
@@ -26,6 +30,15 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Deep-link: pv:// scheme — parity with iOS CFBundleURLSchemes.
+                 Routes handled by GoRouter inside the app. NO autoVerify —
+                 not an App Links (https) deep link; scheme-only intent filter. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="pv" android:host="veritan.to"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/trust_provider.dart';
 import '../trust_models.dart';
+import '../../core/network/api_client.dart';
 import '../widgets/trust_badge.dart';
 import '../widgets/claims_list.dart';
 import '../widgets/evidence_list.dart';
@@ -28,7 +29,7 @@ class TrustResultScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.receipt_long_outlined),
             tooltip: 'Reliance receipts',
-            onPressed: () => context.push('/receipts'),
+            onPressed: () => context.push('/my-pv/receipts'),
           ),
         ],
       ),
@@ -55,10 +56,13 @@ class _RecordView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _LifecycleBanner(record: record),
         StaleBanner(
           freshness: record.freshness?.state ?? FreshnessState.unknown,
           onRequery: () => ref.invalidate(trustRecordProvider(record.publicId)),
         ),
+        // PHYSICAL_MATCH_NOT_SUPPORTED: no approved physical proof method is operational.
+        const _PhysicalMatchGate(),
         TrustBadge(record: record),
         const SizedBox(height: 16),
         _InfoRow('Record', record.publicId),
@@ -91,33 +95,41 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        OutlinedButton.icon(
-          onPressed: () => context.push('/verify/${record.publicId}/why-this-tier'),
-          icon: const Icon(Icons.info_outline, size: 18),
-          label: const Text('Why this tier?'),
-        ),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/verify/${record.publicId}/why-not-higher'),
-          icon: const Icon(Icons.arrow_upward, size: 18),
-          label: const Text('Why not higher?'),
-        ),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/verify/${record.publicId}/authority'),
-          icon: const Icon(Icons.account_balance_outlined, size: 18),
-          label: const Text('Authority'),
-        ),
-        if (record.isQualified)
-          FilledButton.icon(
-            onPressed: () => context.push('/verify/${record.publicId}/actionability'),
-            icon: const Icon(Icons.gavel, size: 18),
-            label: const Text('Assess Reliance'),
-            style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),
+    // Freshness fail-closed: server-authored requiresRequery disables Assess Reliance.
+    // APPROACHING_STALE remains advisory — does not block (requiresRequery is false for it).
+    final freshnessRequiresRequery = record.freshness?.state.requiresRequery ?? false;
+    return Semantics(
+      label: 'Record actions',
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () => context.push('/verify/${record.publicId}/why-this-tier'),
+            icon: const Icon(Icons.info_outline, size: 18),
+            label: const Text('Why this tier?'),
           ),
-      ],
+          OutlinedButton.icon(
+            onPressed: () => context.push('/verify/${record.publicId}/why-not-higher'),
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            label: const Text('Why not higher?'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/verify/${record.publicId}/authority'),
+            icon: const Icon(Icons.account_balance_outlined, size: 18),
+            label: const Text('Authority'),
+          ),
+          if (record.isQualified)
+            FilledButton.icon(
+              onPressed: freshnessRequiresRequery
+                  ? null
+                  : () => context.push('/verify/${record.publicId}/actionability'),
+              icon: const Icon(Icons.gavel, size: 18),
+              label: const Text('Assess Reliance'),
+              style: FilledButton.styleFrom(backgroundColor: PvColors.cyan, foregroundColor: Colors.black),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -129,17 +141,21 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 96,
-            child: Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-          ),
-          Expanded(child: Text(value, style: PvTypography.body)),
-        ],
+    return Semantics(
+      label: '$label: $value',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 96,
+              child: Text(label, style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
+            ),
+            Expanded(child: Text(value, style: PvTypography.body)),
+          ],
+        ),
       ),
     );
   }
@@ -158,25 +174,163 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _ErrorView extends StatelessWidget {
+class _LifecycleBanner extends StatelessWidget {
+  final TrustRecord record;
+  const _LifecycleBanner({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = record.lifecycle?.status?.toUpperCase();
+    if (status == null || status.isEmpty) return const SizedBox.shrink();
+
+    const actionableStates = {
+      'SUSPENDED', 'REVOKED', 'SUPERSEDED', 'EXPIRED', 'CORRECTED', 'REINSTATED',
+    };
+    if (!actionableStates.contains(status)) return const SizedBox.shrink();
+
+    final (color, icon, message) = switch (status) {
+      'SUSPENDED' => (PvColors.error, Icons.block_outlined,
+          'SUSPENDED — Do not rely on this record.'),
+      'REVOKED' => (PvColors.error, Icons.cancel_outlined,
+          'REVOKED — This record has been revoked. Do not rely on it.'),
+      'SUPERSEDED' => (PvColors.warning, Icons.swap_horiz_outlined,
+          record.lifecycle?.supersededBy != null
+              ? 'SUPERSEDED — See record ${record.lifecycle!.supersededBy}.'
+              : 'SUPERSEDED — This record has been superseded.'),
+      'EXPIRED' => (PvColors.warning, Icons.timer_off_outlined,
+          'EXPIRED — Verify currency before reliance.'),
+      'CORRECTED' => (PvColors.cyan, Icons.check_circle_outline,
+          'CORRECTED — This record has been updated.'),
+      'REINSTATED' => (PvColors.success, Icons.restore_outlined,
+          'REINSTATED — This record is active again.'),
+      _ => (PvColors.muted, Icons.info_outline, 'Status: $status'),
+    };
+
+    return Semantics(
+      label: message,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withAlpha(30),
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message, style: PvTypography.bodySmall.copyWith(color: color))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhysicalMatchGate extends StatelessWidget {
+  const _PhysicalMatchGate();
+
+  @override
+  Widget build(BuildContext context) {
+    // PHYSICAL_MATCH_NOT_SUPPORTED: no approved physical proof method is operational.
+    // This app retrieves server-authored trust records only.
+    // Physical object identity matching is not performed by this device.
+    return Semantics(
+      label: 'Physical object matching: not available — no approved physical proof method is operational.',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: PvColors.muted.withAlpha(18),
+          border: Border.all(color: PvColors.muted.withAlpha(80)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.sensors_off_outlined, color: PvColors.muted, size: 16),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Physical object matching: not available — no approved physical proof method is operational. '
+                'This record is server-authored only.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends ConsumerWidget {
   final Object error;
   final String publicId;
   const _ErrorView({required this.error, required this.publicId});
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: PvColors.error, size: 48),
-            const SizedBox(height: 16),
-            Text('Unable to load $publicId', style: PvTypography.title),
-            const SizedBox(height: 8),
-            Text(error.toString(), style: PvTypography.bodySmall.copyWith(color: PvColors.muted)),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final msg = error.toString().toLowerCase();
+    final isNotFound = msg.contains('not_found') || msg.contains('404') ||
+        msg.contains('not found') || publicId.trim().isEmpty;
+    // R66: authority/network failure must remain distinct from NOT FOUND —
+    // a 401/403 from the mobile bootstrap token means the SERVER could not
+    // authorize this request, not that the record doesn't exist or the
+    // network is down. Checked before the generic network-string match so
+    // an ApiException never falls through to the raw-error fallback below.
+    final apiError = error is ApiException ? error as ApiException : null;
+    final isAuthorityUnavailable = !isNotFound && apiError != null &&
+        (apiError.statusCode == 401 || apiError.statusCode == 403);
+    final isNetwork = !isNotFound && !isAuthorityUnavailable &&
+        (msg.contains('network') || msg.contains('timeout') || msg.contains('socket'));
+
+    final (icon, iconColor, title, body) = isNotFound
+        ? (Icons.search_off, PvColors.muted, 'Record not found',
+            'No PV record exists for "$publicId". Check the ID and try again.')
+        : isAuthorityUnavailable
+            ? (Icons.gpp_maybe_outlined, PvColors.warning, 'Authority unavailable',
+                'The PV server could not authorize this request. This is not a '
+                'statement about the record itself — retry shortly.')
+            : isNetwork
+                ? (Icons.signal_wifi_off, PvColors.warning, 'Connection error',
+                    'Could not reach the PV server. Check your connection and retry.')
+                : (Icons.error_outline, PvColors.error, 'Unable to load record',
+                    'Something went wrong loading this record. Retry, or check the ID and try again.');
+
+    return Semantics(
+      label: '$title. $body',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: iconColor, size: 48),
+              const SizedBox(height: 16),
+              Text(title, style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(
+                body,
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              if (isNotFound)
+                OutlinedButton.icon(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go Back'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(trustRecordProvider(publicId)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+            ],
+          ),
         ),
       ),
     );

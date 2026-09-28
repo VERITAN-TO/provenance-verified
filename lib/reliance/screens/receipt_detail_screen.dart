@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/reliance_provider.dart';
 import '../receipt_models.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
+// R42: local snapshot authority boundary — requery route
+const _requeryRoute = '/verify';
 
 class ReceiptDetailScreen extends ConsumerWidget {
   final String receiptId;
@@ -15,17 +18,73 @@ class ReceiptDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Receipt Detail')),
       body: receiptsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
+        loading: () => const Center(
+            child: CircularProgressIndicator(semanticsLabel: 'Loading receipt')),
+        // R66: fixed, accessible copy — not the raw exception (matches
+        // receipt_list_screen.dart's already-correct copy for this same
+        // provider/failure).
+        error: (_, __) => _BoundedErrorView(
+          title: 'Could not load receipts',
+          message: 'Check your connection and retry.',
+          onRetry: () => ref.invalidate(receiptListProvider),
+        ),
         data: (receipts) {
           final receipt = receipts.where((r) => r.receiptId == receiptId).firstOrNull;
           if (receipt == null) {
-            return const Center(child: Text('Receipt not found'));
+            return _BoundedNotFoundView(
+              label: 'Receipt not found',
+              message: 'No receipt found with ID "$receiptId".',
+            );
           }
-          final isInvalidated = receipt.validityState != ReceiptValidityState.valid;
+          final isInvalidated = receipt.validityState == ReceiptValidityState.invalidated ||
+              receipt.validityState == ReceiptValidityState.expired;
+          final isLocalSnapshot = !receipt.isServerIssued;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // R42: local snapshot is NOT current PV reliance authority — must block reliance
+              if (isLocalSnapshot)
+                Semantics(
+                  label: 'Local snapshot — not current reliance authority. Requery required.',
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: PvColors.warning.withAlpha(30),
+                      border: Border.all(color: PvColors.warning),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.cloud_off, color: PvColors.warning, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'LOCAL SNAPSHOT — Not current PV reliance authority. '
+                                'Requery before relying on this record.',
+                                style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              context.push('$_requeryRoute/${receipt.publicId}/reliance'),
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Requery for Current Authority'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: PvColors.warning,
+                            side: const BorderSide(color: PvColors.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               if (isInvalidated)
                 Semantics(
                   label: 'Receipt is ${receipt.validityState.name}',
@@ -68,6 +127,80 @@ class ReceiptDetailScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _BoundedErrorView extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+  const _BoundedErrorView(
+      {required this.title, required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$title. $message',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: PvColors.error, size: 48),
+              const SizedBox(height: 16),
+              Text(title, style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(message,
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BoundedNotFoundView extends StatelessWidget {
+  final String label;
+  final String message;
+  const _BoundedNotFoundView({required this.label, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '$label. $message',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.search_off, color: PvColors.muted, size: 48),
+              const SizedBox(height: 16),
+              Text(label, style: PvTypography.title),
+              const SizedBox(height: 8),
+              Text(message,
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

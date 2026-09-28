@@ -32,7 +32,9 @@ class ApiClient {
   })  : _client           = client ?? http.Client(),
         _baseUrl          = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
         _ownsTokenService = tokenService == null,
-        _tokenService     = tokenService ?? MobileTokenService();
+        _tokenService     = tokenService ?? MobileTokenService(
+          deviceIdOverride: Env.qualDeviceId.isNotEmpty ? Env.qualDeviceId : null,
+        );
 
   Future<Map<String, String>> _authHeaders() async {
     final token = await _tokenService.getToken();

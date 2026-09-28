@@ -15,9 +15,12 @@ typedef ActionabilityArgs = ({
   String claimScope,
 });
 
-// Evaluates actionability via POST /api/v1/actionability.
-// NEVER cached for reliance — always fresh per M1 security law.
-final actionabilityProvider = FutureProvider.family<ActionabilityResult, ActionabilityArgs>(
+// R45: autoDispose enforces the no-retained-authority rule at the provider level.
+// A non-autoDispose family retains its completed result in the ProviderContainer
+// and serves it to new consumers without a fresh server call — that is a currentness
+// defect for reliance. autoDispose disposes state when all listeners are removed,
+// guaranteeing a new server evaluation on every fresh consumer/session.
+final actionabilityProvider = FutureProvider.autoDispose.family<ActionabilityResult, ActionabilityArgs>(
   (ref, args) async {
     final client = ref.watch(apiClientProvider);
     final json = await client.evaluateActionability(
@@ -31,7 +34,8 @@ final actionabilityProvider = FutureProvider.family<ActionabilityResult, Actiona
 );
 
 // Compatibility: simple purpose-only actionability for UI callers.
-final simpleActionabilityProvider = FutureProvider.family<ActionabilityResult, ({String publicId, String purpose})>(
+// R45: autoDispose — same currentness guarantee as actionabilityProvider above.
+final simpleActionabilityProvider = FutureProvider.autoDispose.family<ActionabilityResult, ({String publicId, String purpose})>(
   (ref, args) async {
     final client = ref.watch(apiClientProvider);
     final json = await client.evaluateActionability(

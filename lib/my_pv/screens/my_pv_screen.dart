@@ -70,7 +70,7 @@ class _UnauthenticatedView extends StatelessWidget {
             const Text('Sign in to view your assets', style: PvTypography.title),
             const SizedBox(height: 10),
             Text(
-              'Your digital passports, custody history, and reliance receipts are waiting.',
+              'Your PV asset records, custody history, and reliance receipts are waiting.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               textAlign: TextAlign.center,
             ),
@@ -99,7 +99,7 @@ class _AssetGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final assetsAsync = ref.watch(customerAssetsProvider);
     return assetsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: CircularProgressIndicator(semanticsLabel: 'Loading your assets')),
       error: (err, _) => _ErrorView(error: err),
       data: (assets) {
         if (assets.isEmpty) {
@@ -121,9 +121,13 @@ class _AssetGrid extends ConsumerWidget {
   }
 }
 
-class _AssetCard extends StatelessWidget {
+class _AssetCard extends ConsumerWidget {
   final CustomerAsset asset;
   const _AssetCard({required this.asset});
+
+  // R44: effective tier is null when ineligible — never show a qualified tier label
+  // for an ineligible asset. Must match asset_detail_screen.dart _TierBadge logic.
+  int? _effectiveTier() => asset.eligible ? asset.trustTier : null;
 
   Color _tierColor(int? tier) {
     switch (tier) {
@@ -138,22 +142,26 @@ class _AssetCard extends StatelessWidget {
   String _tierLabel(int? tier) {
     if (tier == null) return 'NOT QUALIFIED';
     switch (tier) {
-      case 1: return 'T1 FINGERPRINT';
-      case 2: return 'T2 DECLARED';
-      case 3: return 'T3 VERIFIED';
-      case 4: return 'T4 GOLD';
+      case 1: return 'T1 — Accountable Existence';
+      case 2: return 'T2 — Accountable Declaration';
+      case 3: return 'T3 — Evidence-Established Trust';
+      case 4: return 'T4 — Highest Governed Provenance Authority';
       default: return 'TIER $tier';
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final tierColor = _tierColor(asset.trustTier);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final effectiveTier = _effectiveTier();
+    final tierColor = _tierColor(effectiveTier);
     return Semantics(
-      label: '${asset.assetName}, ${_tierLabel(asset.trustTier)}${asset.hasStaledReceipts ? ', stale receipts' : ''}',
+      label: '${asset.assetName}, ${_tierLabel(effectiveTier)}${asset.hasStaledReceipts ? ', stale receipts' : ''}',
       button: true,
       child: InkWell(
-        onTap: () => context.push('/my-pv/asset/${asset.assetId}'),
+        onTap: () async {
+          await context.push('/my-pv/asset/${asset.assetId}');
+          if (context.mounted) ref.invalidate(customerAssetsProvider);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
@@ -217,7 +225,7 @@ class _AssetCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              _tierLabel(asset.trustTier),
+                              _tierLabel(effectiveTier),
                               style: PvTypography.label.copyWith(
                                   color: tierColor, fontSize: 8),
                               maxLines: 1,
@@ -300,50 +308,62 @@ class _EmptyAssetsView extends StatelessWidget {
   }
 }
 
-class _ErrorView extends StatelessWidget {
+class _ErrorView extends ConsumerWidget {
   final Object error;
   const _ErrorView({required this.error});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final msg = error.toString();
-    final isAuth = msg.contains('not_authenticated');
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isAuth ? Icons.lock_outline : Icons.error_outline,
-              color: isAuth ? PvColors.silver : PvColors.error,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isAuth ? 'Session expired' : 'Could not load assets',
-              style: PvTypography.title,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isAuth
-                  ? 'Please sign in again.'
-                  : 'Check your connection and pull down to retry.',
-              style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
-              textAlign: TextAlign.center,
-            ),
-            if (isAuth) ...[
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => context.push('/sign-in'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: PvColors.cyan,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Sign In'),
+    final isAuth = msg.contains('not_authenticated') || msg.contains('401');
+    return Semantics(
+      label: isAuth ? 'Session expired. Sign in to view your assets.' : 'Could not load assets. Retry.',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isAuth ? Icons.lock_outline : Icons.error_outline,
+                color: isAuth ? PvColors.silver : PvColors.error,
+                size: 48,
               ),
+              const SizedBox(height: 16),
+              Text(
+                isAuth ? 'Session expired' : 'Could not load assets',
+                style: PvTypography.title,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isAuth
+                    ? 'Please sign in again.'
+                    : 'Check your connection and retry.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              if (isAuth)
+                FilledButton(
+                  onPressed: () => context.push('/sign-in'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PvColors.cyan,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Sign In'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(customerAssetsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: PvColors.onBackground,
+                    side: const BorderSide(color: PvColors.border),
+                  ),
+                ),
             ],
-          ],
+          ),
         ),
       ),
     );

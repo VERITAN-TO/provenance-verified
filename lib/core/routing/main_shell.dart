@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../design/pv_colors.dart';
+import '../../my_pv/providers/my_pv_provider.dart';
 
 /// Five-tab bottom navigation shell for the PROVENANCE VERIFIED customer app.
 ///
@@ -10,12 +12,21 @@ import '../../design/pv_colors.dart';
 ///   2 My PV  — /my-pv
 ///   3 Submit — /submit
 ///   4 Activity — /activity
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  void _onDestinationSelected(int index) {
+  static const int _myPvBranchIndex = 2;
+
+  void _onDestinationSelected(WidgetRef ref, int index) {
+    // Invalidate My PV asset list on tab entry — StatefulShellRoute.indexedStack
+    // keeps the branch mounted while hidden, so retained FutureProvider state can
+    // silently present an older server projection. Invalidation forces a fresh
+    // /api/v1/customer/assets read whenever the user re-enters My PV.
+    if (index == _myPvBranchIndex) {
+      ref.invalidate(customerAssetsProvider);
+    }
     navigationShell.goBranch(
       index,
       // Tapping the active tab returns to its initial location (branch root).
@@ -24,13 +35,13 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: PvColors.background,
       body: navigationShell,
       bottomNavigationBar: _PvNavigationBar(
         currentIndex: navigationShell.currentIndex,
-        onDestinationSelected: _onDestinationSelected,
+        onDestinationSelected: (index) => _onDestinationSelected(ref, index),
       ),
     );
   }
@@ -53,7 +64,7 @@ class _PvNavigationBar extends StatelessWidget {
       data: Theme.of(context).copyWith(
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: PvColors.surface,
-          indicatorColor: PvColors.cyan.withOpacity(0.18),
+          indicatorColor: PvColors.cyan.withAlpha(46),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const IconThemeData(color: PvColors.cyan, size: 24);

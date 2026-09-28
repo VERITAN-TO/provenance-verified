@@ -3,13 +3,119 @@ name: M2 Real E2E CI
 on:
   workflow_dispatch:
   push:
-    branches: ['mobile/m2-real-e2e']
+    branches: ['mobile/m2-real-e2e', 'successor/m4-determination-first-r2']
 
 env:
   FLUTTER_VERSION: '3.47.2'
   FLUTTER_CHANNEL: 'stable'
   PV_API_BASE_URL: 'https://provenance-verified-private.vercel.app'
-  EXPECTED_M2_UNIT_COUNT: '164'
+  # Non-production qualification target rebound to provenance-verified-qual.vercel.app (R4, euhonqxohwrhscvwutqp).
+  # Mobile auth migration applied to R4 and confirmed live (A→C DEPENDENCY_READY, PR3 comment 5753531478).
+  # platform=test pending Vercel redeploy (≤24h from 2026-09-20T23:30Z); platform=ios confirmed working on R4.
+  # This is intentionally checked in so real-backend qualification does not depend on mutable repository-variable tooling.
+  PV_QUAL_API_BASE_URL: 'https://provenance-verified-qual.vercel.app'
+  # Non-secret canonical QUAL tenant slug — TEXT per pv_mobile_consumer_tenants.tenant_id schema (no UUID constraint).
+  # A-lane bootstrap UUID gate removed at a92ad8c (D-verified); slug accepted; checked-in to avoid repo-variable drift.
+  PV_QUAL_TENANT_ID: 'm2-qual-tenant-1'
+  # Canonical QUAL device UUID — distinct from PV_QUAL_SUBJECT_ID (determination subject/public_id).
+  # Registered in qual Supabase euhonqxohwrhscvwutqp; bound to PV_QUAL_API_KEY (key_id=uuid-tenant-prod-qual-v2).
+  # DEPENDENCY_READY_C (PR3 comment 5768552274): A-lane rotated PV_QUAL_API_KEY; TEST_CREDENTIAL_IN_PRODUCTION RESOLVED.
+  PV_QUAL_DEVICE_ID: '00000000-0000-4000-c000-000000000001'
+  # EXPECTED_M2_UNIT_COUNT: fail-closed gate — must match actual executed test count.
+  # Confirmed executed count: 237 — from CI run 35165330574 on commit 32b3019 (R27).
+  # R28 adds 5 tests: C28-1..C28-5 (public reliance failsafe + settlement null ambiguity).
+  # Expected count after R28: 237 + 5 = 242.
+  # R29 adds 5 tests: C29-1..C29-5 (settlement authority seam wired; PR #47 data.settlement).
+  # R29 also updates C22-2 and C28-1..C28-5 (same test count, content updated).
+  # Expected count after R29: 242 + 5 = 247.
+  # R30 adds 5 tests: C30-1..C30-5 (credential lifecycle rebind; PR #48 data.credential_lifecycle).
+  # Confirmed executed count: 252 — from CI run 35176530986 on commit f0915f69 (R30).
+  # R31 adds 5 tests: C31-1..C31-5 (lifecycle-aware credential UI + approachingStale advisory).
+  # Confirmed executed count: 257 — from CI run 35181638507 on commit bda6d3c (R31).
+  # R32 adds 5 tests: C32-1..C32-5 (fail-closed LOOKUP_ERROR/authorityUnavailable/TrustCurrentness).
+  # R32 also updates C22-2, C28-1, C28-2, C28-5, C29-3 (same count; tests updated for payment-gate removal).
+  # CI run 35182964601 on commit bbe8bcb confirmed 262 total tests (257 passing + 5 failing before R32 fix).
+  # Confirmed executed count: 262 — from CI run 35182964601 on commit bbe8bcb (R32) — all 262 pass after fix.
+  # R33 adds 4 tests: C33-1..C33-4 (list credential_state authority ruling; AUTHORITY_UNAVAILABLE fail-closed).
+  # Confirmed executed count: 266 — from CI run 35185928675 on commit 8adc444 (R33) — all 266 pass;
+  #   count gate 262 was sole failure. CI evidence: "+266: All tests passed!"
+  # R34 adds 2 tests: C34-1..C34-2 (unknown lifecycle fail-closed authorityUnavailable; pv_credentials source).
+  # Confirmed executed count: 268 — from CI run 35191693648 on commit 12728eb (R34) — all 268 pass;
+  #   count gate 266 was sole failure. CI evidence: "+268: All tests passed!"
+  # R35/R36 adds 1 test: C35-1 (my_pv tier labels match canonical Web/Core names).
+  # Confirmed executed count: 269 — from CI run 35198037033 job 105125821219 on commit 4c91907 (R36) — all 269 pass;
+  #   count gate 268 was sole failure. CI evidence: "+269: All tests passed!"
+  # R42 adds 6 tests: C42-1..C42-6 (offline reliance authority boundary; local receipt validity state fix).
+  # Confirmed executed count after R42: 275 — from CI run 35221586604 (aea8c35b) — Linux PASS, macOS PASS.
+  # R44 adds 5 tests: C44-1..C44-5 (My PV authority + evidence boundary; eligible gate + wording).
+  # Confirmed executed count after R44: 280 — from CI run 35227641452 (39e6cd9) — Linux PASS, macOS PASS.
+  # R45 adds 7 tests: C45-proof-1..C45-proof-2 (Riverpod retention behavioral proof) + C45-1..C45-5 (autoDispose source assertions).
+  # Anticipated count after R45: 280 + 7 = 287. PENDING CI CONFIRMATION.
+  # R46 adds 5 tests: C46-1..C46-5 (native photo+evidence picker wiring regression locks;
+  #   image_picker/file_picker wired into submit_screen.dart; file_picker >=8.1.4 version gate).
+  # Anticipated count after R46: 287 + 5 = 292. PENDING CI CONFIRMATION.
+  # R47 adds 1 test C47-1 (Share button clipboard), then R48 REPLACES C47-1 with
+  #   2 fail-closed tests (C47-1, C47-2: CROSS_LANE_HANDOFF_REQUIRED semantic locks).
+  #   Net R47→R48 delta on C47: -1 + 2 = +1 (293 + 1 = stays at 293 via R47 then corrected).
+  # R48 adds 4 tests total: corrected C47-1, C47-2 (+1 net on C47); C48-1 manifest audit;
+  #   C48-2 Gradle upgrade-only guard. Net R48 additions: +1 (C47 correction) + 1 + 1 = +3.
+  # Confirmed executed count after R48: 296 — from CI run 35249574619 on commit 6354263 — all 296 pass.
+  # R49 adds 5 tests: C50-1..C50-5 (M2-50 determination-first flow source locks:
+  #   7-step wizard structure, det-first ordering, server-authoritative determinedTier,
+  #   uploadPendingDocuments wiring, homeAlertsProvider server-sourced alerts).
+  # Confirmed executed count after R49: 301 — from CI run 35251283402 on commit 1da65b1 — all 301 pass (Linux + macOS).
+  # Test distribution: api_client_m2_test.dart: 14, eight_stone_parity_test.dart: 49,
+  #   m4_customer_contract_test.dart: +5 new R28 tests (C28-1..5) +5 new R29 tests (C29-1..5)
+  #     +5 new R30 tests (C30-1..5) +5 new R31 tests (C31-1..5) +5 new R32 tests (C32-1..5)
+  #     +4 new R33 tests (C33-1..4) +2 new R34 tests (C34-1..2) +1 new R35 test (C35-1)
+  #     +6 new R42 tests (C42-1..C42-6) +5 new R44 tests (C44-1..C44-5)
+  #     +7 new R45 tests (C45-proof-1..C45-proof-2 + C45-1..C45-5)
+  #     +5 new R46 tests (C46-1..C46-5)
+  #     +2 R48-corrected C47 tests (C47-1, C47-2) +2 new R48 tests (C48-1, C48-2)
+  #     +5 new R49 tests (C50-1..C50-5),
+  #     +5 new R50 tests (C50-6..C50-10), C47-1/C47-2 updated (same IDs, not new).
+  #     +5 new M2-50-04 tests (C50-11..C50-15).
+  #   machine_trust_response_test.dart: 37, qr_handler_test.dart: 21,
+  #   trust_models_test.dart: 37.
+  # DO NOT update this value by hand. Update only after an executed GitHub Actions
+  # run on this branch confirms the new count via FLUTTER_TESTS_*=PASS output.
+  # Confirmed executed count: 306 — from CI run 35257032745 on commit d5d1b8e (R50).
+  # Confirmed executed count: 311 — from CI run 35259983102 on commit ddb2f2f (M2-50-04 C50-11..C50-15). All 311 pass.
+  # M2-50-05 (commit 8bf94b6) adds 5 C51 tests (C51-1..C51-5). Count: 311 + 5 = 316.
+  # Confirmed executed count: 316 — from CI run 35285581356 / artifact 10523134227 at commit d3a5263
+  #   (C51-2 harness repair only; no product change; C51-2 count gate was sole failure at 322).
+  # M2-50-07/08 (commit cb51b11) adds 6 C52/C53 tests (C52-1, C52-2, C53-1..C53-4).
+  # Confirmed executed count: 322 — from CI run 35286047761 on commit cb51b11 — Linux PASS, macOS PASS; all 322 pass.
+  #   android_aab_sha256: dc8e0a2675beb93d89334cee6b7bef2c2097f38e496276ba528834ff3ef6749e (UNSIGNED_QUALIFICATION)
+  #   ios_archive_sha256: 250e362001928fc0072d9103d89c2a3a0dac22cf5f899a150e9d0613d7786b07 (no-codesign)
+  # M2-50-07 inventory (C54-1..C54-4) adds 4 tests — confirmed at fc6fb4c.
+  # M2-50-08 physical-match gate (C55-1..C55-2) adds 2 tests — confirmed at d9697c9.
+  # M2-50-09 My PV freshness (C56-1..C56-3) adds 3 tests. Confirmed 331 at 417102a (run 35293738059).
+  # R62 runtime dimensions (C62-1..C62-8) adds 8 tests: why/why-not, limitations, custody-vs-title.
+  # Confirmed 339 at b5da613 (run 35297492381).
+  # R63 reliance freshness fail-closed (C63-1..C63-7) adds 7 tests: freshnessRequiresRequery gate,
+  #   synchronized requery, save disabled, Assess Reliance disabled, APPROACHING_STALE advisory-only,
+  #   no local DateTime, lifecycle gates preserved.
+  # Confirmed executed count: 346 — every R64/R65 CI run below ran cleanly against this value
+  #   before R65 added its own tests.
+  # R65 Professional authority closure (C57-1..C57-7) adds 7 tests: no fabricated Professional
+  #   role/authorization model, non-authoritative copy in scanner/batch/inventory screens,
+  #   internal control tokens unreachable from customer-visible widget code, no ownership/
+  #   custody/tenant/portfolio language from a locally tracked public ID, no Transfer mutation.
+  # Confirmed executed count: 353 — from CI run 35317849482 on commit d4f7bc968 (executed
+  #   evidence: "+352 -1: Some tests failed" — 352 passed + 1 failed = 353 total; the 1 failure
+  #   was C57-6's own over-broad assertion matching a pre-existing/newly-added source comment,
+  #   fixed in the same commit as this count update — not a product regression).
+  # R66 accessibility + empty/loading/error/recovery state finish (C58-1..C58-7) adds 7 tests:
+  #   My PV true-empty vs error distinctness, Verify AUTHORITY_UNAVAILABLE state + no raw
+  #   exception text, Rely actionability/save-receipt same, Submit order + accessible loading
+  #   labels preserved, scanner invalid-QR accessible live region, receipt_detail no raw
+  #   exception text.
+  # Confirmed executed count: 360 — from CI run 35338113891 on commit 147e5f316 (executed
+  #   evidence: "+360: All tests passed!"; the sole prior failure on this commit's predecessor
+  #   run was flutter analyze's unnecessary_cast, fixed in 147e5f316 — not a test failure).
+  # M2-50-06 (C64-1..C64-5) adds 5 tests. Confirmed 375 from CI run 35542197695 on b0f4ade4.
+  EXPECTED_M2_UNIT_COUNT: '375'
 
 jobs:
   linux-android:
@@ -17,6 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pubspec_lock_sha256: ${{ steps.post_pub.outputs.pubspec_lock_sha256 }}
+      pubspec_lock_sync: ${{ steps.pubspec_lock_sync.outputs.pubspec_lock_sync }}
       android_aab_sha256: ${{ steps.aab_hash.outputs.android_aab_sha256 }}
       android_aab_size: ${{ steps.aab_hash.outputs.android_aab_size }}
       flutter_version: ${{ steps.versions.outputs.flutter_version }}
@@ -35,6 +142,12 @@ jobs:
           HEAD=$(git rev-parse HEAD)
           echo "head_sha=$HEAD" >> $GITHUB_OUTPUT
           echo "M2 HEAD SHA: $HEAD"
+
+      - name: Classifier regression self-test
+        run: |
+          # Runs unconditionally (unlike the real-backend-integration job, which is
+          # gated on vars.PV_QUAL_BACKEND_ENABLED) so this logic is always checked.
+          bash scripts/ci/classify_integration_result_test.sh
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -86,6 +199,32 @@ jobs:
           echo "pubspec_lock_sha256=$LOCK" >> $GITHUB_OUTPUT
           echo "pubspec.lock SHA256: $LOCK"
 
+      - name: PUBSPEC_LOCK_SYNC fail-closed gate
+        id: pubspec_lock_sync
+        run: |
+          # flutter pub get (above) resolves pubspec.lock from pubspec.yaml. If the
+          # committed pubspec.lock is stale/incomplete relative to pubspec.yaml (e.g. a
+          # declared dependency missing from the lock), `git diff` on pubspec.lock will
+          # be non-empty here. Fail closed rather than silently building/testing against
+          # a lockfile the runner rewrote but the repo never committed.
+          if git diff --quiet -- pubspec.lock; then
+            echo "pubspec_lock_sync=PASS" >> $GITHUB_OUTPUT
+            echo "PUBSPEC_LOCK_SYNC=PASS (committed pubspec.lock matches flutter pub get resolution)"
+          else
+            echo "pubspec_lock_sync=FAIL" >> $GITHUB_OUTPUT
+            echo "::error::PUBSPEC_LOCK_SYNC: committed pubspec.lock does not match the resolution flutter pub get produces from pubspec.yaml"
+            git --no-pager diff -- pubspec.lock
+            exit 1
+          fi
+
+      - name: Upload resolved pubspec.lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pv-mobile-m2-resolved-pubspec-lock
+          path: pubspec.lock
+          retention-days: 30
+
       - name: flutter analyze
         run: |
           flutter analyze 2>&1 | tee flutter-analyze-linux.txt
@@ -93,7 +232,7 @@ jobs:
             { echo "::error::flutter analyze found issues"; exit 1; }
           echo "FLUTTER_ANALYZE_LINUX=PASS"
 
-      - name: flutter test — unit tests (assert exactly 172)
+      - name: flutter test — unit tests (fail-closed gate; see EXPECTED_M2_UNIT_COUNT)
         id: flutter_test
         run: |
           flutter test test/unit/ --reporter expanded 2>&1 | tee flutter-test-linux.txt
@@ -148,12 +287,61 @@ jobs:
           [ "$COUNT" -eq 0 ] || { echo "::error::Secrets found in source!"; exit 1; }
           echo "SECRETS_IN_SOURCE=ZERO"
 
-      - name: Build Android AAB (qualification release)
+      - name: Build Android AAB (qualification release — unsigned; SIGNING_STATE=UNSIGNED_QUALIFICATION)
         run: |
           flutter build appbundle --release \
             --flavor qualification \
             --dart-define=ENVIRONMENT=qualification \
             --dart-define=PV_API_BASE_URL=${{ env.PV_API_BASE_URL }}
+
+      - name: Assert SIGNING_STATE=UNSIGNED_QUALIFICATION
+        run: |
+          AAB=build/app/outputs/bundle/qualificationRelease/app-qualification-release.aab
+          mkdir -p /tmp/aab-sign-check
+          unzip -o "$AAB" -d /tmp/aab-sign-check 2>/dev/null
+          if find /tmp/aab-sign-check -name "*.RSA" -o -name "*.DSA" -o -name "*.EC" -o -name "*.SF" \
+               2>/dev/null | grep -q .; then
+            echo "::error::SIGNING_STATE assertion failed: qualification AAB contains signing evidence"
+            exit 1
+          fi
+          echo "SIGNING_STATE=UNSIGNED_QUALIFICATION"
+          rm -rf /tmp/aab-sign-check
+
+      - name: Assert PRODUCTION_SIGNING_DEPENDENCY_GRAPH
+        run: |
+          # Dry-run bundleProductionRelease to prove assertProductionSigningForProductionRelease
+          # is in the task dependency graph — without credentials, without building anything.
+          DRY_RUN_OUTPUT=$(cd android && ./gradlew :app:bundleProductionRelease --dry-run 2>&1)
+          echo "$DRY_RUN_OUTPUT"
+          if ! echo "$DRY_RUN_OUTPUT" | grep -q ":app:assertProductionSigningForProductionRelease"; then
+            echo "::error::PRODUCTION_SIGNING_DEPENDENCY_GRAPH: gate task absent from bundleProductionRelease dependency plan"
+            exit 1
+          fi
+          if [ -f "build/app/outputs/bundle/productionRelease/app-production-release.aab" ]; then
+            echo "::error::PRODUCTION_AAB_EMITTED: dry-run produced a production AAB — custody violation"
+            exit 1
+          fi
+          echo "PRODUCTION_SIGNING_DEPENDENCY_GRAPH=PASS (gate in dependency plan, no AAB emitted)"
+
+      - name: Assert PRODUCTION_SIGNING_FAIL_CLOSED
+        run: |
+          # productionRelease must fail closed: gate must exit non-zero and emit
+          # the exact PRODUCTION_SIGNING_AUTHORITY_REQUIRED marker.
+          # CI has no key.properties and no ANDROID_SIGNING_PASSWORD.
+          set +e
+          (cd android && ./gradlew :app:assertProductionSigningForProductionRelease 2>&1) | tee /tmp/gate-output.txt
+          GATE_EXIT=${PIPESTATUS[0]}
+          set -e
+          if [ "$GATE_EXIT" -eq 0 ]; then
+            echo "::error::PRODUCTION_SIGNING_AUTHORITY_REQUIRED: gate succeeded unexpectedly — fail-closed regression"
+            exit 1
+          fi
+          if ! grep -q "PRODUCTION_SIGNING_AUTHORITY_REQUIRED" /tmp/gate-output.txt; then
+            echo "::error::PRODUCTION_SIGNING_FAIL_CLOSED: gate failed but PRODUCTION_SIGNING_AUTHORITY_REQUIRED marker absent"
+            cat /tmp/gate-output.txt
+            exit 1
+          fi
+          echo "PRODUCTION_SIGNING_FAIL_CLOSED=PASS (PRODUCTION_SIGNING_AUTHORITY_REQUIRED marker confirmed)"
 
       - name: Compute Android AAB SHA256
         id: aab_hash
@@ -212,11 +400,13 @@ jobs:
           retention-days: 30
 
       - name: Upload Linux test output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-test-output-linux
           path: flutter-test-linux.txt
           retention-days: 30
+          if-no-files-found: warn
 
   macos-ios:
     name: 'macOS — Analyze + Unit Tests + iOS Build'
@@ -258,7 +448,7 @@ jobs:
             { echo "::error::flutter analyze found issues"; exit 1; }
           echo "FLUTTER_ANALYZE_MACOS=PASS"
 
-      - name: flutter test — unit tests (assert exactly 172)
+      - name: flutter test — unit tests (fail-closed gate; see EXPECTED_M2_UNIT_COUNT)
         id: flutter_test
         run: |
           flutter test test/unit/ --reporter expanded 2>&1 | tee flutter-test-macos.txt
@@ -327,6 +517,12 @@ jobs:
     outputs:
       integration_gate: ${{ steps.int_gate.outputs.integration_gate }}
       m2_int_test_count: ${{ steps.int_test.outputs.m2_int_test_count }}
+      integration_state: ${{ steps.int_classify.outputs.integration_state }}
+      http_status: ${{ steps.probe.outputs.http_status }}
+      content_type: ${{ steps.probe.outputs.content_type }}
+      bootstrap_classification: ${{ steps.probe.outputs.bootstrap_classification }}
+      endpoint_url_sha256: ${{ steps.probe.outputs.endpoint_url_sha256 }}
+      endpoint_host: ${{ steps.probe.outputs.endpoint_host }}
 
     steps:
       - name: Checkout
@@ -342,19 +538,68 @@ jobs:
       - name: flutter pub get
         run: flutter pub get
 
+      - name: Probe bootstrap endpoint
+        id: probe
+        env:
+          PV_QUAL_API_BASE_URL: ${{ env.PV_QUAL_API_BASE_URL }}
+        run: |
+          if [ -z "$PV_QUAL_API_BASE_URL" ]; then
+            echo "endpoint_url_sha256=N/A" >> $GITHUB_OUTPUT
+            echo "endpoint_host=N/A" >> $GITHUB_OUTPUT
+            echo "http_status=N/A" >> $GITHUB_OUTPUT
+            echo "content_type=N/A" >> $GITHUB_OUTPUT
+            echo "bootstrap_classification=CREDENTIAL_OR_CONFIG_MISSING" >> $GITHUB_OUTPUT
+            echo "PROBE: PV_QUAL_API_BASE_URL not configured"
+            exit 0
+          fi
+          ENDPOINT_URL_SHA=$(printf '%s' "$PV_QUAL_API_BASE_URL" | sha256sum | cut -d' ' -f1)
+          ENDPOINT_HOST=$(printf '%s' "$PV_QUAL_API_BASE_URL" | sed 's|https\?://||' | cut -d'/' -f1)
+          echo "endpoint_url_sha256=$ENDPOINT_URL_SHA" >> $GITHUB_OUTPUT
+          echo "endpoint_host=$ENDPOINT_HOST" >> $GITHUB_OUTPUT
+          HTTP_STATUS=$(curl -s \
+            -D /tmp/probe-headers.txt \
+            -o /tmp/probe-body.txt \
+            -w '%{http_code}' \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            --connect-timeout 10 --max-time 15 \
+            "$PV_QUAL_API_BASE_URL/api/v1/mobile/token" \
+            -d "{\"tenant_id\":\"$PV_QUAL_TENANT_ID\",\"device_id\":\"$PV_QUAL_DEVICE_ID\",\"platform\":\"test\",\"app_version\":\"0.0.0\"}" \
+            2>/dev/null || echo "000")
+          echo "http_status=$HTTP_STATUS" >> $GITHUB_OUTPUT
+          CONTENT_TYPE=$(grep -i '^content-type:' /tmp/probe-headers.txt 2>/dev/null | \
+            head -1 | tr -d '\r\n' | sed 's/.*[Cc]ontent-[Tt]ype: *//' | sed 's/"/\\"/')
+          echo "content_type=$CONTENT_TYPE" >> $GITHUB_OUTPUT
+          RESP_PREFIX=$(head -c 200 /tmp/probe-body.txt 2>/dev/null | tr -d '\n\r' | cut -c1-80)
+          echo "PROBE: HTTP=$HTTP_STATUS host=$ENDPOINT_HOST content-type=$CONTENT_TYPE"
+          echo "PROBE: response-prefix=${RESP_PREFIX:0:80}"
+          if echo "$RESP_PREFIX" | grep -qi '<!DOCTYPE\|<html'; then
+            echo "bootstrap_classification=HTML_RESPONSE" >> $GITHUB_OUTPUT
+          elif [ "$HTTP_STATUS" = "000" ]; then
+            echo "bootstrap_classification=CONNECTION_FAILED" >> $GITHUB_OUTPUT
+          elif echo "$RESP_PREFIX" | grep -q '^[[:space:]]*{'; then
+            echo "bootstrap_classification=JSON_RESPONSE" >> $GITHUB_OUTPUT
+          else
+            echo "bootstrap_classification=UNKNOWN" >> $GITHUB_OUTPUT
+          fi
+
       - name: Real backend integration tests (M2-INT-01 to M2-INT-08)
         id: int_test
         env:
           PV_API_KEY: ${{ secrets.PV_QUAL_API_KEY }}
-          PV_TENANT_ID: ${{ vars.PV_QUAL_TENANT_ID }}
+          PV_TENANT_ID: ${{ env.PV_QUAL_TENANT_ID }}
           PV_QUAL_SUBJECT_ID: ${{ vars.PV_QUAL_SUBJECT_ID }}
-          PV_QUAL_API_BASE_URL: ${{ vars.PV_QUAL_API_BASE_URL }}
+          PV_QUAL_DEVICE_ID: ${{ env.PV_QUAL_DEVICE_ID }}
+          PV_QUAL_API_BASE_URL: ${{ env.PV_QUAL_API_BASE_URL }}
         run: |
           flutter test test/integration/ --reporter expanded \
             --dart-define=PV_API_BASE_URL=$PV_QUAL_API_BASE_URL \
             --dart-define=PV_API_KEY=$PV_API_KEY \
             --dart-define=PV_TENANT_ID=$PV_TENANT_ID \
             --dart-define=PV_QUAL_SUBJECT_ID=$PV_QUAL_SUBJECT_ID \
+            --dart-define=PV_QUAL_DEVICE_ID=$PV_QUAL_DEVICE_ID \
+            --dart-define=PV_MOBILE_PLATFORM=test \
             2>&1 | tee flutter-test-integration.txt
           grep -q "All tests passed" flutter-test-integration.txt || \
             { echo "::error::Integration tests failed"; exit 1; }
@@ -369,16 +614,35 @@ jobs:
           echo "integration_gate=PASS" >> $GITHUB_OUTPUT
           echo "M2_INT_GATE=PASS"
 
+      - name: Classify integration result
+        id: int_classify
+        if: always()
+        run: |
+          # See scripts/ci/classify_integration_result.sh for the classification logic
+          # and scripts/ci/classify_integration_result_test.sh for its regression coverage
+          # (also run unconditionally in the linux-android job's "Classifier regression
+          # self-test" step, so this logic is checked even when the real-backend job
+          # itself doesn't run).
+          STATE=$(INT_TEST_OUTCOME="${{ steps.int_test.outcome }}" \
+            BOOTSTRAP_CLASS="${{ steps.probe.outputs.bootstrap_classification }}" \
+            TEST_OUTPUT_FILE="flutter-test-integration.txt" \
+            bash scripts/ci/classify_integration_result.sh)
+          echo "integration_state=$STATE" >> $GITHUB_OUTPUT
+          echo "CLASSIFY: integration_state=$STATE (int_test outcome=${{ steps.int_test.outcome }})"
+
       - name: Upload integration test output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: flutter-test-output-integration
           path: flutter-test-integration.txt
           retention-days: 30
+          if-no-files-found: warn
 
   evidence:
     name: 'Evidence Assembly'
-    needs: [linux-android, macos-ios]
+    needs: [linux-android, macos-ios, real-backend-integration]
+    if: ${{ always() && needs.linux-android.result == 'success' && needs.macos-ios.result == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -413,9 +677,34 @@ jobs:
       - name: Generate mobile-m2-ci-evidence.json
         run: |
           WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Derive real-backend truth from actual integration job result.
+          # Possible results: success | failure | skipped (disabled by authority) | cancelled.
+          INTEGRATION_RESULT="${{ needs.real-backend-integration.result }}"
+          INTEGRATION_STATE="${{ needs.real-backend-integration.outputs.integration_state }}"
+          HTTP_STATUS="${{ needs.real-backend-integration.outputs.http_status }}"
+          CONTENT_TYPE="${{ needs.real-backend-integration.outputs.content_type }}"
+          BOOTSTRAP_CLASS="${{ needs.real-backend-integration.outputs.bootstrap_classification }}"
+          ENDPOINT_SHA="${{ needs.real-backend-integration.outputs.endpoint_url_sha256 }}"
+          ENDPOINT_HOST="${{ needs.real-backend-integration.outputs.endpoint_host }}"
+
+          if [ "$INTEGRATION_RESULT" = "skipped" ] || [ -z "$INTEGRATION_STATE" ]; then
+            FINAL_STATE="DISABLED_BY_AUTHORITY"
+            ENDPOINT_SHA="N/A"
+            ENDPOINT_HOST="N/A"
+            HTTP_STATUS="N/A"
+            CONTENT_TYPE="N/A"
+            BOOTSTRAP_CLASS="NOT_EXECUTED"
+          else
+            FINAL_STATE="$INTEGRATION_STATE"
+          fi
+
+          # Sanitize content_type for JSON embedding (strip quotes/control chars).
+          CONTENT_TYPE_SAFE=$(printf '%s' "$CONTENT_TYPE" | tr -d '"' | tr -d '\r\n' | cut -c1-80)
+
           cat > mobile-m2-ci-evidence.json << ENDJSON
           {
-            "schema": "pv.mobile-ci-evidence.m2.v1",
+            "schema": "pv.mobile-ci-evidence.m2.v2",
             "m2_head_sha": "${{ needs.linux-android.outputs.head_sha }}",
             "m1_ancestry_sha": "82ad06a",
             "workflow_run_id": "${{ github.run_id }}",
@@ -427,6 +716,7 @@ jobs:
             "java_version": "${{ needs.linux-android.outputs.java_version }}",
             "xcode_version": "${{ needs.macos-ios.outputs.xcode_version }}",
             "pubspec_lock_sha256": "${{ needs.linux-android.outputs.pubspec_lock_sha256 }}",
+            "pubspec_lock_sync": "${{ needs.linux-android.outputs.pubspec_lock_sync }}",
             "linux_flutter_analyze": "PASS",
             "linux_flutter_test_unit": "PASS",
             "linux_unit_test_count": ${{ needs.linux-android.outputs.test_count }},
@@ -434,6 +724,9 @@ jobs:
             "android_flavor": "qualification",
             "android_aab_sha256": "${{ needs.linux-android.outputs.android_aab_sha256 }}",
             "android_aab_size_bytes": ${{ needs.linux-android.outputs.android_aab_size }},
+            "signing_state": "UNSIGNED_QUALIFICATION",
+            "production_signing_dependency_graph": "PASS",
+            "production_signing_fail_closed": "PASS",
             "macos_flutter_analyze": "PASS",
             "macos_flutter_test_unit": "PASS",
             "macos_unit_test_count": ${{ needs.macos-ios.outputs.test_count }},
@@ -461,9 +754,14 @@ jobs:
               "result": "PASS"
             },
             "real_backend": {
-              "url": "${{ env.PV_API_BASE_URL }}",
+              "endpoint_binding": "sha256:$ENDPOINT_SHA",
+              "endpoint_host_sanitized": "$ENDPOINT_HOST",
+              "bootstrap_path": "/api/v1/mobile/token",
               "api_key_source": "PV_QUAL_API_KEY (GitHub secret)",
-              "integration_gate": "PENDING_CREDENTIAL_PROVISIONING"
+              "integration_state": "$FINAL_STATE",
+              "http_status": "$HTTP_STATUS",
+              "content_type": "$CONTENT_TYPE_SAFE",
+              "bootstrap_classification": "$BOOTSTRAP_CLASS"
             },
             "eight_stone_binding": "PASS",
             "downloaded_android_hash_match": "PASS",
@@ -475,6 +773,24 @@ jobs:
           }
           ENDJSON
           cat mobile-m2-ci-evidence.json
+
+      - name: Assert evidence truth
+        run: |
+          # Regression gate: when integration executed, evidence must not claim
+          # PENDING_CREDENTIAL_PROVISIONING and must not bind to the global build URL.
+          INTEGRATION_RESULT="${{ needs.real-backend-integration.result }}"
+          if [ "$INTEGRATION_RESULT" = "success" ] || [ "$INTEGRATION_RESULT" = "failure" ]; then
+            if grep -q 'PENDING_CREDENTIAL_PROVISIONING' mobile-m2-ci-evidence.json; then
+              echo "::error::EVIDENCE_TRUTH_REGRESSION: integration executed but evidence claims PENDING_CREDENTIAL_PROVISIONING"
+              exit 1
+            fi
+            GLOBAL_URL_SHA=$(printf '%s' '${{ env.PV_API_BASE_URL }}' | sha256sum | cut -d' ' -f1)
+            if grep -q "sha256:$GLOBAL_URL_SHA" mobile-m2-ci-evidence.json; then
+              echo "::error::EVIDENCE_TRUTH_REGRESSION: evidence binds global build URL instead of qualification endpoint"
+              exit 1
+            fi
+          fi
+          echo "EVIDENCE_TRUTH=PASS"
 
       - name: Generate checksum manifest
         run: |

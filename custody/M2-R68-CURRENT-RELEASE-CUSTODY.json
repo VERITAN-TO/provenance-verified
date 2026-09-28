@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.1.0",
+  "custody_type": "PV_MISSION2_CURRENT_NATIVE_RELEASE_HANDOFF",
+  "status": "QUALIFICATION_ONLY",
+  "qualified_product_sha": "2ebb9c9abb367abc62f5faf27499bb451a7b8744",
+  "source_branch": "successor/m4-determination-first-r2",
+  "qualified_product_workflow_run": 35461791929,
+  "custody_overlay_parent_sha": "ba4c7515ad37a27fd9d03d260f2f5d9e7e331a66",
+  "custody_record_revision_rule": "The Git commit containing this file is the custody-record revision identity; do not embed a self-referential current commit SHA.",
+  "control_vector": {
+    "authority": {
+      "repository": "VERITAN-TO/provenance-verified-private",
+      "pull_request": 17,
+      "sha": "820cd6a7b9a20bd1697c0d7e40302241087d6b79"
+    },
+    "web_customer": {
+      "repository": "VERITAN-TO/provenance-verified-private",
+      "pull_request": 47,
+      "sha": "0e8edd04eb8a6d1c8b1443abc8dd94048db8533e"
+    },
+    "backend_convergence": {
+      "repository": "VERITAN-TO/provenance-verified-private",
+      "pull_request": 48,
+      "sha": "9700ca51a1ba332fa037586e8d19c24ff837f27e"
+    }
+  },
+  "toolchain": {
+    "flutter": "3.47.2",
+    "dart": "3.13.2",
+    "app_version": "3.0.0+1",
+    "pubspec_lock_sha256": "6c8f8434cd1eeeb3897f403e332f5821a874afee248577bf09af75b9a64d6540"
+  },
+  "bundle_ids": {
+    "ios_production": "to.veritan.pv",
+    "android_production": "to.veritan.pv",
+    "android_qualification": "to.veritan.pv.qual",
+    "android_development": "to.veritan.pv.dev"
+  },
+  "qualification": {
+    "pubspec_lock_sync": "PASS",
+    "linux_analyze": "PASS",
+    "linux_unit_tests": "PASS_370",
+    "android_unsigned_qualification": "PASS",
+    "macos_analyze": "PASS",
+    "macos_unit_tests": "PASS_370",
+    "ios_no_codesign_release": "PASS",
+    "evidence_assembly": "PASS",
+    "real_backend_integration": "EXECUTED_FAIL_EXTERNAL_BACKEND"
+  },
+  "artifacts": {
+    "android_qualification_aab": {
+      "artifact_id": 10588944948,
+      "sha256": "60efb7db2692e7d06d106a0d7481ccf567099766536adca3bb9ea58426c3cddc",
+      "signing_state": "UNSIGNED_QUALIFICATION"
+    },
+    "ios_nocodesign_app": {
+      "artifact_id": 10589996186,
+      "sha256": "63b2706c548d4592b6c8e6dd5ba65a6e03109be87b7f10bc4d8860f7d7a378a7",
+      "signing_state": "NO_CODESIGN"
+    },
+    "evidence_package": {
+      "artifact_id": 10590695050,
+      "sha256": "57e6b00ac3d94c7969705080d107a53a09fc385912c24effa033a5c2cc46cf7d"
+    },
+    "resolved_pubspec_lock": {
+      "artifact_id": 10589980794,
+      "sha256": "6c8f8434cd1eeeb3897f403e332f5821a874afee248577bf09af75b9a64d6540"
+    }
+  },
+  "exact_head_requalification": {
+    "parent_custody_sha": "ba4c7515ad37a27fd9d03d260f2f5d9e7e331a66",
+    "parent_exact_head_run": 35461791929,
+    "parent_run_state": "COMPLETED_WITH_EXTERNAL_BACKEND_FAILURE_ONLY",
+    "repo_owned_gates": {
+      "linux_analyze_unit_android": "PASS",
+      "macos_analyze_unit_ios_nocodesign": "PASS",
+      "evidence_assembly": "PASS"
+    },
+    "real_backend_integration": "EXECUTED_FAIL_EXTERNAL_BACKEND",
+    "next_revision_rule": "qualified_product_sha above is now bound to its own exact-head CI evidence (run 35461791929, unit count 370/370 on both Linux and macOS); this satisfies the prior revision's outstanding child-SHA-requalification requirement. CUSTOS must still independently verify and bind SHA-specific release custody before promotion beyond QUALIFICATION_ONLY status, and any further head movement reopens this requirement again."
+  },
+  "historical_custody": {
+    "custody/M3-RELEASE-CANDIDATE.json": {
+      "classification": "HISTORICAL_ONLY",
+      "reason": "Binds historical M2/M3 source SHAs, 183-test evidence and an older signed Android artifact. It is not the current Mission 2 candidate."
+    },
+    "M2-IOS-NATIVE-E2E-CUSTODY.json": {
+      "classification": "HISTORICAL_ONLY",
+      "reason": "Binds historical profile runner, development provisioning lineage and older bundle identifier. It is not current release custody."
+    }
+  },
+  "release_authority": {
+    "android_production_signing": "HUMAN_AUTHORITY_REQUIRED",
+    "android_signing_gate": "key.properties + ANDROID_SIGNING_PASSWORD",
+    "ios_export_method": "app-store-connect",
+    "ios_signing_style": "automatic",
+    "ios_production_signing": "HUMAN_AUTHORITY_REQUIRED",
+    "testflight": "NOT_EXECUTED",
+    "app_store_submission": "NOT_EXECUTED",
+    "play_store_submission": "NOT_EXECUTED"
+  },
+  "transfer_custody_boundary": {
+    "transfer_mutation_authority": "NOT_PROVEN",
+    "transfer_mutation_genuinely_missing": true,
+    "native_transfer_mutation": "PROHIBITED_UNTIL_SERVER_AUTHORITY_EXISTS",
+    "read_only_custody_history": "PRESERVE"
+  },
+  "external_gate": {
+    "real_backend_integration": {
+      "state": "EXECUTED_FAIL_EXTERNAL_BACKEND",
+      "workflow_variable": "PV_QUAL_API_BASE_URL",
+      "observed_endpoint": "pv-r08-runtime-replay-8emjojrr2-admin-56661436s-projects.vercel.app",
+      "observed_deployment_id": "dpl_7mjCMKqkZKcqULDJHRWEHHopqkUi",
+      "observed_backend_sha": "4336e5587922ce3b73a904d0a1088bdc35465f58",
+      "observed_backend_target": "preview (target=null, non-production)",
+      "root_cause_verified": "Direct read of src/app/api/v1/mobile/token/route.ts at PR #48 head 9700ca51a1ba332fa037586e8d19c24ff837f27e confirms serviceHeaders() throws SERVICE_ROLE_BOUNDARY_UNAVAILABLE before any Supabase fetch when PV_SUPABASE_SECRET_KEY is unset; the surrounding try/catch maps this to 503 SERVICE_UNAVAILABLE. This is an A-lane preview-environment configuration gap (missing secret + redeploy), not a Native defect and not a URL-binding defect.",
+      "required_backend_relation": "Must bind to the current lawful non-production API contract, with PV_SUPABASE_SECRET_KEY configured on that preview, before Real Backend Integration can qualify.",
+      "rule": "Do not patch Native around the backend failure."
+    }
+  },
+  "rollback": {
+    "strategy": "Revert only the custody overlay revision(s) to the prior custody parent.",
+    "prior_custody_parent": "ba4c7515ad37a27fd9d03d260f2f5d9e7e331a66",
+    "product_history_rewrite": false,
+    "backend_mutation_required": false,
+    "key_or_certificate_action_required": false
+  },
+  "prohibited_actions": [
+    "PRODUCTION_SIGNING",
+    "TESTFLIGHT",
+    "APP_STORE_SUBMISSION",
+    "PLAY_STORE_SUBMISSION",
+    "KEY_OR_CERT_REGENERATION",
+    "PRODUCTION_DEPLOYMENT",
+    "PRODUCTION_DB_OR_DATA_MUTATION",
+    "LIVE_MONEY"
+  ],
+  "maximum_truthful_state": "TESTED_QUALIFICATION_ARTIFACTS_PRESENT_AT_EXACT_HEAD__REAL_BACKEND_INTEGRATION_BLOCKED_ON_A_LANE_PREVIEW_MISSING_PV_SUPABASE_SECRET_KEY"
+}

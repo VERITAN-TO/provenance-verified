@@ -14,9 +14,13 @@ class ContinuityWidget extends StatelessWidget {
     final state = continuity?.state ?? record.subject.continuityState;
     final hasGap = record.hasContinuityGap;
     final gapDesc = continuity?.gapDescription;
+    final custodian = continuity?.currentCustodian;
+    final owner = continuity?.currentOwner;
     final color = hasGap ? PvColors.warning : PvColors.success;
     return Semantics(
-      label: 'Custody continuity: ${state.name}',
+      label: 'Custody continuity: ${state.name}'
+          '${custodian != null ? ", custodian: $custodian" : ""}'
+          '${owner != null ? ", title holder: $owner" : ""}',
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -41,6 +45,24 @@ class ContinuityWidget extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(gapDesc, style: PvTypography.bodySmall),
+              ),
+            // Server-reported custodian and title holder — display-only.
+            // CUSTODY_IS_NOT_LEGAL_TITLE = TRUE: no ownership authority is asserted.
+            if (custodian != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'CUSTODIAN: $custodian',
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                ),
+              ),
+            if (owner != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'TITLE HOLDER: $owner',
+                  style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                ),
               ),
           ],
         ),

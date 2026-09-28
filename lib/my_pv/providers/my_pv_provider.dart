@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../models/my_pv_models.dart';
+import '../../auth/auth_models.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../core/config/environment.dart';
 
@@ -15,11 +16,11 @@ Map<String, String> _authHeaders(String accessToken) => {
 };
 
 Future<String> _validToken(Ref ref) async {
-  var session = ref.read(currentUserProvider);
+  CustomerSession? session = ref.read(currentUserProvider);
   if (session == null) throw Exception('not_authenticated');
   if (session.isExpired) {
     await ref.read(authProvider.notifier).refresh();
-    session = ref.read(currentUserProvider);
+    session = ref.read<CustomerSession?>(currentUserProvider);
   }
   if (session == null || session.accessToken.isEmpty || session.isExpired) {
     throw Exception('not_authenticated');
@@ -55,7 +56,7 @@ final customerAssetsProvider = FutureProvider<List<CustomerAsset>>((ref) async {
   }
 });
 
-final assetDetailProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, assetId) async {
+final assetDetailProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, assetId) async {
   final uri = Uri.parse('$_baseUrl/api/v1/customer/assets/${Uri.encodeComponent(assetId)}');
   final client = http.Client();
   try {
