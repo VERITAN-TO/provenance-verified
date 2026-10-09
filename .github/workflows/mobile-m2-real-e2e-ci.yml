@@ -121,7 +121,9 @@ env:
   #   (vbscript, file) +2 pv:// edge cases (empty path, non-PV-ID path). Count: 386 + 6 = 392.
   # API client error-path coverage (M2-20..M2-25): +8 tests (hasError 200, 5xx, and 401/non-200
   #   for evaluateActionability + createRelianceReceipt). Count: 392 + 8 = 400.
-  EXPECTED_M2_UNIT_COUNT: '400'
+  # SubmissionQuote/SubmissionDraft model tests: +12 tests (payment_required inference, _descriptionFor
+  #   fallback, data envelope, tier key fallback, why_not_higher, declarationsComplete). Count: 400 + 12 = 412.
+  EXPECTED_M2_UNIT_COUNT: '412'
 
 jobs:
   linux-android:
