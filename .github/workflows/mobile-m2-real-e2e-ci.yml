@@ -133,7 +133,10 @@ env:
   # Home/auth/my-pv model behavioral tests: +22 tests (CustomerSession.isExpired/expiresWithin/fromJson/copyWith,
   #   AlertType.fromJson fail-closed, RecentScan/SubmissionSummary/TrustAlert field defaults,
   #   CustomerAsset trust_tier null-safety CUSTOMER_SELECTS_TIER=FALSE). Count: 470 + 22 = 492.
-  EXPECTED_M2_UNIT_COUNT: '492'
+  # Constants/offline behavioral tests: +13 tests (M1 Security Law actionabilityCacheForReliance=false locked
+  #   at runtime, publicIdPattern valid/invalid inputs, digestPattern sha256 format, CachedRecord defaults).
+  #   Count: 492 + 13 = 505.
+  EXPECTED_M2_UNIT_COUNT: '505'
 
 jobs:
   linux-android:
