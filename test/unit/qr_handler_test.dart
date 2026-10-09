@@ -21,6 +21,20 @@ void main() {
       expect((result as QrValid).publicId, 'PV-TEST-S1-001');
     });
 
+    test('/registry path is valid', () {
+      final result = QrHandler.parse(
+          'https://provenanceverified.org/registry/PV-TEST-S2-001');
+      expect(result, isA<QrValid>());
+      expect((result as QrValid).publicId, 'PV-TEST-S2-001');
+    });
+
+    test('/reliance path is valid', () {
+      final result = QrHandler.parse(
+          'https://provenanceverified.org/reliance/PV-TEST-S3-001');
+      expect(result, isA<QrValid>());
+      expect((result as QrValid).publicId, 'PV-TEST-S3-001');
+    });
+
     test('pv:// scheme URL is valid', () {
       final result = QrHandler.parse('pv://verify/PV-TEST-S3-001');
       expect(result, isA<QrValid>());
@@ -75,9 +89,25 @@ void main() {
           isA<QrInvalid>());
     });
 
+    test('vbscript: scheme is rejected', () {
+      expect(QrHandler.parse('vbscript:MsgBox(1)'), isA<QrInvalid>());
+    });
+
+    test('file: scheme is rejected', () {
+      expect(QrHandler.parse('file:///etc/passwd'), isA<QrInvalid>());
+    });
+
     test('URL with no PV ID path is invalid', () {
       expect(QrHandler.parse('https://provenanceverified.org/about'),
           isA<QrInvalid>());
+    });
+
+    test('pv:// with empty path is invalid', () {
+      expect(QrHandler.parse('pv://'), isA<QrInvalid>());
+    });
+
+    test('pv:// with non-PV-ID path is invalid', () {
+      expect(QrHandler.parse('pv://verify/not-a-pv-id'), isA<QrInvalid>());
     });
 
     test('lookalike domain is rejected', () {
