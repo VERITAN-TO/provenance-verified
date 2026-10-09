@@ -123,7 +123,9 @@ env:
   #   for evaluateActionability + createRelianceReceipt). Count: 392 + 8 = 400.
   # SubmissionQuote/SubmissionDraft model tests: +12 tests (payment_required inference, _descriptionFor
   #   fallback, data envelope, tier key fallback, why_not_higher, declarationsComplete). Count: 400 + 12 = 412.
-  EXPECTED_M2_UNIT_COUNT: '412'
+  # ClaimantIdentityStatus.fromJson runtime tests: +11 tests (verified flag for VERIFIED/PENDING/FAILED/
+  #   REQUIRES_INPUT/absent, explicit verified=true, data envelope, assuranceLevel, verifiedAt). Count: 412 + 11 = 423.
+  EXPECTED_M2_UNIT_COUNT: '423'
 
 jobs:
   linux-android:
