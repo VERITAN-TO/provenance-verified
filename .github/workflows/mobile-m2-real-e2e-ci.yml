@@ -119,7 +119,9 @@ env:
   # R29 (19bd9c1) dart-format compliance + format-agnostic static assertions adds 5 tests. Count: 381 + 5 = 386.
   # Dependency-ready QR handler coverage (ec244e4): +2 valid paths (/registry, /reliance) +2 dangerous schemes
   #   (vbscript, file) +2 pv:// edge cases (empty path, non-PV-ID path). Count: 386 + 6 = 392.
-  EXPECTED_M2_UNIT_COUNT: '392'
+  # API client error-path coverage (M2-20..M2-25): +8 tests (hasError 200, 5xx, and 401/non-200
+  #   for evaluateActionability + createRelianceReceipt). Count: 392 + 8 = 400.
+  EXPECTED_M2_UNIT_COUNT: '400'
 
 jobs:
   linux-android:

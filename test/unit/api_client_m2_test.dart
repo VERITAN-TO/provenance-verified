@@ -400,4 +400,174 @@ void main() {
       expect(result['trust_state_digest'], _trustStateDigest);
     });
   });
+
+  // ── M2-20: getMachineTrust 200 with hasError → ApiException ──────────────
+
+  group('M2-20: getMachineTrust 200 body with error field → ApiException', () {
+    Map<String, dynamic> errPayload() => {
+          ..._machineTrustPayload(),
+          'error': {'code': 'TRUST_RECORD_INVALID', 'message': 'Record flagged.'},
+        };
+
+    test('200 response with error field throws ApiException', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode(errPayload()),
+            200,
+            headers: {
+              'content-type': 'application/json',
+              'x-pv-trust-state-digest': _trustStateDigest,
+              'x-pv-physical-subject': _physicalSubject,
+            },
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      expect(() => client.getMachineTrust('PV-QUAL-001'), throwsA(isA<ApiException>()));
+    });
+
+    test('ApiException from 200+hasError carries statusCode 200 and errorCode', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode(errPayload()),
+            200,
+            headers: {
+              'content-type': 'application/json',
+              'x-pv-trust-state-digest': _trustStateDigest,
+              'x-pv-physical-subject': _physicalSubject,
+            },
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      try {
+        await client.getMachineTrust('PV-QUAL-001');
+        fail('Should have thrown');
+      } on ApiException catch (e) {
+        expect(e.statusCode, 200);
+        expect(e.errorCode, 'TRUST_RECORD_INVALID');
+      }
+    });
+  });
+
+  // ── M2-21: getMachineTrust 5xx → ApiException ────────────────────────────
+
+  group('M2-21: getMachineTrust 5xx → ApiException', () {
+    test('500 throws ApiException with statusCode 500', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode({'error': {'code': 'INTERNAL_ERROR'}}),
+            500,
+            headers: {'content-type': 'application/json'},
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      try {
+        await client.getMachineTrust('PV-QUAL-001');
+        fail('Should have thrown');
+      } on ApiException catch (e) {
+        expect(e.statusCode, 500);
+      }
+    });
+
+    test('500 with structured error body → errorCode extracted', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode({'error': {'code': 'INTERNAL_ERROR'}}),
+            500,
+            headers: {'content-type': 'application/json'},
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      try {
+        await client.getMachineTrust('PV-QUAL-001');
+        fail('Should have thrown');
+      } on ApiException catch (e) {
+        expect(e.errorCode, 'INTERNAL_ERROR');
+      }
+    });
+  });
+
+  // ── M2-22: evaluateActionability 401 → auto-retry → ApiException ─────────
+
+  group('M2-22: evaluateActionability 401 → auto-retry → ApiException', () {
+    test('persistent 401 throws ApiException', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode({'error': {'code': 'TOKEN_EXPIRED'}}),
+            401,
+            headers: {'content-type': 'application/json'},
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      expect(
+        () => client.evaluateActionability(
+          subjectId: 'PV-QUAL-001',
+          purposeId: 'PURCHASE',
+          requestedAction: 'evaluate',
+          claimScope: 'standard',
+        ),
+        throwsA(isA<ApiException>()),
+      );
+    });
+  });
+
+  // ── M2-23: evaluateActionability non-200 → ApiException ──────────────────
+
+  group('M2-23: evaluateActionability non-200 → ApiException', () {
+    test('503 throws ApiException with statusCode 503', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode({'error': {'code': 'SERVICE_UNAVAILABLE'}}),
+            503,
+            headers: {'content-type': 'application/json'},
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      try {
+        await client.evaluateActionability(
+          subjectId: 'PV-QUAL-001',
+          purposeId: 'PURCHASE',
+          requestedAction: 'evaluate',
+          claimScope: 'standard',
+        );
+        fail('Should have thrown');
+      } on ApiException catch (e) {
+        expect(e.statusCode, 503);
+      }
+    });
+  });
+
+  // ── M2-24: createRelianceReceipt 401 → auto-retry → ApiException ─────────
+
+  group('M2-24: createRelianceReceipt 401 → auto-retry → ApiException', () {
+    test('persistent 401 throws ApiException', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode({'error': {'code': 'TOKEN_EXPIRED'}}),
+            401,
+            headers: {'content-type': 'application/json'},
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      expect(
+        () => client.createRelianceReceipt(
+          subjectId: 'PV-QUAL-001',
+          purposeId: 'PURCHASE',
+          requestedAction: 'evaluate',
+          claimScope: 'standard',
+        ),
+        throwsA(isA<ApiException>()),
+      );
+    });
+  });
+
+  // ── M2-25: createRelianceReceipt non-200/201 → ApiException ──────────────
+
+  group('M2-25: createRelianceReceipt non-200/201 → ApiException', () {
+    test('403 throws ApiException with statusCode 403 and errorCode', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            jsonEncode({'error': {'code': 'INSUFFICIENT_SCOPE'}}),
+            403,
+            headers: {'content-type': 'application/json'},
+          ));
+      final client = ApiClient(client: mockClient, baseUrl: _baseUrl, tokenService: _makeTokenService());
+      try {
+        await client.createRelianceReceipt(
+          subjectId: 'PV-QUAL-001',
+          purposeId: 'PURCHASE',
+          requestedAction: 'evaluate',
+          claimScope: 'standard',
+        );
+        fail('Should have thrown');
+      } on ApiException catch (e) {
+        expect(e.statusCode, 403);
+        expect(e.errorCode, 'INSUFFICIENT_SCOPE');
+      }
+    });
+  });
 }
