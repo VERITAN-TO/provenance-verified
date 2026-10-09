@@ -136,7 +136,9 @@ env:
   # Constants/offline behavioral tests: +13 tests (M1 Security Law actionabilityCacheForReliance=false locked
   #   at runtime, publicIdPattern valid/invalid inputs, digestPattern sha256 format, CachedRecord defaults).
   #   Count: 492 + 13 = 505.
-  EXPECTED_M2_UNIT_COUNT: '505'
+  # Exception format behavioral tests: +8 tests (AuthException/ApiException toString contract; errorCode
+  #   conditional format; statusCode/message preservation; both implement Exception). Count: 505 + 8 = 513.
+  EXPECTED_M2_UNIT_COUNT: '513'
 
 jobs:
   linux-android:
