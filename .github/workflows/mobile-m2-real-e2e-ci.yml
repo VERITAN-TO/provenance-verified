@@ -41,7 +41,7 @@ env:
   #   count gate 262 was sole failure. CI evidence: "+266: All tests passed!"
   # R34 adds 2 tests: C34-1..C34-2 (unknown lifecycle fail-closed authorityUnavailable; pv_credentials source).
   # Confirmed executed count: 268 — from CI run 35191693648 on commit 12728eb (R34) — all 268 pass;
-  #   count gate 266 was sole failure. CI evidence: "+268: All tests passed!"
+  #   count gate 266 was sole failure. CI evidence: "+266: All tests passed!"
   # R35/R36 adds 1 test: C35-1 (my_pv tier labels match canonical Web/Core names).
   # Confirmed executed count: 269 — from CI run 35198037033 job 105125821219 on commit 4c91907 (R36) — all 269 pass;
   #   count gate 268 was sole failure. CI evidence: "+269: All tests passed!"
@@ -115,7 +115,11 @@ env:
   #   evidence: "+360: All tests passed!"; the sole prior failure on this commit's predecessor
   #   run was flutter analyze's unnecessary_cast, fixed in 147e5f316 — not a test failure).
   # M2-50-06 (C64-1..C64-5) adds 5 tests. Confirmed 375 from CI run 35542197695 on b0f4ade4.
-  EXPECTED_M2_UNIT_COUNT: '375'
+  # R22 (4bfbe3ed) canonicalize CUSTOS-accepted pre-intake identity repair: adds 6 tests
+  #   (PI-1..PI-6: R17 Pre-Intake Identity Parity — import wiring, step-0 pre-check order,
+  #   launchClaimantIdentityVerification routing, 428 handler, 428 user-copy, coordinator API).
+  #   Verified paired with submit_screen.dart code changes. No security relaxation. Count: 375 + 6 = 381.
+  EXPECTED_M2_UNIT_COUNT: '381'
 
 jobs:
   linux-android:
