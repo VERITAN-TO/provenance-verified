@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provenance_verified_app/submit/models/submit_models.dart';
@@ -26,8 +27,14 @@ void main() {
       expect(ServiceTier.t1Free.priceRange, 'Free if determined T1');
       expect(ServiceTier.t2Standard.priceRange, '\$50 if determined T2');
       expect(ServiceTier.t3Professional.priceRange, '\$150 if determined T3');
-      expect(ServiceTier.t4Certified.priceRange, '\$350 if evidence determines T4');
-      expect(ServiceTier.t4Certified.machineTrustState, contains('GOLD SEAL AUTHORITY SEPARATE'));
+      expect(
+        ServiceTier.t4Certified.priceRange,
+        '\$350 if evidence determines T4',
+      );
+      expect(
+        ServiceTier.t4Certified.machineTrustState,
+        contains('GOLD SEAL AUTHORITY SEPARATE'),
+      );
     });
 
     test('quote parses determined tier and determination evidence', () {
@@ -78,12 +85,23 @@ void main() {
     });
 
     test('native evaluation and settlement carry no client tier or price authority', () {
-      final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
-      final payment = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
+      final submit = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
+      final payment = File('lib/submit/providers/payment_coordinator.dart')
+          .readAsStringSync();
 
-      expect(submit, contains("_postJson('/api/v1/customer/submissions/start', const {})"));
-      expect(submit, contains("/api/v1/customer/submissions/\$submissionId/evaluate"));
-      expect(submit, isNot(contains("/api/v1/customer/submissions/\$submissionId/submit")));
+      expect(
+        submit,
+        contains("_postJson('/api/v1/customer/submissions/start', const {})"),
+      );
+      expect(
+        submit,
+        contains("/api/v1/customer/submissions/\$submissionId/evaluate"),
+      );
+      expect(
+        submit,
+        isNot(contains("/api/v1/customer/submissions/\$submissionId/submit")),
+      );
       expect(submit, isNot(contains("'requested_service_tier'")));
 
       expect(payment, contains("'submissionId': submissionId"));
@@ -93,32 +111,54 @@ void main() {
       expect(payment, isNot(contains("'payment_intent_id'")));
     });
 
-    test('both free and paid determinations bind canonical settlement explicitly', () {
-      final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
-      expect(submit, contains('Both FREE and PAID orders must be explicitly bound after determination.'));
-      expect(submit, contains('_payment.bindSettlement'));
-      expect(submit, isNot(contains('T1 free order is bound server-side when it is created.')));
-    });
+    test(
+      'both free and paid determinations bind canonical settlement explicitly',
+      () {
+        final submit = File('lib/submit/providers/submit_provider.dart')
+            .readAsStringSync();
+        expect(
+          submit,
+          contains(
+            'Both FREE and PAID orders must be explicitly bound after determination.',
+          ),
+        );
+        expect(submit, contains('_payment.bindSettlement'));
+        expect(
+          submit,
+          isNot(
+            contains('T1 free order is bound server-side when it is created.'),
+          ),
+        );
+      },
+    );
 
     test('tier cards are informational, not customer-selection controls', () {
-      final card = File('lib/submit/widgets/service_tier_card.dart').readAsStringSync();
+      final card = File('lib/submit/widgets/service_tier_card.dart')
+          .readAsStringSync();
       expect(card, contains('educational PV trust-ladder card'));
-      expect(card, contains('Your evidence determines whether this state is earned.'));
+      expect(
+        card,
+        contains('Your evidence determines whether this state is earned.'),
+      );
       expect(card, isNot(contains('Select service path')));
       expect(card, isNot(contains('Requested service selected')));
     });
 
     test('expired-session paths call the real auth refresh notifier', () {
-      final submit = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
-      final activity = File('lib/activity/providers/activity_provider.dart').readAsStringSync();
-      final myPv = File('lib/my_pv/providers/my_pv_provider.dart').readAsStringSync();
+      final submit = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
+      final activity = File('lib/activity/providers/activity_provider.dart')
+          .readAsStringSync();
+      final myPv = File('lib/my_pv/providers/my_pv_provider.dart')
+          .readAsStringSync();
       expect(submit, contains('authProvider.notifier).refresh()'));
       expect(activity, contains('authProvider.notifier).refresh()'));
       expect(myPv, contains('authProvider.notifier).refresh()'));
     });
 
     test('submit screen is educational trust ladder with no customer tier authority', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
 
       expect(screen, contains('PV TRUST LADDER'));
       expect(screen, contains('DETERMINATION & PRICING'));
@@ -129,29 +169,58 @@ void main() {
       expect(screen, isNot(contains('requested service tier')));
       expect(screen, isNot(contains('selectTier(')));
 
-      final savePos     = screen.indexOf('saveDeclarations()');
-      final evalPos     = screen.indexOf('submitForEvaluation()');
-      final quotePos    = screen.indexOf('fetchQuote()');
-      expect(savePos,  greaterThan(-1), reason: 'saveDeclarations() must be present');
-      expect(evalPos,  greaterThan(-1), reason: 'submitForEvaluation() must be present');
+      final savePos = screen.indexOf('saveDeclarations()');
+      final evalPos = screen.indexOf('submitForEvaluation()');
+      final quotePos = screen.indexOf('fetchQuote()');
+      expect(
+        savePos,
+        greaterThan(-1),
+        reason: 'saveDeclarations() must be present',
+      );
+      expect(
+        evalPos,
+        greaterThan(-1),
+        reason: 'submitForEvaluation() must be present',
+      );
       expect(quotePos, greaterThan(-1), reason: 'fetchQuote() must be present');
-      expect(savePos,  lessThan(evalPos),  reason: 'saveDeclarations must precede submitForEvaluation');
-      expect(evalPos,  lessThan(quotePos), reason: 'submitForEvaluation must precede fetchQuote');
+      expect(
+        savePos,
+        lessThan(evalPos),
+        reason: 'saveDeclarations must precede submitForEvaluation',
+      );
+      expect(
+        evalPos,
+        lessThan(quotePos),
+        reason: 'submitForEvaluation must precede fetchQuote',
+      );
     });
 
     test('settlement cannot precede canonical determination', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      final quotePos    = screen.indexOf('fetchQuote()');
-      final settlePos   = screen.indexOf('settleDeterminedResult()');
-      expect(settlePos, greaterThan(-1), reason: 'settleDeterminedResult() must be present');
-      expect(quotePos,  lessThan(settlePos), reason: 'fetchQuote must precede settleDeterminedResult');
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      final quotePos = screen.indexOf('fetchQuote()');
+      final settlePos = screen.indexOf('settleDeterminedResult()');
+      expect(
+        settlePos,
+        greaterThan(-1),
+        reason: 'settleDeterminedResult() must be present',
+      );
+      expect(
+        quotePos,
+        lessThan(settlePos),
+        reason: 'fetchQuote must precede settleDeterminedResult',
+      );
     });
 
     test('submit screen uses canonical tier names and evidence-and-policy authority', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
 
       expect(screen, isNot(contains('determined by the review team')));
-      expect(screen, isNot(contains('exclusively by the PROVENANCE VERIFIED™ review team')));
+      expect(
+        screen,
+        isNot(contains('exclusively by the PROVENANCE VERIFIED™ review team')),
+      );
 
       expect(screen, contains('Accountable Existence'));
       expect(screen, contains('Accountable Declaration'));
@@ -172,74 +241,100 @@ void main() {
     });
 
     test('activity screen does not project requested tier as trust state', () {
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
 
-      expect(activity, isNot(contains("'Requested: \${item.requestedServiceTier}'")));
+      expect(
+        activity,
+        isNot(contains("'Requested: \${item.requestedServiceTier}'")),
+      );
       expect(activity, isNot(contains('"Requested: "')));
 
       expect(activity, contains('Awaiting determination'));
     });
 
     test('activity model marks requestedServiceTier as decode-only', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
 
       expect(model, contains('Decode-only'));
-      expect(model, contains('Must not be projected as current trust authority'));
+      expect(
+        model,
+        contains('Must not be projected as current trust authority'),
+      );
     });
 
     test('submission detail screen does not project requestedServiceTier as trust state', () {
-      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
 
       expect(screen, isNot(contains("'Requested Service'")));
       expect(screen, isNot(contains('requestedServiceTier')));
     });
 
-    test('T4 determination does not grant Gold Seal or official credential', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(screen, contains('signing, issuance, or registry activation'));
-      expect(screen, isNot(contains('T4 — PV GOLD SEAL')));
-    });
+    test(
+      'T4 determination does not grant Gold Seal or official credential',
+      () {
+        final screen = File('lib/submit/screens/submit_screen.dart')
+            .readAsStringSync();
+        expect(screen, contains('signing, issuance, or registry activation'));
+        expect(screen, isNot(contains('T4 — PV GOLD SEAL')));
+      },
+    );
 
-    test('scanner navigates to canonical /verify/manual route, not bare /manual', () {
-      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
-      expect(scanner, contains("'/verify/manual'"));
-      expect(scanner, isNot(contains("'/manual'")));
-    });
+    test(
+      'scanner navigates to canonical /verify/manual route, not bare /manual',
+      () {
+        final scanner = File('lib/scanner/screens/scanner_screen.dart')
+            .readAsStringSync();
+        expect(scanner, contains("'/verify/manual'"));
+        expect(scanner, isNot(contains("'/manual'")));
+      },
+    );
 
-    test('trust result screen links to /my-pv/receipts, not bare /receipts', () {
-      final trust = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
-      expect(trust, contains("'/my-pv/receipts'"));
-      expect(trust, isNot(contains("'/receipts'")));
-    });
+    test(
+      'trust result screen links to /my-pv/receipts, not bare /receipts',
+      () {
+        final trust = File('lib/trust/screens/trust_result_screen.dart')
+            .readAsStringSync();
+        expect(trust, contains("'/my-pv/receipts'"));
+        expect(trust, isNot(contains("'/receipts'")));
+      },
+    );
 
     test('receipt list screen links to /my-pv/receipts/:id, not bare /receipts/:id', () {
-      final list = File('lib/reliance/screens/receipt_list_screen.dart').readAsStringSync();
+      final list = File('lib/reliance/screens/receipt_list_screen.dart')
+          .readAsStringSync();
       expect(list, contains("'/my-pv/receipts/"));
       expect(list, isNot(contains("'/receipts/")));
     });
 
     test('asset detail screen links to /my-pv/receipts/:id, not bare /receipts/:id', () {
-      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains("'/my-pv/receipts/"));
       expect(detail, isNot(contains("'/receipts/")));
     });
 
     test('my PV screen tier labels do not use Gold or stale names', () {
-      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
       expect(screen, isNot(contains("'T4 GOLD'")));
       expect(screen, isNot(contains("'T4 GOLD STANDARD'")));
       expect(screen, contains('T4 — Highest Governed Provenance Authority'));
     });
 
     test('asset detail tier badge does not assert Gold Standard for T4', () {
-      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains('T4 GOLD STANDARD')));
       expect(detail, isNot(contains('T4 GOLD')));
       expect(detail, contains('T4 — GOVERNED AUTHORITY'));
     });
 
     test('trust badge does not assert Gold Standard or Gold Seal for T4', () {
-      final badge = File('lib/trust/widgets/trust_badge.dart').readAsStringSync();
+      final badge = File('lib/trust/widgets/trust_badge.dart')
+          .readAsStringSync();
       expect(badge, isNot(contains('T4 GOLD STANDARD')));
       expect(badge, isNot(contains('T4 GOLD SEAL')));
       expect(badge, isNot(contains("'T4 GOLD'")));
@@ -247,43 +342,63 @@ void main() {
     });
 
     test('trust result screen surfaces lifecycle state before trust badge', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       final lifecyclePos = screen.indexOf('_LifecycleBanner');
-      final stalePos     = screen.indexOf('StaleBanner');
-      expect(lifecyclePos, greaterThan(-1), reason: '_LifecycleBanner must be present');
-      expect(stalePos,     greaterThan(-1), reason: 'StaleBanner must be present');
-      expect(lifecyclePos, lessThan(stalePos), reason: 'lifecycle must precede stale banner');
+      final stalePos = screen.indexOf('StaleBanner');
+      expect(
+        lifecyclePos,
+        greaterThan(-1),
+        reason: '_LifecycleBanner must be present',
+      );
+      expect(stalePos, greaterThan(-1), reason: 'StaleBanner must be present');
+      expect(
+        lifecyclePos,
+        lessThan(stalePos),
+        reason: 'lifecycle must precede stale banner',
+      );
       expect(screen, contains('SUSPENDED'));
       expect(screen, contains('REVOKED'));
       expect(screen, contains('SUPERSEDED'));
     });
 
     test('trust result screen error view has retry capability', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('ConsumerWidget'));
       expect(screen, contains('ref.invalidate(trustRecordProvider(publicId))'));
       expect(screen, contains("const Text('Retry')"));
     });
 
     test('scanner screen camera area has accessibility semantics label', () {
-      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
+      final scanner = File('lib/scanner/screens/scanner_screen.dart')
+          .readAsStringSync();
       expect(scanner, contains('Camera viewfinder'));
       expect(scanner, contains('Semantics('));
     });
 
-    test('trust result info rows combine label and value for screen readers', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
-      expect(screen, contains('excludeSemantics: true'));
-    });
+    test(
+      'trust result info rows combine label and value for screen readers',
+      () {
+        final screen = File('lib/trust/screens/trust_result_screen.dart')
+            .readAsStringSync();
+        expect(screen, contains('excludeSemantics: true'));
+      },
+    );
 
-    test('quote parser reads why_not_higher with fallback to why_not_next_tier', () {
-      final model = File('lib/submit/models/submit_models.dart').readAsStringSync();
-      expect(model, contains("data['why_not_higher']"));
-      expect(model, contains("data['why_not_next_tier']"));
-    });
+    test(
+      'quote parser reads why_not_higher with fallback to why_not_next_tier',
+      () {
+        final model = File('lib/submit/models/submit_models.dart')
+            .readAsStringSync();
+        expect(model, contains("data['why_not_higher']"));
+        expect(model, contains("data['why_not_next_tier']"));
+      },
+    );
 
     test('determination result parser reads why_not_higher and handles array why_this_tier', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains("j['why_not_higher']"));
       expect(model, contains("j['why_not_next_tier']"));
       expect(model, contains('is List'));
@@ -291,44 +406,74 @@ void main() {
     });
 
     test('determination result parser does not cast why_this_tier directly as String', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      expect(model, isNot(contains("as String?\n      whyNotNextTier: j['why_not_next_tier']")));
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
+      expect(
+        model,
+        isNot(
+          contains("as String?\n      whyNotNextTier: j['why_not_next_tier']"),
+        ),
+      );
     });
 
     test('lifecycle banner suppresses non-actionable states such as UNKNOWN and ACTIVE', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('actionableStates'));
       expect(screen, contains("'SUSPENDED'"));
       expect(screen, contains("'REVOKED'"));
       expect(screen, contains("'SUPERSEDED'"));
-      final guardPos  = screen.indexOf('actionableStates.contains(status)');
+      final guardPos = screen.indexOf('actionableStates.contains(status)');
       final switchPos = screen.indexOf('switch (status)');
-      expect(guardPos, greaterThan(-1), reason: 'actionableStates guard must be present');
-      expect(switchPos, greaterThan(-1), reason: 'switch (status) must be present');
-      expect(guardPos, lessThan(switchPos), reason: 'guard must precede the switch');
+      expect(
+        guardPos,
+        greaterThan(-1),
+        reason: 'actionableStates guard must be present',
+      );
+      expect(
+        switchPos,
+        greaterThan(-1),
+        reason: 'switch (status) must be present',
+      );
+      expect(
+        guardPos,
+        lessThan(switchPos),
+        reason: 'guard must precede the switch',
+      );
     });
 
     test('ADDITIONAL_INFO_REQUESTED is a named status value, not decoded as unknown', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('additionalInfoRequested'));
       expect(model, contains("'ADDITIONAL_INFO_REQUESTED'"));
-      expect(model, isNot(contains("'ADDITIONAL_INFO_REQUESTED':  return SubmissionStatus.unknown")));
+      expect(
+        model,
+        isNot(
+          contains(
+            "'ADDITIONAL_INFO_REQUESTED':  return SubmissionStatus.unknown",
+          ),
+        ),
+      );
     });
 
     test('evidence request section shows for both MORE_INFORMATION_REQUIRED and ADDITIONAL_INFO_REQUESTED', () {
-      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('moreInformationRequired'));
       expect(screen, contains('additionalInfoRequested'));
     });
 
     test('custody timeline items have semantics labels for screen readers', () {
-      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('Semantics('));
       expect(screen, contains('excludeSemantics: true'));
     });
 
     test('determination section surface law: server-determined tier, CUSTOMER_SELECTS_TIER=FALSE, no Gold Seal', () {
-      final screen = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('CUSTOMER_SELECTS_TIER = FALSE'));
       expect(screen, contains('DETERMINATION RESULT'));
       expect(screen, contains('det.tier'));
@@ -340,7 +485,8 @@ void main() {
     });
 
     test('activity list projects server determination only, BILLING_FOLLOWS_DETERMINATION surface', () {
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(activity, contains('Server-authored determination result'));
       expect(activity, contains("'Determined: \${item.determinedTier}'"));
       expect(activity, isNot(contains("'Determined: T4 GOLD'")));
@@ -348,18 +494,21 @@ void main() {
     });
 
     test('no funded/payment-grants-tier language in native activity — BILLING_FOLLOWS_DETERMINATION', () {
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(activity, isNot(contains('verification is funded')));
       expect(activity, isNot(contains('Your verification is')));
       expect(activity, isNot(contains('payment grants')));
       expect(activity, isNot(contains('PAYMENT_GRANTS')));
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains('verification is funded')));
       expect(detail, isNot(contains('payment grants')));
     });
 
     test('no native pricing page or PricingTierCTA — CUSTOMER_SELECTS_TIER=FALSE on pricing surface', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, isNot(contains('pricing_tier_selected')));
       expect(submit, isNot(contains('PricingTierCTA')));
       expect(submit, isNot(contains('/checkout?service=')));
@@ -369,24 +518,31 @@ void main() {
     });
 
     test('ServiceTierCard has no selection params — CUSTOMER_SELECTS_TIER=FALSE on tier display widget', () {
-      final card = File('lib/submit/widgets/service_tier_card.dart').readAsStringSync();
+      final card = File('lib/submit/widgets/service_tier_card.dart')
+          .readAsStringSync();
       expect(card, isNot(contains('isSelected')));
       expect(card, isNot(contains('onSelect')));
       expect(card, isNot(contains('VoidCallback')));
-      expect(card, contains('Your evidence determines whether this state is earned.'));
+      expect(
+        card,
+        contains('Your evidence determines whether this state is earned.'),
+      );
     });
 
     test('SubmissionDraft has no selectedTier field — CUSTOMER_SELECTS_TIER=FALSE in submit model', () {
-      final models = File('lib/submit/models/submit_models.dart').readAsStringSync();
+      final models = File('lib/submit/models/submit_models.dart')
+          .readAsStringSync();
       expect(models, isNot(contains('selectedTier')));
       expect(models, isNot(contains('Deprecated compatibility field')));
-      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
       expect(provider, isNot(contains('selectTier')));
       expect(provider, isNot(contains('@Deprecated')));
     });
 
     test('no customer-selectable checkout path — CUSTOMER_SELECTS_TIER=FALSE on settlement surface', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, isNot(contains('/checkout?service=')));
       expect(submit, isNot(contains("serviceCode: draft.selectedTier")));
       expect(submit, isNot(contains("'checkout?service='")));
@@ -394,7 +550,8 @@ void main() {
     });
 
     test('C20-1: router errorBuilder has bounded not-found recovery — no raw URI dump', () {
-      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
+      final router = File('lib/core/routing/app_router.dart')
+          .readAsStringSync();
       expect(router, isNot(contains("'Page not found: \${state.uri}'")));
       expect(router, contains("context.go('/verify')"));
       expect(router, contains('Semantics'));
@@ -402,7 +559,8 @@ void main() {
     });
 
     test('C20-2: TrustResultScreen._ErrorView distinguishes not-found from generic errors', () {
-      final trust = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final trust = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       expect(trust, contains('isNotFound'));
       expect(trust, contains('Semantics'));
       expect(trust, contains("'Go Back'"));
@@ -410,66 +568,92 @@ void main() {
     });
 
     test('C20-3: ReceiptDetailScreen has bounded error and not-found states — no naked Text(e.toString())', () {
-      final receipt = File('lib/reliance/screens/receipt_detail_screen.dart').readAsStringSync();
+      final receipt = File('lib/reliance/screens/receipt_detail_screen.dart')
+          .readAsStringSync();
       expect(receipt, isNot(contains('Center(child: Text(e.toString()))')));
-      expect(receipt, isNot(contains("const Center(child: Text('Receipt not found'))")));
+      expect(
+        receipt,
+        isNot(contains("const Center(child: Text('Receipt not found'))")),
+      );
       expect(receipt, contains('Semantics'));
       expect(receipt, contains("'Go Back'"));
     });
 
     test('C20-4: RelianceScreen blocks reliance for REVOKED/SUSPENDED lifecycle states', () {
-      final reliance = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final reliance = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       expect(reliance, contains('lifecycleBlocked'));
       expect(reliance, contains('REVOKED'));
       expect(reliance, contains('SUSPENDED'));
       expect(reliance, contains('lifecycleBlocked'));
-      expect(reliance, contains('LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY'));
+      expect(
+        reliance,
+        contains('LOCAL CACHE IS NEVER CURRENT TRUST AUTHORITY'),
+      );
     });
 
     test('C20-5: submit wizard has auth recovery redirect on 401 — terminal auth failure sends to sign-in', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('e.statusCode == 401'));
       expect(submit, contains("'/sign-in"));
       expect(submit, contains('context.push'));
     });
 
     test('C20-6: submit wizard re-fetches quote on re-entry at step 4+ — interruption recovery', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('draft.step >= 4'));
       expect(submit, contains('_refetchQuote'));
       expect(submit, contains('Future<void> _refetchQuote()'));
     });
 
     test('C20-7: Android manifest has pv:// deep-link intent-filter — iOS/Android parity', () {
-      final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      final manifest = File('android/app/src/main/AndroidManifest.xml')
+          .readAsStringSync();
       expect(manifest, contains('android:scheme="pv"'));
       expect(manifest, contains('android.intent.action.VIEW'));
       expect(manifest, contains('android.intent.category.BROWSABLE'));
     });
 
     test('C20-8: AssetDetailScreen._ErrorView has distinct not-found recovery — no misleading Pull down to retry for 404', () {
-      final asset = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final asset = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(asset, contains('isNotFound'));
       expect(asset, contains("'Return to My PV'"));
       expect(asset, contains('Semantics'));
     });
 
     test('C20-9: SubmissionDetail.requestedServiceTier has decode-only annotation in activity_models — not rendered as trust authority', () {
-      final activity = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      expect(activity, contains('Decode-only: retained for backward-compat JSON parsing only'));
-      final first = activity.indexOf('Decode-only: retained for backward-compat JSON parsing only');
-      final last = activity.lastIndexOf('Decode-only: retained for backward-compat JSON parsing only');
-      expect(first, isNot(equals(last)), reason: 'decode-only annotation must appear in both SubmissionStatusItem and SubmissionDetail');
+      final activity = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
+      expect(
+        activity,
+        contains('Decode-only: retained for backward-compat JSON parsing only'),
+      );
+      final first = activity.indexOf(
+        'Decode-only: retained for backward-compat JSON parsing only',
+      );
+      final last = activity.lastIndexOf(
+        'Decode-only: retained for backward-compat JSON parsing only',
+      );
+      expect(
+        first,
+        isNot(equals(last)),
+        reason: 'decode-only annotation must appear in both SubmissionStatusItem and SubmissionDetail',
+      );
     });
 
     test('C20-10: ServiceTier.serviceCode annotated as not-for-client-submission — GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY law present', () {
-      final models = File('lib/submit/models/submit_models.dart').readAsStringSync();
+      final models = File('lib/submit/models/submit_models.dart')
+          .readAsStringSync();
       expect(models, contains('NEVER sent to the server'));
       expect(models, contains('GOLD_SEAL_REQUIRES_SEPARATE_AUTHORITY=TRUE'));
     });
 
     test('C20-11: MyPvScreen._ErrorView has Semantics + Retry button + 401 auth detection + spinner semanticsLabel', () {
-      final myPv = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      final myPv = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
       expect(myPv, contains('Semantics'));
       expect(myPv, contains("'401'"));
       expect(myPv, contains("'Retry'"));
@@ -478,21 +662,24 @@ void main() {
     });
 
     test('C20-12: WhyThisTierScreen — T4 description must not say "Gold Standard"; must reference governed authority and separate issuance', () {
-      final why = File('lib/trust/screens/why_this_tier_screen.dart').readAsStringSync();
+      final why = File('lib/trust/screens/why_this_tier_screen.dart')
+          .readAsStringSync();
       expect(why, isNot(contains('Gold Standard')));
       expect(why, contains('Governed Provenance Authority'));
       expect(why, contains('Gold Seal'));
     });
 
     test('C20-13: WhyNotHigherScreen — T4 banner must not say "Gold Standard"; must reference governed authority', () {
-      final why = File('lib/trust/screens/why_not_higher_screen.dart').readAsStringSync();
+      final why = File('lib/trust/screens/why_not_higher_screen.dart')
+          .readAsStringSync();
       expect(why, isNot(contains('Gold Standard')));
       expect(why, contains('Governed Provenance Authority'));
       expect(why, contains('Gold Seal'));
     });
 
     test('C20-14: ReceiptListScreen has styled error view with Semantics + Retry + spinner semanticsLabel', () {
-      final receipts = File('lib/reliance/screens/receipt_list_screen.dart').readAsStringSync();
+      final receipts = File('lib/reliance/screens/receipt_list_screen.dart')
+          .readAsStringSync();
       expect(receipts, contains("semanticsLabel: 'Loading reliance receipts'"));
       expect(receipts, contains('Semantics'));
       expect(receipts, contains("'Retry'"));
@@ -507,15 +694,32 @@ void main() {
         'lib/trust/screens/authority_screen.dart',
       ]) {
         final src = File(path).readAsStringSync();
-        expect(src, isNot(contains('Center(child: Text(e.toString()))')), reason: '$path must not have raw error display');
-        expect(src, contains('Semantics'), reason: '$path must have Semantics on error state');
-        expect(src, contains("'Retry'"), reason: '$path must have Retry button');
-        expect(src, contains('semanticsLabel:'), reason: '$path must have spinner semanticsLabel');
+        expect(
+          src,
+          isNot(contains('Center(child: Text(e.toString()))')),
+          reason: '$path must not have raw error display',
+        );
+        expect(
+          src,
+          contains('Semantics'),
+          reason: '$path must have Semantics on error state',
+        );
+        expect(
+          src,
+          contains("'Retry'"),
+          reason: '$path must have Retry button',
+        );
+        expect(
+          src,
+          contains('semanticsLabel:'),
+          reason: '$path must have spinner semanticsLabel',
+        );
       }
     });
 
     test('C21-1: SubmitScreen — no "review team" as tier selector; canonical T1-T4 names present', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, isNot(contains('review team')));
       expect(submit, contains('T1 — Accountable Existence'));
       expect(submit, contains('T2 — Accountable Declaration'));
@@ -524,52 +728,74 @@ void main() {
     });
 
     test('C21-2: SubmitScreen — no T4 Gold Seal label; Gold Seal requires separate authority', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, isNot(contains('PV GOLD SEAL')));
       expect(submit, contains('Gold Seal'));
       expect(submit, contains('T4_DETERMINATION_IS_OFFICIAL_T4=FALSE'));
     });
 
     test('C21-3: SubmitScreen — no provenance fingerprint language; no SELF-REPORTED label', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, isNot(contains('provenance fingerprint')));
       expect(submit, isNot(contains('SELF-REPORTED')));
     });
 
     test('C21-4: SubmitScreen — determination-first control flow; evaluation precedes payment', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       final saveIdx = submit.indexOf('saveDeclarations');
       final evalIdx = submit.indexOf('submitForEvaluation');
       final quoteIdx = submit.indexOf('fetchQuote');
       expect(saveIdx, isNot(-1), reason: 'saveDeclarations must be present');
       expect(evalIdx, isNot(-1), reason: 'submitForEvaluation must be present');
       expect(quoteIdx, isNot(-1), reason: 'fetchQuote must be present');
-      expect(saveIdx, lessThan(evalIdx), reason: 'saveDeclarations must precede submitForEvaluation');
-      expect(evalIdx, lessThan(quoteIdx), reason: 'submitForEvaluation must precede fetchQuote');
+      expect(
+        saveIdx,
+        lessThan(evalIdx),
+        reason: 'saveDeclarations must precede submitForEvaluation',
+      );
+      expect(
+        evalIdx,
+        lessThan(quoteIdx),
+        reason: 'submitForEvaluation must precede fetchQuote',
+      );
     });
 
     test('C21-5: ActivityScreen — no "certification" language for empty-state CTA; must use evaluation framing', () {
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(activity, isNot(contains('Submit a gemstone for certification')));
       expect(activity, contains('PROVENANCE VERIFIED'));
     });
 
-    test('C21-6: ActivityScreen — no customer-facing "Requested:" tier fallback', () {
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
-      expect(activity, isNot(contains("'Requested: \${item.requestedServiceTier}'")));
-      expect(activity, isNot(contains('"Requested: ')));
-    });
+    test(
+      'C21-6: ActivityScreen — no customer-facing "Requested:" tier fallback',
+      () {
+        final activity = File('lib/activity/screens/activity_screen.dart')
+            .readAsStringSync();
+        expect(
+          activity,
+          isNot(contains("'Requested: \${item.requestedServiceTier}'")),
+        );
+        expect(activity, isNot(contains('"Requested: ')));
+      },
+    );
 
     test('C21-7: SubmissionDetailScreen — no "Requested Service" tier displayed as trust authority', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains("'Requested Service'")));
       expect(detail, isNot(contains('"Requested Service"')));
       expect(detail, isNot(contains('requestedServiceTier')));
     });
 
     test('C21-8: No selectTier / selectedTier in submit or activity screens — CUSTOMER_SELECTS_TIER=FALSE', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(submit, isNot(contains('selectTier')));
       expect(submit, isNot(contains('selectedTier')));
       expect(activity, isNot(contains('selectTier')));
@@ -577,7 +803,8 @@ void main() {
     });
 
     test('C22-1: Evidence upload multipart carries explicit trust-law classification — not inferred from missing fields', () {
-      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
       expect(provider, contains("'independent'"));
       expect(provider, contains("'false'"));
       expect(provider, contains("'related_party'"));
@@ -588,7 +815,8 @@ void main() {
     });
 
     test('C22-2: SubmissionDetail decodes public_id → publicId and determinedAt; R32: payment-gated Public Verify removed', () {
-      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final models = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(models, contains("json['public_id']"));
       expect(models, contains('publicId'));
       expect(models, contains("json['determined_at']"));
@@ -597,7 +825,8 @@ void main() {
       expect(models, contains('hasSettlementSeam'));
       expect(models, contains('settlementData'));
       expect(models, contains("json.containsKey('settlement')"));
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(models, contains('publicId'));
       expect(detail, isNot(contains('class _ProvenanceRecordAction')));
       expect(detail, contains('_ProvenanceRecordAction removed in R32'));
@@ -609,8 +838,10 @@ void main() {
     });
 
     test('C23-1: auth screens use go_router context.go — no Navigator.pushReplacementNamed', () {
-      final signIn = File('lib/auth/screens/sign_in_screen.dart').readAsStringSync();
-      final signUp = File('lib/auth/screens/sign_up_screen.dart').readAsStringSync();
+      final signIn = File('lib/auth/screens/sign_in_screen.dart')
+          .readAsStringSync();
+      final signUp = File('lib/auth/screens/sign_up_screen.dart')
+          .readAsStringSync();
       expect(signIn, contains("import 'package:go_router/go_router.dart'"));
       expect(signUp, contains("import 'package:go_router/go_router.dart'"));
       expect(signIn, isNot(contains('pushReplacementNamed')));
@@ -620,48 +851,68 @@ void main() {
     });
 
     test('C23-2: reliance provider fails closed on server error — SocketException/TimeoutException only for offline fallback', () {
-      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      final provider = File('lib/reliance/providers/reliance_provider.dart')
+          .readAsStringSync();
       expect(provider, contains("import 'dart:io'"));
       expect(provider, contains("import 'dart:async'"));
       expect(provider, contains('SocketException'));
       expect(provider, contains('TimeoutException'));
       expect(provider, contains('B delta'));
-      expect(provider, isNot(contains('} catch (_) {\n        // Fallback to local receipt on server failure')));
+      expect(
+        provider,
+        isNot(
+          contains(
+            '} catch (_) {\n        // Fallback to local receipt on server failure',
+          ),
+        ),
+      );
     });
 
     test('C24-1: Step 2 evidence upload surfaces SHA-256 binding and auto-claim-credit prohibition', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('SHA-256'));
       expect(submit, contains('governs evidence credit independently'));
     });
 
-    test('C24-2: Step 6 confirmation back button routes to /my-pv not /home', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(submit, isNot(contains("context.go('/home')")));
-      expect(submit, contains("context.go('/my-pv')"));
-    });
+    test(
+      'C24-2: Step 6 confirmation back button routes to /my-pv not /home',
+      () {
+        final submit = File('lib/submit/screens/submit_screen.dart')
+            .readAsStringSync();
+        expect(submit, isNot(contains("context.go('/home')")));
+        expect(submit, contains("context.go('/my-pv')"));
+      },
+    );
 
     test('C24-3: Step 4 determination result has retry path when quote is unavailable', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('onRetry'));
       expect(submit, contains('_refetchQuote'));
     });
 
-    test('C24-4: Step 4 surfaces T4 Gold Seal separation notice for T4 tier', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(submit, contains("q.tier == 'T4'"));
-      expect(submit, contains('separate authority chain'));
-    });
+    test(
+      'C24-4: Step 4 surfaces T4 Gold Seal separation notice for T4 tier',
+      () {
+        final submit = File('lib/submit/screens/submit_screen.dart')
+            .readAsStringSync();
+        expect(submit, contains("q.tier == 'T4'"));
+        expect(submit, contains('separate authority chain'));
+      },
+    );
 
     test('C25-1: SubmissionDetailScreen AppBar back uses go_router — no Navigator.of(context).pop()', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains("import 'package:go_router/go_router.dart'"));
       expect(detail, isNot(contains('Navigator.of(context).pop()')));
       expect(detail, contains('context.pop()'));
     });
 
     test('C25-2: ActivityScreen row tap uses go_router — no MaterialPageRoute or Navigator.push', () {
-      final activity = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final activity = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(activity, contains("import 'package:go_router/go_router.dart'"));
       expect(activity, isNot(contains('Navigator.of(context).push(')));
       expect(activity, isNot(contains('MaterialPageRoute(')));
@@ -670,14 +921,21 @@ void main() {
     });
 
     test('C25-3: App router registers /activity/:submissionId route — SubmissionDetailScreen reachable via URL', () {
-      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
-      expect(router, contains("import '../../activity/screens/submission_detail_screen.dart'"));
+      final router = File('lib/core/routing/app_router.dart')
+          .readAsStringSync();
+      expect(
+        router,
+        contains(
+          "import '../../activity/screens/submission_detail_screen.dart'",
+        ),
+      );
       expect(router, contains("name: 'submission-detail'"));
       expect(router, contains("pathParameters['submissionId']"));
     });
 
     test('C28-1: publicId alone must not unlock a public-reliance Verify action — R32: payment gate removed, CROSS_LANE_HANDOFF_REQUIRED', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains('if (detail.publicId != null)')));
       expect(detail, isNot(contains('class _ProvenanceRecordAction')));
       expect(detail, isNot(contains('settlementData!.isSettled')));
@@ -686,7 +944,8 @@ void main() {
     });
 
     test('C28-2: payment state alone does not unlock public-reliance Verify — R32: gate removed entirely, CROSS_LANE_HANDOFF_REQUIRED', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('_SettlementStatusSection'));
       expect(detail, contains('_MyPvNavigationSection'));
       expect(detail, isNot(contains('settlementData!.isSettled')));
@@ -695,7 +954,8 @@ void main() {
     });
 
     test('C28-3: settlement CTA wired in R29 — hasSettlementSeam gate replaces null-ambiguous suppression', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains('detail.settlementPaymentStatus == null')));
       expect(detail, contains('detail.hasSettlementSeam'));
       expect(detail, contains('class _SettlementCtaSection'));
@@ -703,7 +963,8 @@ void main() {
     });
 
     test('C28-4: unknown/error settlement state must not enable settlement CTA — R29 gate requires hasSettlementSeam+null data', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('SettlementPaymentStatus.unknown'));
       expect(detail, contains('class _SettlementCtaSection'));
       expect(detail, contains('detail.hasSettlementSeam'));
@@ -711,8 +972,10 @@ void main() {
     });
 
     test('C28-5: public record authority must not use isSettled — R32: gate removed, CROSS_LANE_HANDOFF_REQUIRED', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(model, isNot(contains("'registry_active'")));
       expect(model, isNot(contains('registryActive')));
       expect(detail, isNot(contains("'registry_active'")));
@@ -722,7 +985,8 @@ void main() {
     });
 
     test('C29-1: Settlement model: isSettled = FREE or PAID; class decoded from data.settlement', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('class Settlement'));
       expect(model, contains("'FREE'"));
       expect(model, contains("'PAID'"));
@@ -733,13 +997,15 @@ void main() {
     });
 
     test('C29-2: hasSettlementSeam uses json.containsKey — key-absent old API is fail-closed', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains("json.containsKey('settlement')"));
       expect(model, contains('hasSettlementSeam'));
     });
 
     test('C29-3: _ProvenanceRecordAction removed in R32 — isSettled gate gone, CROSS_LANE_HANDOFF_REQUIRED active', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains('class _ProvenanceRecordAction')));
       expect(detail, contains('_ProvenanceRecordAction removed in R32'));
       expect(detail, isNot(contains('if (detail.publicId != null)')));
@@ -748,15 +1014,20 @@ void main() {
     });
 
     test('C29-4: Settlement CTA shown when hasSettlementSeam + no order linked + determination present', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('detail.hasSettlementSeam'));
       expect(detail, contains('detail.settlementData == null'));
       expect(detail, contains('detail.determination != null'));
-      expect(detail, contains('_SettlementCtaSection(submissionId: detail.submissionId)'));
+      expect(
+        detail,
+        contains('_SettlementCtaSection(submissionId: detail.submissionId)'),
+      );
     });
 
     test('C29-5: SubmissionDetail.fromJson reads settlement key safely — key-absent and key-present-null both handled', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains("json.containsKey('settlement')"));
       expect(model, contains("json['settlement'] is Map<String, dynamic>"));
       expect(model, contains('hasSettlementSeam:'));
@@ -764,7 +1035,8 @@ void main() {
     });
 
     test('C30-1: CredentialLifecycleStatus enum present with all six values and displayLabel', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('enum CredentialLifecycleStatus'));
       expect(model, contains('active'));
       expect(model, contains('suspended'));
@@ -776,52 +1048,64 @@ void main() {
     });
 
     test('C30-2: fromApiString is null-safe and fail-closed — null → null, NOT_ISSUED maps explicitly', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('if (raw == null) return null'));
       expect(model, contains("case 'NOT_ISSUED'"));
       expect(model, contains('return CredentialLifecycleStatus.notIssued'));
     });
 
     test('C30-3: REGISTRY_STATE_ONLY annotation present — lifecycle plane separate from trust and settlement', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('REGISTRY_STATE_ONLY = TRUE'));
     });
 
     test('C30-4: SubmissionDetail.credentialLifecycle field decoded from credential_lifecycle JSON key', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('credentialLifecycle'));
       expect(model, contains("json['credential_lifecycle']"));
       expect(model, contains('CredentialLifecycleStatus.fromApiString'));
     });
 
     test('C30-5: _CredentialLifecycleSection widget present; shown only when credentialLifecycle non-null', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('_CredentialLifecycleSection'));
       expect(detail, contains('detail.credentialLifecycle != null'));
       expect(detail, contains('status: detail.credentialLifecycle!'));
     });
 
     test('C31-1: StaleBanner surfaces approachingStale advisory before requiresRequery gate', () {
-      final banner = File('lib/trust/widgets/stale_banner.dart').readAsStringSync();
+      final banner = File('lib/trust/widgets/stale_banner.dart')
+          .readAsStringSync();
       expect(banner, contains('approachingStale'));
       expect(banner, contains('Verification due soon'));
       expect(banner, contains('_ApproachingStaleAdvisory'));
     });
 
-    test('C31-2: _CredentialLifecycleSection shows revoked do-not-rely advisory', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
-      expect(detail, contains('Do not rely on this record'));
-      expect(detail, contains('revoked'));
-    });
+    test(
+      'C31-2: _CredentialLifecycleSection shows revoked do-not-rely advisory',
+      () {
+        final detail = File(
+          'lib/activity/screens/submission_detail_screen.dart',
+        ).readAsStringSync();
+        expect(detail, contains('Do not rely on this record'));
+        expect(detail, contains('revoked'));
+      },
+    );
 
     test('C31-3: _CredentialLifecycleSection shows suspended verify-before-relying advisory', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('suspended'));
       expect(detail, contains('verify current status before relying'));
     });
 
     test('C31-4: _CredentialLifecycleSection is lifecycle-aware with distinct states', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('_LifecycleStyle'));
       expect(detail, contains('CredentialLifecycleStatus.active'));
       expect(detail, contains('PvColors.success'));
@@ -829,90 +1113,118 @@ void main() {
     });
 
     test('C31-5: REGISTRY_STATE_ONLY annotation and NOT_ISSUED preserved in enhanced section', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('REGISTRY_STATE_ONLY = TRUE'));
       expect(detail, contains('NOT_ISSUED'));
     });
 
     test('C32-1: SettlementPaymentStatus.lookupError is distinct — not collapsed to unknown', () {
-      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final models = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(models, contains('lookupError'));
       expect(models, contains('LOOKUP_ERROR'));
       expect(models, contains('Settlement Unavailable'));
     });
 
     test('C32-2: payment-gated Public Verify removed — CROSS_LANE_HANDOFF_REQUIRED annotated', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('payment-gated authority removed'));
       expect(detail, contains('CROSS_LANE_HANDOFF_REQUIRED'));
       expect(detail, contains('MONEY_CONTROLS_TRUST = FALSE'));
     });
 
     test('C32-3: authorityUnavailable does not downgrade to neutral — fail-closed in model and UI', () {
-      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final models = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(models, contains('authorityUnavailable'));
       expect(models, contains('CREDENTIAL_AUTHORITY_UNAVAILABLE'));
       expect(models, contains('REGISTRY_AUTHORITY_UNAVAILABLE'));
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('authorityUnavailable'));
       expect(detail, contains('authority unavailable'));
     });
 
-    test('C32-4: TrustCurrentness model consumes all PR47 currentness fields', () {
-      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      expect(models, contains('TrustCurrentness'));
-      expect(models, contains('determination_state'));
-      expect(models, contains('determination_is_current'));
-      expect(models, contains('requery_guidance'));
-      expect(models, contains('reliance_boundary'));
-      expect(models, contains('authority_note'));
-      expect(models, contains('credential_state'));
-    });
+    test(
+      'C32-4: TrustCurrentness model consumes all PR47 currentness fields',
+      () {
+        final models = File('lib/activity/models/activity_models.dart')
+            .readAsStringSync();
+        expect(models, contains('TrustCurrentness'));
+        expect(models, contains('determination_state'));
+        expect(models, contains('determination_is_current'));
+        expect(models, contains('requery_guidance'));
+        expect(models, contains('reliance_boundary'));
+        expect(models, contains('authority_note'));
+        expect(models, contains('credential_state'));
+      },
+    );
 
     test('C32-5: LOOKUP_ERROR settlement gate excludes CTA — no CTA on authority failure', () {
-      final detail = File('lib/activity/screens/submission_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/activity/screens/submission_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('_SettlementLookupErrorSection'));
       expect(detail, contains('SETTLEMENT UNAVAILABLE'));
       expect(detail, contains('SettlementPaymentStatus.lookupError'));
     });
 
     test('C33-1: list credential_state placeholder NOT displayed as badge — Core PR48 authority ruling', () {
-      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(screen, isNot(contains('item.credentialState!.toUpperCase()')));
       expect(screen, isNot(contains('item.credentialState!.isNotEmpty')));
-      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final models = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(models, contains('credentialState'));
       expect(models, contains('credential_state'));
     });
 
     test('C33-2: AUTHORITY_UNAVAILABLE list card — error border + badge; tier suppressed', () {
-      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(screen, contains("determinationState == 'AUTHORITY_UNAVAILABLE'"));
       expect(screen, contains('PvColors.error'));
       expect(screen, contains('AUTHORITY UNAVAILABLE'));
-      final avIdx = screen.indexOf("determinationState == 'AUTHORITY_UNAVAILABLE'");
+      final avIdx = screen.indexOf(
+        "determinationState == 'AUTHORITY_UNAVAILABLE'",
+      );
       final tierIdx = screen.indexOf('determinedTier != null');
-      expect(avIdx, lessThan(tierIdx),
-          reason: 'AUTHORITY_UNAVAILABLE branch must precede tier display — tier suppressed when authority unavailable');
+      expect(
+        avIdx,
+        lessThan(tierIdx),
+        reason: 'AUTHORITY_UNAVAILABLE branch must precede tier display — tier suppressed when authority unavailable',
+      );
     });
 
     test('C33-3: AUTHORITY_UNAVAILABLE list card — notice paragraph shown', () {
-      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
-      expect(screen, contains('Canonical determination temporarily unavailable'));
+      final screen = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('Canonical determination temporarily unavailable'),
+      );
       expect(screen, contains('View details or refresh to retry'));
     });
 
     test('C33-4: no payment/settlement inference for credential on list card — MTA-1 enforced', () {
-      final screen = File('lib/activity/screens/activity_screen.dart').readAsStringSync();
+      final screen = File('lib/activity/screens/activity_screen.dart')
+          .readAsStringSync();
       expect(screen, isNot(contains('settlementPaymentStatus')));
-      final models = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final models = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(models, contains('MTA-1: SERVER DETERMINES TRUST'));
       expect(models, contains('MONEY_CONTROLS_TRUST = FALSE'));
     });
 
     test('C34-1: fromApiString default fails closed to authorityUnavailable — not notIssued', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
-      expect(model, contains('return CredentialLifecycleStatus.authorityUnavailable'));
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
+      expect(
+        model,
+        contains('return CredentialLifecycleStatus.authorityUnavailable'),
+      );
       final defaultIdx = model.indexOf('default:');
       expect(defaultIdx, greaterThan(0));
       final defaultArm = model.substring(defaultIdx, defaultIdx + 80);
@@ -920,26 +1232,37 @@ void main() {
     });
 
     test('C34-2: credential lifecycle source annotation references pv_credentials — not pv_review_cases', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains('pv_credentials'));
       expect(model, isNot(contains('pv_review_cases')));
     });
 
     test('C42-1: local receipt built with unknown validity — never valid', () {
-      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      final provider = File('lib/reliance/providers/reliance_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('validityState: ReceiptValidityState.unknown'));
-      expect(provider, isNot(contains('validityState: ReceiptValidityState.valid,\n    policyVersion: policyVersion,\n    isServerIssued: false')));
+      expect(
+        provider,
+        isNot(
+          contains(
+            'validityState: ReceiptValidityState.valid,\n    policyVersion: policyVersion,\n    isServerIssued: false',
+          ),
+        ),
+      );
     });
 
     test('C42-2: receipt list distinguishes local snapshot badge — no green VALID for isServerIssued=false', () {
-      final list = File('lib/reliance/screens/receipt_list_screen.dart').readAsStringSync();
+      final list = File('lib/reliance/screens/receipt_list_screen.dart')
+          .readAsStringSync();
       expect(list, contains("'LOCAL SNAPSHOT'"));
       expect(list, contains('isServerIssued'));
       expect(list, isNot(contains('receipt.validityState.name.toUpperCase()')));
     });
 
     test('C42-3: receipt detail shows authority warning and requery for local snapshot', () {
-      final detail = File('lib/reliance/screens/receipt_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/reliance/screens/receipt_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('isServerIssued'));
       expect(detail, contains('LOCAL SNAPSHOT'));
       expect(detail, contains("reliance'"));
@@ -947,59 +1270,90 @@ void main() {
     });
 
     test('C42-4: reliance screen save confirmation distinguishes local vs server receipt', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('isServerIssued'));
       expect(screen, contains('not current authority'));
     });
 
     test('C42-5: server-issued receipt validityState remains valid — only local changed', () {
-      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      final provider = File('lib/reliance/providers/reliance_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('validityState: ReceiptValidityState.valid'));
       expect(provider, contains('isServerIssued: true'));
     });
 
     test('C42-6: SocketException/TimeoutException fallback still fails closed on ApiException — B delta preserved', () {
-      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      final provider = File('lib/reliance/providers/reliance_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('B delta'));
       expect(provider, contains('on SocketException catch'));
       expect(provider, contains('on TimeoutException catch'));
-      expect(provider, isNot(contains('} catch (e) {\n        receipt = _buildLocalReceipt')));
-      expect(provider, isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')));
+      expect(
+        provider,
+        isNot(contains('} catch (e) {\n        receipt = _buildLocalReceipt')),
+      );
+      expect(
+        provider,
+        isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')),
+      );
     });
 
-    test('C44-1: _AssetCard derives effectiveTier from eligible before display', () {
-      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
-      expect(screen, contains('_effectiveTier()'));
-      expect(screen, contains('asset.eligible ? asset.trustTier : null'));
-      expect(screen, isNot(contains('_tierLabel(asset.trustTier)')));
-      expect(screen, contains('_tierColor(effectiveTier)'));
-      expect(screen, contains('_tierLabel(effectiveTier)'));
-    });
+    test(
+      'C44-1: _AssetCard derives effectiveTier from eligible before display',
+      () {
+        final screen = File('lib/my_pv/screens/my_pv_screen.dart')
+            .readAsStringSync();
+        expect(screen, contains('_effectiveTier()'));
+        expect(screen, contains('asset.eligible ? asset.trustTier : null'));
+        expect(screen, isNot(contains('_tierLabel(asset.trustTier)')));
+        expect(screen, contains('_tierColor(effectiveTier)'));
+        expect(screen, contains('_tierLabel(effectiveTier)'));
+      },
+    );
 
-    test('C44-2: list and detail agree — ineligible shows NOT QUALIFIED on both', () {
-      final listScreen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
-      final detailScreen = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
-      expect(listScreen, contains("if (tier == null) return 'NOT QUALIFIED'"));
-      expect(detailScreen, contains("if (!asset.eligible) return 'NOT QUALIFIED'"));
-    });
+    test(
+      'C44-2: list and detail agree — ineligible shows NOT QUALIFIED on both',
+      () {
+        final listScreen = File('lib/my_pv/screens/my_pv_screen.dart')
+            .readAsStringSync();
+        final detailScreen = File('lib/my_pv/screens/asset_detail_screen.dart')
+            .readAsStringSync();
+        expect(
+          listScreen,
+          contains("if (tier == null) return 'NOT QUALIFIED'"),
+        );
+        expect(
+          detailScreen,
+          contains("if (!asset.eligible) return 'NOT QUALIFIED'"),
+        );
+      },
+    );
 
     test('C44-3: evidence section wording does not claim verification authority for server-recorded items', () {
-      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, isNot(contains('provided by the verification authority')));
       expect(detail, contains('recorded on submission'));
-      expect(detail, contains('No inferences beyond what is explicitly stated'));
+      expect(
+        detail,
+        contains('No inferences beyond what is explicitly stated'),
+      );
       expect(detail, contains('does not make an item independent'));
     });
 
     test('C44-4: integrity wording is file-integrity-only — not independent evidentiary verification', () {
-      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('File integrity verified'));
       expect(detail, isNot(contains("'Integrity verified'")));
     });
 
     test('C44-5: no Transfer mutation or Professional-mode route/action introduced', () {
-      final myPvScreen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
-      final detailScreen = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final myPvScreen = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
+      final detailScreen = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(myPvScreen, isNot(contains('/transfer')));
       expect(detailScreen, isNot(contains('/transfer')));
       expect(myPvScreen, isNot(contains('/professional')));
@@ -1011,7 +1365,10 @@ void main() {
 
     test('C45-proof-1: non-autoDispose FutureProvider.family retains result across consumer teardown', () async {
       var callCount = 0;
-      final nonDisposeProvider = FutureProvider.family<String, String>((ref, arg) async {
+      final nonDisposeProvider = FutureProvider.family<String, String>((
+        ref,
+        arg,
+      ) async {
         callCount++;
         return 'result-$arg';
       });
@@ -1026,76 +1383,130 @@ void main() {
 
       final sub2 = container.listen(nonDisposeProvider('key'), (_, __) {});
       await container.read(nonDisposeProvider('key').future);
-      expect(callCount, 1,
-          reason: 'Non-autoDispose served retained result to new consumer — this is the defect');
+      expect(
+        callCount,
+        1,
+        reason: 'Non-autoDispose served retained result to new consumer — this is the defect',
+      );
       sub2.close();
     });
 
     test('C45-proof-2: autoDispose FutureProvider.family forces fresh evaluation after consumer teardown', () async {
       var callCount = 0;
       var disposeCount = 0;
-      final autoDisposeProvider = FutureProvider.autoDispose.family<String, String>((ref, arg) async {
-        callCount++;
-        ref.onDispose(() { disposeCount++; });
-        return 'result-$arg';
-      });
+      final autoDisposeProvider = FutureProvider.autoDispose
+          .family<String, String>((ref, arg) async {
+            callCount++;
+            ref.onDispose(() {
+              disposeCount++;
+            });
+            return 'result-$arg';
+          });
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final sub1 = container.listen(autoDisposeProvider('key'), (_, __) {});
       await container.read(autoDisposeProvider('key').future);
       expect(callCount, 1);
-      expect(disposeCount, 0, reason: 'Provider not yet disposed — listener still active');
+      expect(
+        disposeCount,
+        0,
+        reason: 'Provider not yet disposed — listener still active',
+      );
 
       sub1.close();
       await Future<void>.delayed(Duration.zero);
-      expect(disposeCount, 1, reason: 'onDispose ran — provider was actually disposed after all listeners removed');
+      expect(
+        disposeCount,
+        1,
+        reason: 'onDispose ran — provider was actually disposed after all listeners removed',
+      );
 
       final sub2 = container.listen(autoDisposeProvider('key'), (_, __) {});
       await container.read(autoDisposeProvider('key').future);
-      expect(callCount, 2,
-          reason: 'AutoDispose made fresh evaluation on new consumer after disposal');
+      expect(
+        callCount,
+        2,
+        reason:
+            'AutoDispose made fresh evaluation on new consumer after disposal',
+      );
       sub2.close();
     });
 
     test('C45-1: simpleActionabilityProvider is declared autoDispose — no retained actionability for reliance', () {
-      final source = File('lib/actionability/providers/actionability_provider.dart').readAsStringSync();
-      expect(source, contains('simpleActionabilityProvider = FutureProvider.autoDispose.family'));
-      expect(source, contains('actionabilityProvider = FutureProvider.autoDispose.family'));
-      expect(source, isNot(contains('= FutureProvider.family<ActionabilityResult,')));
+      final source = File(
+        'lib/actionability/providers/actionability_provider.dart',
+      ).readAsStringSync();
+      expect(
+        source,
+        contains(
+          'simpleActionabilityProvider = FutureProvider.autoDispose.family',
+        ),
+      );
+      expect(
+        source,
+        contains('actionabilityProvider = FutureProvider.autoDispose.family'),
+      );
+      expect(
+        source,
+        isNot(contains('= FutureProvider.family<ActionabilityResult,')),
+      );
     });
 
-    test('C45-2: actionabilityProvider (full-args variant) is also autoDispose', () {
-      final provider = File('lib/actionability/providers/actionability_provider.dart').readAsStringSync();
-      final autoDisposeCount = 'FutureProvider.autoDispose.family'.allMatches(provider).length;
-      expect(autoDisposeCount, greaterThanOrEqualTo(2),
-          reason: 'Both actionabilityProvider and simpleActionabilityProvider must be autoDispose');
-      expect(provider, isNot(contains('= FutureProvider.family')));
-    });
+    test(
+      'C45-2: actionabilityProvider (full-args variant) is also autoDispose',
+      () {
+        final provider = File(
+          'lib/actionability/providers/actionability_provider.dart',
+        ).readAsStringSync();
+        final autoDisposeCount = 'FutureProvider.autoDispose.family'
+            .allMatches(provider)
+            .length;
+        expect(
+          autoDisposeCount,
+          greaterThanOrEqualTo(2),
+          reason: 'Both actionabilityProvider and simpleActionabilityProvider must be autoDispose',
+        );
+        expect(provider, isNot(contains('= FutureProvider.family')));
+      },
+    );
 
     test('C45-3: trustRecordProvider is declared autoDispose — no retained trust record for verify', () {
-      final provider = File('lib/trust/providers/trust_provider.dart').readAsStringSync();
-      expect(provider, contains('FutureProvider.autoDispose.family<TrustRecord'));
+      final provider = File('lib/trust/providers/trust_provider.dart')
+          .readAsStringSync();
+      expect(
+        provider,
+        contains('FutureProvider.autoDispose.family<TrustRecord'),
+      );
       expect(provider, isNot(contains('FutureProvider.family<TrustRecord')));
       expect(provider, contains('autoDispose'));
     });
 
     test('C45-4: RelianceScreen no-cache assertion preserved and aligned with autoDispose enforcement', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('actionabilityCacheForReliance'));
       expect(screen, contains('Actionability must not be cached for reliance'));
     });
 
     test('C45-5: receipt B-delta preserved — SocketException/TimeoutException only; ApiException propagates', () {
-      final provider = File('lib/reliance/providers/reliance_provider.dart').readAsStringSync();
+      final provider = File('lib/reliance/providers/reliance_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('on SocketException catch'));
       expect(provider, contains('on TimeoutException catch'));
-      expect(provider, isNot(contains('} catch (e) {\n        receipt = _buildLocalReceipt')));
-      expect(provider, isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')));
+      expect(
+        provider,
+        isNot(contains('} catch (e) {\n        receipt = _buildLocalReceipt')),
+      );
+      expect(
+        provider,
+        isNot(contains('} catch (_) {\n        receipt = _buildLocalReceipt')),
+      );
     });
 
     test('C35-1: my_pv tier labels use canonical Web/Core names — not abbreviated variants', () {
-      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('Accountable Existence'));
       expect(screen, contains('Accountable Declaration'));
       expect(screen, contains('Evidence-Established Trust'));
@@ -1107,22 +1518,33 @@ void main() {
     });
 
     test('C46-1: submit_screen imports image_picker and file_picker — native packages wired', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(screen, contains("import 'package:image_picker/image_picker.dart'"));
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains("import 'package:image_picker/image_picker.dart'"),
+      );
       expect(screen, contains("import 'package:file_picker/file_picker.dart'"));
       expect(screen, contains("import 'dart:io'"));
     });
 
     test('C46-2: _PhotoSection calls ImagePicker.pickImage with gallery source — no SnackBar stub', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('ImagePicker()'));
-      expect(screen, contains('pickImage(source: ImageSource.gallery'));
+      expect(
+        RegExp(r'pickImage\(\s*source:\s*ImageSource\.gallery')
+            .hasMatch(screen),
+        isTrue,
+        reason: 'pickImage must use gallery source (format-agnostic)',
+      );
       expect(screen, contains('addPhoto(picked.path)'));
       expect(screen, isNot(contains("'Photo upload not yet implemented'")));
     });
 
     test('C46-3: _PhotoTile renders Image.file — not icon placeholder', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('Image.file('));
       expect(screen, contains('File(path)'));
       expect(screen, contains('errorBuilder:'));
@@ -1130,10 +1552,15 @@ void main() {
     });
 
     test('C46-4: Step 2 document section calls FilePicker.platform.pickFiles — no SnackBar stub', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('FilePicker.platform.pickFiles('));
       expect(screen, contains('result.files.isNotEmpty'));
-      expect(screen, contains('addDocument(EvidenceDocument('));
+      expect(
+        RegExp(r'addDocument\(\s*EvidenceDocument\(').hasMatch(screen),
+        isTrue,
+        reason: 'addDocument must take EvidenceDocument (format-agnostic)',
+      );
       expect(screen, isNot(contains("'File upload not yet implemented'")));
     });
 
@@ -1146,7 +1573,8 @@ void main() {
     });
 
     test('C47-1: Share is server-gated — Clipboard.setData present only under publicRecordUrl guard', () {
-      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains('Clipboard.setData'));
       expect(detail, contains('publicRecordUrl'));
       expect(detail, contains('final url = publicRecordUrl'));
@@ -1156,16 +1584,21 @@ void main() {
     });
 
     test('C47-2: Share wired from server-authored URL — trust provider seam present in detail screen', () {
-      final detail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final detail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(detail, contains("import 'package:flutter/services.dart'"));
-      expect(detail, contains("import '../../trust/providers/trust_provider.dart'"));
+      expect(
+        detail,
+        contains("import '../../trust/providers/trust_provider.dart'"),
+      );
       expect(detail, contains('trustRecordProvider'));
       expect(detail, contains('public_record_url'));
       expect(detail, isNot(contains('CROSS_LANE_HANDOFF_REQUIRED')));
     });
 
     test('C48-1: AndroidManifest declares no broad-media storage permissions — system picker boundary', () {
-      final manifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+      final manifest = File('android/app/src/main/AndroidManifest.xml')
+          .readAsStringSync();
       expect(manifest, isNot(contains('READ_MEDIA_IMAGES')));
       expect(manifest, isNot(contains('READ_EXTERNAL_STORAGE')));
       expect(manifest, contains('android.permission.CAMERA'));
@@ -1179,7 +1612,8 @@ void main() {
     });
 
     test('C50-1: submit wizard has exactly 7 steps (0-6) and all step widget classes defined', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('_kTotalSteps = 7'));
       expect(submit, contains('class _Step0TrustLadder'));
       expect(submit, contains('class _Step1AssetInfo'));
@@ -1191,23 +1625,38 @@ void main() {
     });
 
     test('C50-2: determination (Step 4) precedes settlement (Step 5) in _buildStep — determination-first enforced', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       final det4Idx = submit.indexOf('_Step4DeterminationPricing');
       final set5Idx = submit.indexOf('_Step5Settlement');
-      expect(det4Idx, isNot(-1), reason: '_Step4DeterminationPricing must be present in _buildStep');
-      expect(set5Idx, isNot(-1), reason: '_Step5Settlement must be present in _buildStep');
-      expect(det4Idx, lessThan(set5Idx), reason: 'determination step must precede settlement step — determination-first enforced');
+      expect(
+        det4Idx,
+        isNot(-1),
+        reason: '_Step4DeterminationPricing must be present in _buildStep',
+      );
+      expect(
+        set5Idx,
+        isNot(-1),
+        reason: '_Step5Settlement must be present in _buildStep',
+      );
+      expect(
+        det4Idx,
+        lessThan(set5Idx),
+        reason: 'determination step must precede settlement step — determination-first enforced',
+      );
     });
 
     test('C50-3: ActivitySubmission.determinedTier is server-authoritative — CUSTOMER_SELECTS_TIER=FALSE annotated', () {
-      final model = File('lib/activity/models/activity_models.dart').readAsStringSync();
+      final model = File('lib/activity/models/activity_models.dart')
+          .readAsStringSync();
       expect(model, contains("json['determined_tier']"));
       expect(model, contains('determinedTier'));
       expect(model, contains('CUSTOMER_SELECTS_TIER'));
     });
 
     test('C50-4: submit_provider wires physical evidence upload via uploadPendingDocuments and uploadEvidence', () {
-      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('uploadPendingDocuments'));
       expect(provider, contains('uploadEvidence'));
       expect(provider, contains('!doc.uploaded'));
@@ -1221,17 +1670,22 @@ void main() {
     });
 
     test('C50-6: photo picker (_PhotoSection) wraps pickImage in try/catch — PlatformException fail-safe', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('picker.pickImage'));
       final pickIdx = submit.indexOf('picker.pickImage');
       final catchIdx = submit.indexOf('} catch (_) {', pickIdx);
       expect(pickIdx, isNot(-1), reason: 'pickImage call must be present');
       expect(catchIdx, isNot(-1), reason: 'catch block must follow pickImage');
-      expect(submit, contains('Could not access photo library. Please try again.'));
+      expect(
+        submit,
+        contains('Could not access photo library. Please try again.'),
+      );
     });
 
     test('C50-7: file picker (_Step2Evidence) wraps pickFiles in try/catch — PlatformException fail-safe', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('FilePicker.platform.pickFiles'));
       final pickIdx = submit.indexOf('FilePicker.platform.pickFiles');
       final catchIdx = submit.indexOf('} catch (_) {', pickIdx);
@@ -1241,7 +1695,8 @@ void main() {
     });
 
     test('C50-8: MachineTrustResponse parses public_record_url — server-authored Share seam', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
       expect(mtr, contains('publicRecordUrl'));
       expect(mtr, contains("j['public_record_url']"));
       expect(mtr, contains('String? publicRecordUrl'));
@@ -1256,48 +1711,79 @@ void main() {
     });
 
     test('C50-10: MachineTrustResponse parses purchase.qualification_outcome — MONEY_CONTROLS_TRUST=FALSE', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
       expect(mtr, contains('purchaseQualificationOutcome'));
       expect(mtr, contains("purchase['qualification_outcome']"));
       expect(mtr, contains('String? purchaseQualificationOutcome'));
       expect(mtr, contains('MONEY_CONTROLS_TRUST'));
     });
 
-    test('C50-11: picker cancel (null return) — no error SnackBar shown, no crash', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(submit, contains('if (picked != null)'));
-      final nullIdx = submit.indexOf('if (picked != null)');
-      final addIdx  = submit.indexOf('addPhoto(picked.path)');
-      expect(nullIdx, isNot(-1), reason: 'null guard for cancel path must be present');
-      expect(addIdx,  isNot(-1), reason: 'addPhoto must be guarded by null check');
-      expect(addIdx, greaterThan(nullIdx),
-          reason: 'addPhoto must be inside the null guard — cancel does not call addPhoto');
-      expect(submit, contains('if (result != null && result.files.isNotEmpty)'));
-    });
+    test(
+      'C50-11: picker cancel (null return) — no error SnackBar shown, no crash',
+      () {
+        final submit = File('lib/submit/screens/submit_screen.dart')
+            .readAsStringSync();
+        expect(submit, contains('if (picked != null)'));
+        final nullIdx = submit.indexOf('if (picked != null)');
+        final addIdx = submit.indexOf('addPhoto(picked.path)');
+        expect(
+          nullIdx,
+          isNot(-1),
+          reason: 'null guard for cancel path must be present',
+        );
+        expect(
+          addIdx,
+          isNot(-1),
+          reason: 'addPhoto must be guarded by null check',
+        );
+        expect(
+          addIdx,
+          greaterThan(nullIdx),
+          reason: 'addPhoto must be inside the null guard — cancel does not call addPhoto',
+        );
+        expect(
+          submit,
+          contains('if (result != null && result.files.isNotEmpty)'),
+        );
+      },
+    );
 
     test('C50-12: upload failure — uploadPendingDocuments SubmitApiException surfaces as error banner', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('uploadPendingDocuments()'));
       expect(submit, contains('on SubmitApiException catch (e)'));
       expect(submit, contains('_setError('));
-      expect(submit, contains("'Server error (\${e.statusCode}): \${e.message}'"));
+      expect(
+        submit,
+        contains("'Server error (\${e.statusCode}): \${e.message}'"),
+      );
       expect(submit, contains('_ErrorBanner'));
       expect(submit, contains('if (_error != null)'));
     });
 
     test('C50-13: backend unavailable — submitForEvaluation/fetchQuote failures surface as error; 401 redirects to sign-in', () {
-      final submit = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final submit = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       expect(submit, contains('submitForEvaluation()'));
       expect(submit, contains('fetchQuote()'));
       expect(submit, contains('on SubmitApiException catch (e)'));
       expect(submit, contains('e.statusCode == 401'));
       expect(submit, contains("context.push('/sign-in"));
-      expect(submit, contains("'Server error (\${e.statusCode}): \${e.message}'"));
-      expect(submit, contains("'An unexpected error occurred. Please try again.'"));
+      expect(
+        submit,
+        contains("'Server error (\${e.statusCode}): \${e.message}'"),
+      );
+      expect(
+        submit,
+        contains("'An unexpected error occurred. Please try again.'"),
+      );
     });
 
     test('C50-14: evidence persistence — photoPaths and documents survive step navigation', () {
-      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('copyWith(step: step)'));
       expect(provider, contains('photoPaths: [...c.photoPaths, path]'));
       expect(provider, contains('documents: [...c.documents, doc]'));
@@ -1306,58 +1792,112 @@ void main() {
       expect(goToIdx, isNot(-1), reason: 'goToStep must be present');
       final goToEnd = provider.indexOf('}', goToIdx);
       final goToBody = provider.substring(goToIdx, goToEnd);
-      expect(goToBody, contains('copyWith'), reason: 'goToStep must use copyWith, not reset');
-      expect(goToBody, isNot(contains('reset()')), reason: 'goToStep must not reset state');
+      expect(
+        goToBody,
+        contains('copyWith'),
+        reason: 'goToStep must use copyWith, not reset',
+      );
+      expect(
+        goToBody,
+        isNot(contains('reset()')),
+        reason: 'goToStep must not reset state',
+      );
     });
 
     test('C50-15: retry/idempotency — uploadPendingDocuments skips already-uploaded documents; safe to re-enter', () {
-      final provider = File('lib/submit/providers/submit_provider.dart').readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
       expect(provider, contains('!doc.uploaded'));
       expect(provider, contains('markDocumentUploaded(i)'));
       expect(provider, contains('Future<void> uploadPendingDocuments()'));
-      expect(provider, contains('for (int i = 0; i < current.documents.length; i++)'));
+      expect(
+        provider,
+        contains('for (int i = 0; i < current.documents.length; i++)'),
+      );
     });
 
     test('C51-1: Defect D repair — lifecycleWarning (SUPERSEDED/EXPIRED) disables Save Receipt; fresh requery required before reliance', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('lifecycleWarning'));
-      expect(screen, contains("lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'"),
-          reason: 'lifecycleWarning must cover both EXPIRED and SUPERSEDED — not silently treated as current');
-      expect(screen, contains('lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
-          reason: 'SUPERSEDED/EXPIRED must gate Save Receipt — Defect D repair: cannot produce receipt without requery');
+      expect(
+        screen,
+        contains(
+          "lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'",
+        ),
+        reason: 'lifecycleWarning must cover both EXPIRED and SUPERSEDED — not silently treated as current',
+      );
+      expect(
+        screen,
+        contains(
+          'lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning',
+        ),
+        reason: 'SUPERSEDED/EXPIRED must gate Save Receipt — Defect D repair: cannot produce receipt without requery',
+      );
     });
 
     test('C51-2: Defect D repair — Requery in lifecycle warning section invalidates both trustRecordProvider and simpleActionabilityProvider', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       final warningIdx = screen.indexOf('lifecycleWarning)');
-      expect(warningIdx, isNot(-1), reason: 'lifecycleWarning branch must be present');
+      expect(
+        warningIdx,
+        isNot(-1),
+        reason: 'lifecycleWarning branch must be present',
+      );
       final branchEnd = screen.indexOf('DropdownButtonFormField', warningIdx);
-      expect(branchEnd, isNot(-1), reason: 'DropdownButtonFormField must follow the lifecycleWarning branch');
+      expect(
+        branchEnd,
+        isNot(-1),
+        reason:
+            'DropdownButtonFormField must follow the lifecycleWarning branch',
+      );
       final warningSection = screen.substring(warningIdx, branchEnd);
-      expect(warningSection, contains('ref.invalidate(trustRecordProvider('),
-          reason: 'Requery must force fresh trust server evaluation for lifecycle currency');
-      expect(warningSection, contains('ref.invalidate(simpleActionabilityProvider('),
-          reason: 'Requery must force fresh actionability evaluation synchronized with trust');
-      expect(warningSection, contains('Requery for Current Status'),
-          reason: 'Requery button must be present and labeled in lifecycle warning section');
+      expect(
+        warningSection,
+        contains('ref.invalidate(trustRecordProvider('),
+        reason: 'Requery must force fresh trust server evaluation for lifecycle currency',
+      );
+      expect(
+        warningSection,
+        contains('ref.invalidate(simpleActionabilityProvider('),
+        reason: 'Requery must force fresh actionability evaluation synchronized with trust',
+      );
+      expect(
+        warningSection,
+        contains('Requery for Current Status'),
+        reason: 'Requery button must be present and labeled in lifecycle warning section',
+      );
     });
 
     test('C51-3: Share invariant — Clipboard copies server-authored URL only; no publicId or Env.pvApiBaseUrl synthesis', () {
-      final screen = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
+      final screen = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('publicRecordUrl'));
       expect(screen, contains('final url = publicRecordUrl'));
       expect(screen, contains('Clipboard.setData'));
-      expect(screen, isNot(contains('Env.pvApiBaseUrl')),
-          reason: 'Share must not synthesize URL from PV_API_BASE_URL — server-authored url only');
+      expect(
+        screen,
+        isNot(contains('Env.pvApiBaseUrl')),
+        reason: 'Share must not synthesize URL from PV_API_BASE_URL — server-authored url only',
+      );
       final clipIdx = screen.indexOf('Clipboard.setData');
       final urlGuardIdx = screen.indexOf('if (url != null && url.isNotEmpty)');
-      expect(urlGuardIdx, isNot(-1), reason: 'publicRecordUrl null+empty guard must be present');
-      expect(clipIdx, greaterThan(urlGuardIdx),
-          reason: 'Clipboard.setData must be inside the publicRecordUrl guard — missing URL = no Share');
+      expect(
+        urlGuardIdx,
+        isNot(-1),
+        reason: 'publicRecordUrl null+empty guard must be present',
+      );
+      expect(
+        clipIdx,
+        greaterThan(urlGuardIdx),
+        reason: 'Clipboard.setData must be inside the publicRecordUrl guard — missing URL = no Share',
+      );
     });
 
     test('C51-4: _LifecycleBanner in trust_result_screen is visually and semantically explicit for REVOKED, SUSPENDED, SUPERSEDED, EXPIRED', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       expect(screen, contains("'SUSPENDED'"));
       expect(screen, contains("'REVOKED'"));
       expect(screen, contains("'SUPERSEDED'"));
@@ -1366,24 +1906,53 @@ void main() {
       expect(screen, contains('Verify currency before reliance'));
       final bannerIdx = screen.indexOf('_LifecycleBanner');
       final actionsIdx = screen.indexOf('_ActionButtons');
-      expect(bannerIdx, isNot(-1), reason: '_LifecycleBanner must be a distinct component');
+      expect(
+        bannerIdx,
+        isNot(-1),
+        reason: '_LifecycleBanner must be a distinct component',
+      );
       expect(actionsIdx, isNot(-1), reason: '_ActionButtons must be present');
-      expect(bannerIdx, lessThan(actionsIdx),
-          reason: 'Lifecycle banner must appear before action buttons — user sees lifecycle state before CTA');
+      expect(
+        bannerIdx,
+        lessThan(actionsIdx),
+        reason: 'Lifecycle banner must appear before action buttons — user sees lifecycle state before CTA',
+      );
       expect(screen, contains('Semantics('));
     });
 
     test('C51-5: reliance_screen lifecycle gate — REVOKED + SUSPENDED + SUPERSEDED + EXPIRED + UNKNOWN all prevent receipt production', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
-      expect(screen, contains("const blockedLifecycles = {'REVOKED', 'SUSPENDED'}"));
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains("const blockedLifecycles = {'REVOKED', 'SUSPENDED'}"),
+      );
       expect(screen, contains('lifecycleBlocked'));
-      expect(screen, contains("lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'"));
+      expect(
+        screen,
+        contains(
+          "lifecycleStatus == 'EXPIRED' || lifecycleStatus == 'SUPERSEDED'",
+        ),
+      );
       expect(screen, contains('lifecycleWarning'));
-      expect(screen, contains('isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
-          reason: 'All dangerous lifecycle states must disable Save Receipt');
-      expect(screen, contains("'RELIANCE BLOCKED — This record is \$lifecycleStatus. '"));
+      expect(
+        screen,
+        contains(
+          'isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning',
+        ),
+        reason: 'All dangerous lifecycle states must disable Save Receipt',
+      );
+      expect(
+        screen,
+        contains("'RELIANCE BLOCKED — This record is \$lifecycleStatus. '"),
+      );
       expect(screen, contains('Requery for Current Status'));
-      expect(screen, contains('UNKNOWN actionability — Do not rely on this record for the stated purpose'));
+      expect(
+        screen,
+        contains(
+          'UNKNOWN actionability — Do not rely on this record for the stated purpose',
+        ),
+      );
     });
   });
 
@@ -1393,54 +1962,98 @@ void main() {
   // create, transfer, or assert legal title. Source, models, and UI must never
   // conflate confirmed custody with legal ownership.
   // ---------------------------------------------------------------------------
-  group('M2-50-06 Custody-Not-Legal-Title Boundary (C64 — STATIC_CONTRACT)', () {
-    test('C64-1 STATIC_CONTRACT: trust_models annotates CUSTODY_IS_NOT_LEGAL_TITLE=TRUE on TrustRecord.continuity', () {
-      final models = File('lib/trust/trust_models.dart').readAsStringSync();
-      expect(models, contains('CUSTODY_IS_NOT_LEGAL_TITLE'),
-          reason: 'TrustRecord must annotate the custody boundary invariant on the continuity field '
-              'so the model itself carries the semantic constraint at the source level');
-      expect(models, contains('continuity/custody projection is display-only'),
-          reason: 'TrustRecord.continuity comment must state display-only scope — '
-              'custody projection carries no legal-title authority');
-    });
+  group(
+    'M2-50-06 Custody-Not-Legal-Title Boundary (C64 — STATIC_CONTRACT)',
+    () {
+      test('C64-1 STATIC_CONTRACT: trust_models annotates CUSTODY_IS_NOT_LEGAL_TITLE=TRUE on TrustRecord.continuity', () {
+        final models = File('lib/trust/trust_models.dart').readAsStringSync();
+        expect(
+          models,
+          contains('CUSTODY_IS_NOT_LEGAL_TITLE'),
+          reason:
+              'TrustRecord must annotate the custody boundary invariant on the continuity field '
+              'so the model itself carries the semantic constraint at the source level',
+        );
+        expect(
+          models,
+          contains('continuity/custody projection is display-only'),
+          reason:
+              'TrustRecord.continuity comment must state display-only scope — '
+              'custody projection carries no legal-title authority',
+        );
+      });
 
-    test('C64-2 STATIC_CONTRACT: TrustContinuity.currentOwner is annotated display-only with no ownership authority assertion', () {
-      final models = File('lib/trust/trust_models.dart').readAsStringSync();
-      expect(models, contains('display-only, no ownership authority assertion'),
-          reason: 'TrustContinuity.currentOwner must be annotated as display-only with explicit '
-              'denial of ownership authority — custody display does not assert legal title');
-    });
+      test('C64-2 STATIC_CONTRACT: TrustContinuity.currentOwner is annotated display-only with no ownership authority assertion', () {
+        final models = File('lib/trust/trust_models.dart').readAsStringSync();
+        expect(
+          models,
+          contains('display-only, no ownership authority assertion'),
+          reason:
+              'TrustContinuity.currentOwner must be annotated as display-only with explicit '
+              'denial of ownership authority — custody display does not assert legal title',
+        );
+      });
 
-    test('C64-3 STATIC_CONTRACT: machine_trust_response annotates CUSTODY_IS_NOT_LEGAL_TITLE and no legalTitle field produced', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('CUSTODY_IS_NOT_LEGAL_TITLE'),
-          reason: 'MachineTrustResponse must carry the custody boundary annotation '
-              'so the parser contract is explicit at source level');
-      expect(mtr, isNot(contains("'legalTitle'")),
-          reason: 'MachineTrustResponse must not carry a legalTitle JSON key — '
-              'title assertions are outside the machine trust schema scope');
-    });
+      test('C64-3 STATIC_CONTRACT: machine_trust_response annotates CUSTODY_IS_NOT_LEGAL_TITLE and no legalTitle field produced', () {
+        final mtr = File('lib/trust/machine_trust_response.dart')
+            .readAsStringSync();
+        expect(
+          mtr,
+          contains('CUSTODY_IS_NOT_LEGAL_TITLE'),
+          reason:
+              'MachineTrustResponse must carry the custody boundary annotation '
+              'so the parser contract is explicit at source level',
+        );
+        expect(
+          mtr,
+          isNot(contains("'legalTitle'")),
+          reason:
+              'MachineTrustResponse must not carry a legalTitle JSON key — '
+              'title assertions are outside the machine trust schema scope',
+        );
+      });
 
-    test('C64-4 STATIC_CONTRACT: trust_badge carries no legal-title language for any tier', () {
-      final badge = File('lib/trust/widgets/trust_badge.dart').readAsStringSync();
-      expect(badge, isNot(contains('legal title')),
-          reason: 'Trust badge must not label any tier with legal-title language');
-      expect(badge, isNot(contains('title confirmed')),
-          reason: 'Trust badge must not claim title confirmed — '
-              'custody confirmation is physical possession only, not title transfer');
-      expect(badge, isNot(contains('custodyIsTitle')),
-          reason: 'Trust badge must not contain a custodyIsTitle identifier');
-    });
+      test('C64-4 STATIC_CONTRACT: trust_badge carries no legal-title language for any tier', () {
+        final badge = File('lib/trust/widgets/trust_badge.dart')
+            .readAsStringSync();
+        expect(
+          badge,
+          isNot(contains('legal title')),
+          reason:
+              'Trust badge must not label any tier with legal-title language',
+        );
+        expect(
+          badge,
+          isNot(contains('title confirmed')),
+          reason:
+              'Trust badge must not claim title confirmed — '
+              'custody confirmation is physical possession only, not title transfer',
+        );
+        expect(
+          badge,
+          isNot(contains('custodyIsTitle')),
+          reason: 'Trust badge must not contain a custodyIsTitle identifier',
+        );
+      });
 
-    test('C64-5 STATIC_CONTRACT: machine_trust_response marks current_owner and current_custodian display-only with no authority assertion', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('display-only, no authority assertion'),
-          reason: 'MachineTrustResponse must annotate current_owner as display-only with '
-              'explicit no-authority constraint — CUSTODY_IS_NOT_LEGAL_TITLE=TRUE enforced at parser');
-      expect(mtr, contains('display-only'),
-          reason: 'Both current_custodian and current_owner annotations must carry display-only scope');
-    });
-  });
+      test('C64-5 STATIC_CONTRACT: machine_trust_response marks current_owner and current_custodian display-only with no authority assertion', () {
+        final mtr = File('lib/trust/machine_trust_response.dart')
+            .readAsStringSync();
+        expect(
+          mtr,
+          contains('display-only, no authority assertion'),
+          reason:
+              'MachineTrustResponse must annotate current_owner as display-only with '
+              'explicit no-authority constraint — CUSTODY_IS_NOT_LEGAL_TITLE=TRUE enforced at parser',
+        );
+        expect(
+          mtr,
+          contains('display-only'),
+          reason: 'Both current_custodian and current_owner annotations must carry display-only scope',
+        );
+      });
+    },
+  );
 
   // ---------------------------------------------------------------------------
   // M2-50-08 — Physical-object matching gate
@@ -1448,29 +2061,54 @@ void main() {
   // ---------------------------------------------------------------------------
   group('M2-50-08 Physical Match Gate (C52)', () {
     test('C52-1: trust_result_screen has explicit physical match capability gate with correct text', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('_PhysicalMatchGate'));
       expect(screen, contains('Physical object matching: not available'));
-      expect(screen, contains('no approved physical proof method is operational'));
+      expect(
+        screen,
+        contains('no approved physical proof method is operational'),
+      );
       final recordViewIdx = screen.indexOf('class _RecordView');
       final gateIdx = screen.indexOf('_PhysicalMatchGate()', recordViewIdx);
       final actionsIdx = screen.indexOf('_ActionButtons', recordViewIdx);
-      expect(gateIdx, isNot(-1), reason: '_PhysicalMatchGate() must be instantiated in _RecordView');
-      expect(actionsIdx, isNot(-1), reason: '_ActionButtons must be present in _RecordView');
-      expect(gateIdx, lessThan(actionsIdx),
-          reason: 'Physical match gate must appear before action buttons');
+      expect(
+        gateIdx,
+        isNot(-1),
+        reason: '_PhysicalMatchGate() must be instantiated in _RecordView',
+      );
+      expect(
+        actionsIdx,
+        isNot(-1),
+        reason: '_ActionButtons must be present in _RecordView',
+      );
+      expect(
+        gateIdx,
+        lessThan(actionsIdx),
+        reason: 'Physical match gate must appear before action buttons',
+      );
       expect(screen, contains('Semantics('));
       expect(screen, contains('PHYSICAL_MATCH_NOT_SUPPORTED'));
     });
 
     test('C52-2: trust_result_screen does not display SubjectMatchState as a user-facing match claim', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
-      expect(screen, isNot(contains('subjectMatchState')),
-          reason: 'SubjectMatchState is a server field only — not displayed in trust result screen');
-      expect(screen, isNot(contains('CONFIRMED_MATCH')),
-          reason: 'No physical match claims in UI — physical matching is not supported');
-      expect(screen, isNot(contains('PROBABLE_MATCH')),
-          reason: 'No physical match claims in UI — physical matching is not supported');
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        isNot(contains('subjectMatchState')),
+        reason: 'SubjectMatchState is a server field only — not displayed in trust result screen',
+      );
+      expect(
+        screen,
+        isNot(contains('CONFIRMED_MATCH')),
+        reason: 'No physical match claims in UI — physical matching is not supported',
+      );
+      expect(
+        screen,
+        isNot(contains('PROBABLE_MATCH')),
+        reason: 'No physical match claims in UI — physical matching is not supported',
+      );
     });
   });
 
@@ -1481,203 +2119,390 @@ void main() {
   // ---------------------------------------------------------------------------
   group('M2-50-07 Professional Batch (C53)', () {
     test('C53-1: professional_batch_screen exists and contains no tier-selection UI', () {
-      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      expect(screen.isNotEmpty, isTrue, reason: 'professional_batch_screen.dart must exist');
+      final screen = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen.isNotEmpty,
+        isTrue,
+        reason: 'professional_batch_screen.dart must exist',
+      );
       expect(screen, contains('PROFESSIONAL_CANNOT_SELECT_TIER'));
-      expect(screen, isNot(contains('selectTier')),
-          reason: 'Professional mode cannot select tier');
-      expect(screen, isNot(contains('tier: \'')),
-          reason: 'No hardcoded tier string assertions — tier is server-determined');
-      expect(screen, isNot(contains('DropdownButton<int>')),
-          reason: 'No tier dropdown in professional mode');
+      expect(
+        screen,
+        isNot(contains('selectTier')),
+        reason: 'Professional mode cannot select tier',
+      );
+      expect(
+        screen,
+        isNot(contains('tier: \'')),
+        reason:
+            'No hardcoded tier string assertions — tier is server-determined',
+      );
+      expect(
+        screen,
+        isNot(contains('DropdownButton<int>')),
+        reason: 'No tier dropdown in professional mode',
+      );
     });
 
     test('C53-2: professional_batch_screen fails closed — AUTHORITY UNAVAILABLE text present', () {
-      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      expect(screen, contains('AUTHORITY UNAVAILABLE'),
-          reason: 'Batch screen must show AUTHORITY UNAVAILABLE for unqualified/unknown records');
-      expect(screen, contains('safeTier'),
-          reason: 'Professional batch must use safeTier to fail closed on UNQUALIFIED');
-      expect(screen, contains('_UnavailableRow'),
-          reason: '_UnavailableRow must handle both UNQUALIFIED and query failure cases');
+      final screen = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        contains('AUTHORITY UNAVAILABLE'),
+        reason: 'Batch screen must show AUTHORITY UNAVAILABLE for unqualified/unknown records',
+      );
+      expect(
+        screen,
+        contains('safeTier'),
+        reason: 'Professional batch must use safeTier to fail closed on UNQUALIFIED',
+      );
+      expect(
+        screen,
+        contains('_UnavailableRow'),
+        reason: '_UnavailableRow must handle both UNQUALIFIED and query failure cases',
+      );
     });
 
-    test('C53-3: professional_batch_screen surfaces purchaseQualificationOutcome', () {
-      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      expect(screen, contains('purchaseQualificationOutcome'),
-          reason: 'Server-authored purchaseQualificationOutcome must be displayed');
-      expect(screen, contains('Commercial eligibility'),
-          reason: 'purchaseQualificationOutcome must be labeled as commercial eligibility');
-      expect(screen, contains('MONEY_CONTROLS_TRUST = FALSE'),
-          reason: 'Professional batch must annotate that money does not control trust');
-    });
+    test(
+      'C53-3: professional_batch_screen surfaces purchaseQualificationOutcome',
+      () {
+        final screen = File(
+          'lib/professional/screens/professional_batch_screen.dart',
+        ).readAsStringSync();
+        expect(
+          screen,
+          contains('purchaseQualificationOutcome'),
+          reason:
+              'Server-authored purchaseQualificationOutcome must be displayed',
+        );
+        expect(
+          screen,
+          contains('Commercial eligibility'),
+          reason: 'purchaseQualificationOutcome must be labeled as commercial eligibility',
+        );
+        expect(
+          screen,
+          contains('MONEY_CONTROLS_TRUST = FALSE'),
+          reason: 'Professional batch must annotate that money does not control trust',
+        );
+      },
+    );
 
     test('C53-4: professional route is auth-gated and entry point is in scanner only', () {
-      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
-      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
-      expect(router, contains("'/professional'"),
-          reason: '/professional must be in _protectedPrefixes');
-      expect(scanner, contains('/professional/batch'),
-          reason: 'scanner_screen must provide professional batch entry point');
-      final myPv = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
-      final assetDetail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
-      expect(myPv, isNot(contains('/professional')),
-          reason: 'my_pv_screen must not reference /professional (C44-5)');
-      expect(assetDetail, isNot(contains('/professional')),
-          reason: 'asset_detail_screen must not reference /professional (C44-5)');
+      final router = File('lib/core/routing/app_router.dart')
+          .readAsStringSync();
+      final scanner = File('lib/scanner/screens/scanner_screen.dart')
+          .readAsStringSync();
+      expect(
+        router,
+        contains("'/professional'"),
+        reason: '/professional must be in _protectedPrefixes',
+      );
+      expect(
+        scanner,
+        contains('/professional/batch'),
+        reason: 'scanner_screen must provide professional batch entry point',
+      );
+      final myPv = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
+      final assetDetail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
+      expect(
+        myPv,
+        isNot(contains('/professional')),
+        reason: 'my_pv_screen must not reference /professional (C44-5)',
+      );
+      expect(
+        assetDetail,
+        isNot(contains('/professional')),
+        reason: 'asset_detail_screen must not reference /professional (C44-5)',
+      );
     });
   });
 
   group('M2-50-07 Professional Inventory (C54)', () {
     test('C54-1: professional_inventory_screen exists with PROFESSIONAL_CANNOT_SELECT_TIER annotation', () {
-      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
-      expect(screen.isNotEmpty, isTrue,
-          reason: 'professional_inventory_screen.dart must exist');
-      expect(screen, contains('PROFESSIONAL_CANNOT_SELECT_TIER'),
-          reason: 'Inventory must annotate PROFESSIONAL_CANNOT_SELECT_TIER — no tier selection');
-      expect(screen, contains('MONEY_CONTROLS_TRUST = FALSE'),
-          reason: 'Inventory must annotate that money does not control trust');
+      final screen = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen.isNotEmpty,
+        isTrue,
+        reason: 'professional_inventory_screen.dart must exist',
+      );
+      expect(
+        screen,
+        contains('PROFESSIONAL_CANNOT_SELECT_TIER'),
+        reason: 'Inventory must annotate PROFESSIONAL_CANNOT_SELECT_TIER — no tier selection',
+      );
+      expect(
+        screen,
+        contains('MONEY_CONTROLS_TRUST = FALSE'),
+        reason: 'Inventory must annotate that money does not control trust',
+      );
     });
 
     test('C54-2: professional_inventory_screen fails closed — AUTHORITY UNAVAILABLE present', () {
-      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
-      expect(screen, contains('AUTHORITY UNAVAILABLE'),
-          reason: 'Inventory must display AUTHORITY UNAVAILABLE when tier is null — fail closed');
-      expect(screen, contains('safeTier'),
-          reason: 'Inventory must use safeTier (returns null for UNQUALIFIED) as fail-closed gate');
+      final screen = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        contains('AUTHORITY UNAVAILABLE'),
+        reason: 'Inventory must display AUTHORITY UNAVAILABLE when tier is null — fail closed',
+      );
+      expect(
+        screen,
+        contains('safeTier'),
+        reason: 'Inventory must use safeTier (returns null for UNQUALIFIED) as fail-closed gate',
+      );
     });
 
     test('C54-3: professional_inventory_screen navigates to trust result, not a shortcut tier display', () {
-      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
-      expect(screen, contains('/verify/'),
-          reason: 'Inventory must navigate to /verify/:id for full trust result detail');
-      expect(screen, isNot(contains('selectTier')),
-          reason: 'Inventory must not allow tier selection');
-      expect(screen, isNot(contains('tier_selector')),
-          reason: 'Inventory must not have tier selector');
+      final screen = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        contains('/verify/'),
+        reason: 'Inventory must navigate to /verify/:id for full trust result detail',
+      );
+      expect(
+        screen,
+        isNot(contains('selectTier')),
+        reason: 'Inventory must not allow tier selection',
+      );
+      expect(
+        screen,
+        isNot(contains('tier_selector')),
+        reason: 'Inventory must not have tier selector',
+      );
     });
 
     test('C54-4: professional inventory route registered in router', () {
-      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
-      expect(router, contains("'inventory'"),
-          reason: '/professional/inventory route must be registered');
-      expect(router, contains('ProfessionalInventoryScreen'),
-          reason: 'Router must reference ProfessionalInventoryScreen');
-      expect(router, contains("professional-inventory"),
-          reason: 'named route professional-inventory must be registered');
+      final router = File('lib/core/routing/app_router.dart')
+          .readAsStringSync();
+      expect(
+        router,
+        contains("'inventory'"),
+        reason: '/professional/inventory route must be registered',
+      );
+      expect(
+        router,
+        contains('ProfessionalInventoryScreen'),
+        reason: 'Router must reference ProfessionalInventoryScreen',
+      );
+      expect(
+        router,
+        contains("professional-inventory"),
+        reason: 'named route professional-inventory must be registered',
+      );
     });
   });
 
   group('M2-50-08 Physical-Match Gate — Professional Screens (C55)', () {
     test('C55-1: professional_batch_screen has user-visible physical-match unavailability gate', () {
-      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      expect(screen, contains('Physical object matching: not available'),
-          reason: 'Batch screen must explicitly disclose physical match is unavailable — REQ-027');
-      expect(screen, contains('PHYSICAL_MATCH_NOT_SUPPORTED'),
-          reason: 'Batch screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED');
+      final screen = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        contains('Physical object matching: not available'),
+        reason: 'Batch screen must explicitly disclose physical match is unavailable — REQ-027',
+      );
+      expect(
+        screen,
+        contains('PHYSICAL_MATCH_NOT_SUPPORTED'),
+        reason: 'Batch screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED',
+      );
     });
 
     test('C55-2: professional_inventory_screen has user-visible physical-match unavailability gate', () {
-      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
-      expect(screen, contains('Physical object matching: not available'),
-          reason: 'Inventory screen must explicitly disclose physical match is unavailable — REQ-027');
-      expect(screen, contains('PHYSICAL_MATCH_NOT_SUPPORTED'),
-          reason: 'Inventory screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED');
+      final screen = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        contains('Physical object matching: not available'),
+        reason: 'Inventory screen must explicitly disclose physical match is unavailable — REQ-027',
+      );
+      expect(
+        screen,
+        contains('PHYSICAL_MATCH_NOT_SUPPORTED'),
+        reason: 'Inventory screen must annotate PHYSICAL_MATCH_NOT_SUPPORTED',
+      );
     });
   });
 
   group('M2-50-09 My PV Freshness — Stale-Retention Boundary (C56 — STATIC_CONTRACT)', () {
     test('C56-1 STATIC_CONTRACT: assetDetailProvider is autoDispose — fresh on same-ID re-entry', () {
-      final provider = File('lib/my_pv/providers/my_pv_provider.dart').readAsStringSync();
-      expect(provider, contains('FutureProvider.autoDispose.family'),
-          reason: 'assetDetailProvider must be autoDispose so re-entering the same asset ID '
-              'always fetches fresh server data, not retained in-memory state');
+      final provider = File('lib/my_pv/providers/my_pv_provider.dart')
+          .readAsStringSync();
+      expect(
+        provider,
+        contains('FutureProvider.autoDispose.family'),
+        reason:
+            'assetDetailProvider must be autoDispose so re-entering the same asset ID '
+            'always fetches fresh server data, not retained in-memory state',
+      );
     });
 
     test('C56-2 STATIC_CONTRACT: main_shell invalidates customerAssetsProvider on My PV tab entry', () {
       final shell = File('lib/core/routing/main_shell.dart').readAsStringSync();
-      expect(shell, contains('customerAssetsProvider'),
-          reason: 'MainShell must reference customerAssetsProvider for tab-entry invalidation');
-      expect(shell, contains('ref.invalidate'),
-          reason: 'MainShell must call ref.invalidate to discard retained list state on My PV tab entry');
-      expect(shell, contains('_myPvBranchIndex'),
-          reason: 'MainShell must name the My PV branch index constant for clarity and auditability');
+      expect(
+        shell,
+        contains('customerAssetsProvider'),
+        reason: 'MainShell must reference customerAssetsProvider for tab-entry invalidation',
+      );
+      expect(
+        shell,
+        contains('ref.invalidate'),
+        reason: 'MainShell must call ref.invalidate to discard retained list state on My PV tab entry',
+      );
+      expect(
+        shell,
+        contains('_myPvBranchIndex'),
+        reason: 'MainShell must name the My PV branch index constant for clarity and auditability',
+      );
     });
 
     test('C56-3 STATIC_CONTRACT: my_pv_screen invalidates list after returning from asset detail', () {
-      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
-      expect(screen, contains('await context.push'),
-          reason: 'Asset detail navigation must be awaited so list invalidation fires on return');
-      expect(screen, contains('ref.invalidate(customerAssetsProvider)'),
-          reason: 'customerAssetsProvider must be invalidated after returning from asset detail '
-              'so the list fetches fresh server state on reveal');
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('await context.push'),
+        reason: 'Asset detail navigation must be awaited so list invalidation fires on return',
+      );
+      expect(
+        screen,
+        contains('ref.invalidate(customerAssetsProvider)'),
+        reason:
+            'customerAssetsProvider must be invalidated after returning from asset detail '
+            'so the list fetches fresh server state on reveal',
+      );
     });
   });
 
   group('M2-50-09 Runtime Dimensions — R62 Native Contract (C62 — STATIC_CONTRACT)', () {
     test('C62-1 STATIC_CONTRACT: machine_trust_response reads why_this_tier from determination', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('why_this_tier'),
-          reason: 'MachineTrustResponse must read determination.why_this_tier so the server-authored '
-              'met-requirements list reaches TrustDetermination.metRequirements');
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
+      expect(
+        mtr,
+        contains('why_this_tier'),
+        reason:
+            'MachineTrustResponse must read determination.why_this_tier so the server-authored '
+            'met-requirements list reaches TrustDetermination.metRequirements',
+      );
     });
 
     test('C62-2 STATIC_CONTRACT: machine_trust_response reads why_not_higher from determination', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('why_not_higher'),
-          reason: 'MachineTrustResponse must read determination.why_not_higher so the server-authored '
-              'gap list reaches TrustDetermination.notMetRequirements');
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
+      expect(
+        mtr,
+        contains('why_not_higher'),
+        reason:
+            'MachineTrustResponse must read determination.why_not_higher so the server-authored '
+            'gap list reaches TrustDetermination.notMetRequirements',
+      );
     });
 
     test('C62-3 STATIC_CONTRACT: toTrustRecord maps whyThisTier to metRequirements', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('metRequirements: whyThisTier'),
-          reason: 'toTrustRecord must populate TrustDetermination.metRequirements from whyThisTier '
-              'so WhyThisTierScreen renders server-returned requirements, not empty');
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
+      expect(
+        mtr,
+        contains('metRequirements: whyThisTier'),
+        reason:
+            'toTrustRecord must populate TrustDetermination.metRequirements from whyThisTier '
+            'so WhyThisTierScreen renders server-returned requirements, not empty',
+      );
     });
 
     test('C62-4 STATIC_CONTRACT: toTrustRecord maps whyNotHigher to notMetRequirements', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('notMetRequirements: whyNotHigher'),
-          reason: 'toTrustRecord must populate TrustDetermination.notMetRequirements from whyNotHigher '
-              'so WhyNotHigherScreen renders server-returned gaps, not empty');
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
+      expect(
+        mtr,
+        contains('notMetRequirements: whyNotHigher'),
+        reason:
+            'toTrustRecord must populate TrustDetermination.notMetRequirements from whyNotHigher '
+            'so WhyNotHigherScreen renders server-returned gaps, not empty',
+      );
     });
 
     test('C62-5 STATIC_CONTRACT: machine_trust_response reads current_custodian and current_owner', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains('current_custodian'),
-          reason: 'MachineTrustResponse must read continuity.current_custodian — physical holder '
-              'per the A machine response contract; server authority preserved display-only');
-      expect(mtr, contains('current_owner'),
-          reason: 'MachineTrustResponse must read continuity.current_owner — title holder '
-              'per the A machine response contract; CUSTODY_IS_NOT_LEGAL_TITLE=TRUE');
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
+      expect(
+        mtr,
+        contains('current_custodian'),
+        reason:
+            'MachineTrustResponse must read continuity.current_custodian — physical holder '
+            'per the A machine response contract; server authority preserved display-only',
+      );
+      expect(
+        mtr,
+        contains('current_owner'),
+        reason:
+            'MachineTrustResponse must read continuity.current_owner — title holder '
+            'per the A machine response contract; CUSTODY_IS_NOT_LEGAL_TITLE=TRUE',
+      );
     });
 
     test('C62-6 STATIC_CONTRACT: TrustContinuity exposes currentCustodian and currentOwner', () {
       final models = File('lib/trust/trust_models.dart').readAsStringSync();
-      expect(models, contains('currentCustodian'),
-          reason: 'TrustContinuity must carry currentCustodian so ContinuityWidget can '
-              'display the server-reported physical custodian distinct from title holder');
-      expect(models, contains('currentOwner'),
-          reason: 'TrustContinuity must carry currentOwner (display-only, no authority assertion) '
-              'so the custody-vs-title distinction reaches the UI from the server');
+      expect(
+        models,
+        contains('currentCustodian'),
+        reason:
+            'TrustContinuity must carry currentCustodian so ContinuityWidget can '
+            'display the server-reported physical custodian distinct from title holder',
+      );
+      expect(
+        models,
+        contains('currentOwner'),
+        reason:
+            'TrustContinuity must carry currentOwner (display-only, no authority assertion) '
+            'so the custody-vs-title distinction reaches the UI from the server',
+      );
     });
 
     test('C62-7 STATIC_CONTRACT: MtLimitation reads prohibited_inferences per limitation', () {
-      final mtr = File('lib/trust/machine_trust_response.dart').readAsStringSync();
-      expect(mtr, contains("j['prohibited_inferences']"),
-          reason: 'MtLimitation.fromJson must read prohibited_inferences from each limitation entry '
-              'per the A machine response contract; affectedClaim must not be used as a substitute');
+      final mtr = File('lib/trust/machine_trust_response.dart')
+          .readAsStringSync();
+      expect(
+        mtr,
+        contains("j['prohibited_inferences']"),
+        reason:
+            'MtLimitation.fromJson must read prohibited_inferences from each limitation entry '
+            'per the A machine response contract; affectedClaim must not be used as a substitute',
+      );
     });
 
     test('C62-8 STATIC_CONTRACT: ContinuityWidget presents custodian and title holder', () {
-      final widget = File('lib/trust/widgets/continuity_widget.dart').readAsStringSync();
-      expect(widget, contains('currentCustodian'),
-          reason: 'ContinuityWidget must display server-reported currentCustodian to surface '
-              'the custody dimension of the full custody-vs-title contract');
-      expect(widget, contains('currentOwner'),
-          reason: 'ContinuityWidget must display server-reported currentOwner to surface '
-              'the title dimension; display-only, CUSTODY_IS_NOT_LEGAL_TITLE=TRUE preserved');
+      final widget = File('lib/trust/widgets/continuity_widget.dart')
+          .readAsStringSync();
+      expect(
+        widget,
+        contains('currentCustodian'),
+        reason:
+            'ContinuityWidget must display server-reported currentCustodian to surface '
+            'the custody dimension of the full custody-vs-title contract',
+      );
+      expect(
+        widget,
+        contains('currentOwner'),
+        reason:
+            'ContinuityWidget must display server-reported currentOwner to surface '
+            'the title dimension; display-only, CUSTODY_IS_NOT_LEGAL_TITLE=TRUE preserved',
+      );
     });
   });
 
@@ -1689,75 +2514,147 @@ void main() {
   // ---------------------------------------------------------------------------
   group('M2-50-09 Reliance Freshness Fail-Closed — R63 (C63 — STATIC_CONTRACT)', () {
     test('C63-1 STATIC_CONTRACT: reliance_screen derives freshnessRequiresRequery from server freshness — no local clock', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
-      expect(screen, contains('freshnessRequiresRequery'),
-          reason: 'RelianceScreen must gate on freshnessRequiresRequery derived from server freshness state');
-      expect(screen, contains('freshness.requiresRequery'),
-          reason: 'freshnessRequiresRequery must be derived from FreshnessState.requiresRequery — server-authored only');
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('freshnessRequiresRequery'),
+        reason: 'RelianceScreen must gate on freshnessRequiresRequery derived from server freshness state',
+      );
+      expect(
+        screen,
+        contains('freshness.requiresRequery'),
+        reason: 'freshnessRequiresRequery must be derived from FreshnessState.requiresRequery — server-authored only',
+      );
     });
 
     test('C63-2 STATIC_CONTRACT: freshness requery in reliance_screen invalidates both trustRecordProvider and simpleActionabilityProvider', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       final freshnessIdx = screen.indexOf('freshnessRequiresRequery)');
-      expect(freshnessIdx, isNot(-1),
-          reason: 'freshnessRequiresRequery branch must be present in banner section');
-      final nextBranchIdx = screen.indexOf('else if (lifecycleWarning)', freshnessIdx);
-      expect(nextBranchIdx, isNot(-1),
-          reason: 'lifecycleWarning branch must follow freshnessRequiresRequery branch');
+      expect(
+        freshnessIdx,
+        isNot(-1),
+        reason:
+            'freshnessRequiresRequery branch must be present in banner section',
+      );
+      final nextBranchIdx = screen.indexOf(
+        'else if (lifecycleWarning)',
+        freshnessIdx,
+      );
+      expect(
+        nextBranchIdx,
+        isNot(-1),
+        reason: 'lifecycleWarning branch must follow freshnessRequiresRequery branch',
+      );
       final freshnessSection = screen.substring(freshnessIdx, nextBranchIdx);
-      expect(freshnessSection, contains('ref.invalidate(trustRecordProvider('),
-          reason: 'Freshness requery must invalidate trustRecordProvider for synchronized trust refresh');
-      expect(freshnessSection, contains('ref.invalidate(simpleActionabilityProvider('),
-          reason: 'Freshness requery must invalidate simpleActionabilityProvider synchronized with trust — '
-              'actionability derived from stale trust state is not current server authority');
+      expect(
+        freshnessSection,
+        contains('ref.invalidate(trustRecordProvider('),
+        reason: 'Freshness requery must invalidate trustRecordProvider for synchronized trust refresh',
+      );
+      expect(
+        freshnessSection,
+        contains('ref.invalidate(simpleActionabilityProvider('),
+        reason:
+            'Freshness requery must invalidate simpleActionabilityProvider synchronized with trust — '
+            'actionability derived from stale trust state is not current server authority',
+      );
     });
 
     test('C63-3 STATIC_CONTRACT: Save Reliance Receipt is disabled when freshnessRequiresRequery', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
-      expect(screen, contains('freshnessRequiresRequery || lifecycleWarning'),
-          reason: 'Save Reliance Receipt onPressed must be null when freshnessRequiresRequery is true — '
-              'STALE/REVERIFY_REQUIRED/freshness-EXPIRED records must not produce a reliance receipt');
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('freshnessRequiresRequery || lifecycleWarning'),
+        reason:
+            'Save Reliance Receipt onPressed must be null when freshnessRequiresRequery is true — '
+            'STALE/REVERIFY_REQUIRED/freshness-EXPIRED records must not produce a reliance receipt',
+      );
     });
 
     test('C63-4 STATIC_CONTRACT: FreshnessState.requiresRequery covers STALE, EXPIRED, REVERIFY_REQUIRED — APPROACHING_STALE is advisory only', () {
       final models = File('lib/trust/trust_models.dart').readAsStringSync();
-      expect(models, contains('bool get requiresRequery'),
-          reason: 'FreshnessState.requiresRequery must be declared as a getter');
-      expect(models, contains('this == stale || this == expired || this == reverifyRequired'),
-          reason: 'requiresRequery must cover exactly stale, expired, and reverifyRequired — '
-              'APPROACHING_STALE must remain advisory and not be in this predicate');
+      expect(
+        models,
+        contains('bool get requiresRequery'),
+        reason: 'FreshnessState.requiresRequery must be declared as a getter',
+      );
+      expect(
+        models,
+        contains(
+          'this == stale || this == expired || this == reverifyRequired',
+        ),
+        reason:
+            'requiresRequery must cover exactly stale, expired, and reverifyRequired — '
+            'APPROACHING_STALE must remain advisory and not be in this predicate',
+      );
     });
 
     test('C63-5 STATIC_CONTRACT: trust_result_screen Assess Reliance is disabled when server freshness requiresRequery', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
-      expect(screen, contains('freshnessRequiresRequery'),
-          reason: '_ActionButtons must compute freshnessRequiresRequery from record.freshness');
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('freshnessRequiresRequery'),
+        reason: '_ActionButtons must compute freshnessRequiresRequery from record.freshness',
+      );
       // Use the button label widget text to find the button, not the string 'Assess Reliance'
       // which also appears in comments earlier in the file.
       final assessIdx = screen.indexOf("const Text('Assess Reliance')");
-      expect(assessIdx, isNot(-1), reason: 'Assess Reliance button must remain present');
+      expect(
+        assessIdx,
+        isNot(-1),
+        reason: 'Assess Reliance button must remain present',
+      );
       final onPressedNullIdx = screen.lastIndexOf('? null', assessIdx);
-      expect(onPressedNullIdx, isNot(-1),
-          reason: 'onPressed must evaluate to null when requiresRequery — Assess Reliance must not present as ready-to-rely');
-      final freshnessNearIdx = screen.lastIndexOf('freshnessRequiresRequery', onPressedNullIdx);
-      expect(freshnessNearIdx, isNot(-1),
-          reason: 'freshnessRequiresRequery must gate the null onPressed for Assess Reliance');
+      expect(
+        onPressedNullIdx,
+        isNot(-1),
+        reason: 'onPressed must evaluate to null when requiresRequery — Assess Reliance must not present as ready-to-rely',
+      );
+      final freshnessNearIdx = screen.lastIndexOf(
+        'freshnessRequiresRequery',
+        onPressedNullIdx,
+      );
+      expect(
+        freshnessNearIdx,
+        isNot(-1),
+        reason: 'freshnessRequiresRequery must gate the null onPressed for Assess Reliance',
+      );
     });
 
     test('C63-6 STATIC_CONTRACT: reliance_screen contains no local DateTime or Duration for freshness — server-authored state only', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
-      expect(screen, isNot(contains('DateTime.now()')),
-          reason: 'No local clock staleness calculation — freshness is server-authored');
-      expect(screen, isNot(contains('Duration(')),
-          reason: 'No local age/threshold freshness computation — server FreshnessState is the sole authority');
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        isNot(contains('DateTime.now()')),
+        reason: 'No local clock staleness calculation — freshness is server-authored',
+      );
+      expect(
+        screen,
+        isNot(contains('Duration(')),
+        reason: 'No local age/threshold freshness computation — server FreshnessState is the sole authority',
+      );
     });
 
     test('C63-7 STATIC_CONTRACT: existing lifecycle gates preserved — lifecycleBlocked and lifecycleWarning still in disable condition', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
-      expect(screen, contains('lifecycleBlocked'),
-          reason: 'lifecycleBlocked (REVOKED/SUSPENDED) must remain as hard block — R51 lifecycle gate preserved');
-      expect(screen, contains('lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
-          reason: 'Disable condition must preserve lifecycle gates alongside freshness gate — R51 not weakened');
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('lifecycleBlocked'),
+        reason: 'lifecycleBlocked (REVOKED/SUSPENDED) must remain as hard block — R51 lifecycle gate preserved',
+      );
+      expect(
+        screen,
+        contains(
+          'lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning',
+        ),
+        reason: 'Disable condition must preserve lifecycle gates alongside freshness gate — R51 not weakened',
+      );
     });
   });
 
@@ -1772,53 +2669,104 @@ void main() {
   // ---------------------------------------------------------------------------
   group('M2-50-10 Professional Authority Closure (C57)', () {
     test('C57-1: no fabricated Professional authorization/role model — same generic _isAuthenticated gate as other protected routes', () {
-      final router = File('lib/core/routing/app_router.dart').readAsStringSync();
-      expect(router, contains("'/professional'"),
-          reason: '/professional must remain in _protectedPrefixes (C53-4 preserved)');
-      expect(router, isNot(contains('isProfessional')),
-          reason: 'No fabricated isProfessional() authorization check');
-      expect(router, isNot(contains('ProfessionalRole')),
-          reason: 'No fabricated ProfessionalRole/entitlement type');
-      expect(router, isNot(contains('professionalEntitlement')),
-          reason: 'No fabricated professional entitlement seam');
+      final router = File('lib/core/routing/app_router.dart')
+          .readAsStringSync();
+      expect(
+        router,
+        contains("'/professional'"),
+        reason:
+            '/professional must remain in _protectedPrefixes (C53-4 preserved)',
+      );
+      expect(
+        router,
+        isNot(contains('isProfessional')),
+        reason: 'No fabricated isProfessional() authorization check',
+      );
+      expect(
+        router,
+        isNot(contains('ProfessionalRole')),
+        reason: 'No fabricated ProfessionalRole/entitlement type',
+      );
+      expect(
+        router,
+        isNot(contains('professionalEntitlement')),
+        reason: 'No fabricated professional entitlement seam',
+      );
     });
 
     test('C57-2: scanner_screen batch-verify entry point uses non-authoritative wording', () {
-      final scanner = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
-      expect(scanner, contains('/professional/batch'),
-          reason: 'entry point route preserved (C53-4)');
-      expect(scanner, isNot(contains("tooltip: 'Professional")),
-          reason: 'tooltip must not claim Professional authorization');
+      final scanner = File('lib/scanner/screens/scanner_screen.dart')
+          .readAsStringSync();
+      expect(
+        scanner,
+        contains('/professional/batch'),
+        reason: 'entry point route preserved (C53-4)',
+      );
+      expect(
+        scanner,
+        isNot(contains("tooltip: 'Professional")),
+        reason: 'tooltip must not claim Professional authorization',
+      );
     });
 
     test('C57-3: professional_batch_screen visible title uses non-authoritative wording', () {
-      final screen = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      expect(screen, isNot(contains("Text('Professional Batch Verification')")),
-          reason: 'AppBar title must not claim an authorized Professional mode');
-      expect(screen, contains("Text('Batch Verify')"),
-          reason: 'AppBar title must use bounded, non-authoritative wording');
+      final screen = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        isNot(contains("Text('Professional Batch Verification')")),
+        reason: 'AppBar title must not claim an authorized Professional mode',
+      );
+      expect(
+        screen,
+        contains("Text('Batch Verify')"),
+        reason: 'AppBar title must use bounded, non-authoritative wording',
+      );
     });
 
     test('C57-4: professional_inventory_screen visible title and tooltip use non-authoritative wording', () {
-      final screen = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
-      expect(screen, isNot(contains("Text('Professional Inventory')")),
-          reason: 'AppBar title must not claim an authorized tenant inventory');
-      expect(screen, contains("Text('Tracked Records')"),
-          reason: 'AppBar title must use local/session, non-authoritative wording');
-      expect(screen, isNot(contains("'Remove from inventory'")),
-          reason: 'tooltip must not imply a server inventory');
+      final screen = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
+      expect(
+        screen,
+        isNot(contains("Text('Professional Inventory')")),
+        reason: 'AppBar title must not claim an authorized tenant inventory',
+      );
+      expect(
+        screen,
+        contains("Text('Tracked Records')"),
+        reason:
+            'AppBar title must use local/session, non-authoritative wording',
+      );
+      expect(
+        screen,
+        isNot(contains("'Remove from inventory'")),
+        reason: 'tooltip must not imply a server inventory',
+      );
       expect(screen, contains("'Remove from tracked records'"));
     });
 
     test('C57-5: PROFESSIONAL_CANNOT_SELECT_TIER and PHYSICAL_MATCH_NOT_SUPPORTED are not reachable from customer-visible widget code', () {
-      final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      final batch = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      final inventory = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
       for (final screen in [batch, inventory]) {
         final nonComment = _stripLineComments(screen);
-        expect(nonComment, isNot(contains('PROFESSIONAL_CANNOT_SELECT_TIER')),
-            reason: 'Internal control token must not be reachable from widget/build code');
-        expect(nonComment, isNot(contains('PHYSICAL_MATCH_NOT_SUPPORTED')),
-            reason: 'Internal control token must not be reachable from widget/build code');
+        expect(
+          nonComment,
+          isNot(contains('PROFESSIONAL_CANNOT_SELECT_TIER')),
+          reason: 'Internal control token must not be reachable from widget/build code',
+        );
+        expect(
+          nonComment,
+          isNot(contains('PHYSICAL_MATCH_NOT_SUPPORTED')),
+          reason: 'Internal control token must not be reachable from widget/build code',
+        );
       }
       // Tokens remain documented in source comments — C53-1/C54-1/C55-1/C55-2 preserved.
       expect(batch, contains('PROFESSIONAL_CANNOT_SELECT_TIER'));
@@ -1831,25 +2779,62 @@ void main() {
       // Checked against non-comment text only: the file header comments
       // legitimately discuss "bypass tenant/auth" as a system property
       // (see C57-5) — that is not customer-visible copy.
-      final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      final batch = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      final inventory = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
       for (final screen in [batch, inventory]) {
         final nonComment = _stripLineComments(screen);
-        expect(nonComment, isNot(contains('ownership')), reason: 'no ownership authority implied');
-        expect(nonComment, isNot(contains('custody')), reason: 'no custody authority implied');
-        expect(nonComment, isNot(contains('tenant')), reason: 'no tenant-membership authority implied');
-        expect(nonComment, isNot(contains('membership')), reason: 'no membership authority implied');
-        expect(nonComment, isNot(contains('portfolio')), reason: 'no portfolio/tenant-inventory framing');
+        expect(
+          nonComment,
+          isNot(contains('ownership')),
+          reason: 'no ownership authority implied',
+        );
+        expect(
+          nonComment,
+          isNot(contains('custody')),
+          reason: 'no custody authority implied',
+        );
+        expect(
+          nonComment,
+          isNot(contains('tenant')),
+          reason: 'no tenant-membership authority implied',
+        );
+        expect(
+          nonComment,
+          isNot(contains('membership')),
+          reason: 'no membership authority implied',
+        );
+        expect(
+          nonComment,
+          isNot(contains('portfolio')),
+          reason: 'no portfolio/tenant-inventory framing',
+        );
       }
     });
 
     test('C57-7: no Transfer mutation action introduced — TRANSFER_MUTATION_AUTHORITY=NOT_PROVEN preserved', () {
-      final assetDetail = File('lib/my_pv/screens/asset_detail_screen.dart').readAsStringSync();
-      final batch = File('lib/professional/screens/professional_batch_screen.dart').readAsStringSync();
-      final inventory = File('lib/professional/screens/professional_inventory_screen.dart').readAsStringSync();
+      final assetDetail = File('lib/my_pv/screens/asset_detail_screen.dart')
+          .readAsStringSync();
+      final batch = File(
+        'lib/professional/screens/professional_batch_screen.dart',
+      ).readAsStringSync();
+      final inventory = File(
+        'lib/professional/screens/professional_inventory_screen.dart',
+      ).readAsStringSync();
       for (final screen in [assetDetail, batch, inventory]) {
-        expect(screen, isNot(contains('/transfer')), reason: 'No Transfer route introduced (C44-5 extended)');
-        expect(screen, isNot(contains("Text('Transfer")), reason: 'No Transfer action button introduced');
+        expect(
+          screen,
+          isNot(contains('/transfer')),
+          reason: 'No Transfer route introduced (C44-5 extended)',
+        );
+        expect(
+          screen,
+          isNot(contains("Text('Transfer")),
+          reason: 'No Transfer action button introduced',
+        );
       }
     });
   });
@@ -1863,76 +2848,123 @@ void main() {
   // ---------------------------------------------------------------------------
   group('M2-50-11 Accessibility + State Completeness (C58)', () {
     test('C58-1: My PV true-empty state is structurally distinct from authority/error state', () {
-      final screen = File('lib/my_pv/screens/my_pv_screen.dart').readAsStringSync();
+      final screen = File('lib/my_pv/screens/my_pv_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('class _EmptyAssetsView'));
       expect(screen, contains('class _ErrorView'));
-      expect(screen, contains('if (assets.isEmpty)'),
-          reason: 'empty view only renders for a genuinely empty successful data result');
-      expect(screen, contains('error: (err, _) => _ErrorView(error: err)'),
-          reason: 'error view only renders for a provider error, never folded into the empty branch');
+      expect(
+        screen,
+        contains('if (assets.isEmpty)'),
+        reason: 'empty view only renders for a genuinely empty successful data result',
+      );
+      expect(
+        screen,
+        contains('error: (err, _) => _ErrorView(error: err)'),
+        reason: 'error view only renders for a provider error, never folded into the empty branch',
+      );
     });
 
     test('C58-2: Verify _ErrorView distinguishes not-found/authority-unavailable/network/generic and never leaks raw exception text', () {
-      final screen = File('lib/trust/screens/trust_result_screen.dart').readAsStringSync();
+      final screen = File('lib/trust/screens/trust_result_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('isNotFound'));
       expect(screen, contains('isAuthorityUnavailable'));
       expect(screen, contains('isNetwork'));
       expect(screen, contains("'Authority unavailable'"));
       final occurrences = 'error.toString()'.allMatches(screen).length;
-      expect(occurrences, 1,
-          reason: 'error.toString() must be used exactly once, for state classification only — '
-              'never as the displayed body text (that was the pre-R66 defect)');
+      expect(
+        occurrences,
+        1,
+        reason:
+            'error.toString() must be used exactly once, for state classification only — '
+            'never as the displayed body text (that was the pre-R66 defect)',
+      );
     });
 
     test('C58-3: Rely actionability error view distinguishes authority/network from generic and never leaks raw exception text', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
       expect(screen, contains('isAuthorityUnavailable'));
       expect(screen, contains('isNetwork'));
       final occurrences = 'e.toString()'.allMatches(screen).length;
-      expect(occurrences, 1,
-          reason: 'e.toString() must be used exactly once, for state classification only');
-      expect(screen, isNot(contains(r'Failed to save receipt: $e')),
-          reason: 'save-receipt failure must use fixed accessible copy, not the raw exception');
+      expect(
+        occurrences,
+        1,
+        reason: 'e.toString() must be used exactly once, for state classification only',
+      );
+      expect(
+        screen,
+        isNot(contains(r'Failed to save receipt: $e')),
+        reason: 'save-receipt failure must use fixed accessible copy, not the raw exception',
+      );
     });
 
     test('C58-4: Rely Save Receipt still disables on lifecycleBlocked/freshnessRequiresRequery/lifecycleWarning; Requery remains available', () {
-      final screen = File('lib/reliance/screens/reliance_screen.dart').readAsStringSync();
-      expect(screen, contains('isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning'),
-          reason: 'R66 must not weaken the existing R51/R63 disable condition');
+      final screen = File('lib/reliance/screens/reliance_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains(
+          'isUnknown || _saving || lifecycleBlocked || freshnessRequiresRequery || lifecycleWarning',
+        ),
+        reason: 'R66 must not weaken the existing R51/R63 disable condition',
+      );
       expect(screen, contains("'Requery for Current Status'"));
     });
 
     test('C58-5: Submit preserves exact saveDeclarations -> submitForEvaluation -> fetchQuote order and adds accessible loading labels', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      final saveIdx  = screen.indexOf('await notifier.saveDeclarations();');
-      final evalIdx  = screen.indexOf('await notifier.submitForEvaluation();');
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      final saveIdx = screen.indexOf('await notifier.saveDeclarations();');
+      final evalIdx = screen.indexOf('await notifier.submitForEvaluation();');
       final quoteIdx = screen.indexOf('final q = await notifier.fetchQuote();');
       expect(saveIdx, isNot(-1));
       expect(evalIdx, isNot(-1));
       expect(quoteIdx, isNot(-1));
-      expect(saveIdx, lessThan(evalIdx),
-          reason: 'saveDeclarations must still precede submitForEvaluation');
-      expect(evalIdx, lessThan(quoteIdx),
-          reason: 'submitForEvaluation must still precede fetchQuote');
+      expect(
+        saveIdx,
+        lessThan(evalIdx),
+        reason: 'saveDeclarations must still precede submitForEvaluation',
+      );
+      expect(
+        evalIdx,
+        lessThan(quoteIdx),
+        reason: 'submitForEvaluation must still precede fetchQuote',
+      );
       expect(screen, contains("semanticsLabel: 'Processing — please wait'"));
       expect(screen, contains(r"semanticsLabel: '$nextLabel — loading'"));
     });
 
     test('C58-6: scanner_screen invalid-QR error is an accessible live-announced state, not SnackBar-only', () {
-      final screen = File('lib/scanner/screens/scanner_screen.dart').readAsStringSync();
-      expect(screen, contains('liveRegion: true'),
-          reason: 'invalid QR error must be accessible, not only a visual SnackBar');
+      final screen = File('lib/scanner/screens/scanner_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('liveRegion: true'),
+        reason:
+            'invalid QR error must be accessible, not only a visual SnackBar',
+      );
       expect(screen, contains("tooltip: 'Dismiss'"));
-      expect(screen, isNot(contains('ScaffoldMessenger.of(context).showSnackBar')),
-          reason: 'the pre-R66 SnackBar-only invalid-QR error is replaced by the accessible banner above, not merely supplemented');
+      expect(
+        screen,
+        isNot(contains('ScaffoldMessenger.of(context).showSnackBar')),
+        reason: 'the pre-R66 SnackBar-only invalid-QR error is replaced by the accessible banner above, not merely supplemented',
+      );
     });
 
-    test('C58-7: receipt_detail_screen error view never leaks raw exception text', () {
-      final screen = File('lib/reliance/screens/receipt_detail_screen.dart').readAsStringSync();
-      expect(screen, isNot(contains('message: e.toString()')),
-          reason: 'receipt detail load failure must use fixed accessible copy, matching receipt_list_screen.dart');
-      expect(screen, contains("message: 'Check your connection and retry.'"));
-    });
+    test(
+      'C58-7: receipt_detail_screen error view never leaks raw exception text',
+      () {
+        final screen = File('lib/reliance/screens/receipt_detail_screen.dart')
+            .readAsStringSync();
+        expect(
+          screen,
+          isNot(contains('message: e.toString()')),
+          reason: 'receipt detail load failure must use fixed accessible copy, matching receipt_list_screen.dart',
+        );
+        expect(screen, contains("message: 'Check your connection and retry.'"));
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -1944,55 +2976,234 @@ void main() {
   // ---------------------------------------------------------------------------
   group('R17 Pre-Intake Identity Parity', () {
     test('PI-1: submit_screen imports payment_coordinator (identity coordinator wired)', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(screen, contains("import '../providers/payment_coordinator.dart'"),
-          reason: 'submit_screen must import payment_coordinator to access identity verification');
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains("import '../providers/payment_coordinator.dart'"),
+        reason: 'submit_screen must import payment_coordinator to access identity verification',
+      );
     });
 
-    test('PI-2: step 0 pre-checks claimantIdentityStatus before startSubmission', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      final identityCheckPos = screen.indexOf('claimantIdentityStatus()');
-      final startPos         = screen.indexOf('startSubmission()');
-      expect(identityCheckPos, isNot(-1),
-          reason: 'claimantIdentityStatus() must be called in submit_screen (step 0 pre-check)');
-      expect(startPos, isNot(-1),
-          reason: 'startSubmission() must still be present');
-      expect(identityCheckPos, lessThan(startPos),
-          reason: 'identity pre-check must precede startSubmission() — server enforces VERIFIED_HUMAN at intake START');
-    });
+    test(
+      'PI-2: step 0 pre-checks claimantIdentityStatus before startSubmission',
+      () {
+        final screen = File('lib/submit/screens/submit_screen.dart')
+            .readAsStringSync();
+        final identityCheckPos = screen.indexOf('claimantIdentityStatus()');
+        final startPos = screen.indexOf('startSubmission()');
+        expect(
+          identityCheckPos,
+          isNot(-1),
+          reason: 'claimantIdentityStatus() must be called in submit_screen (step 0 pre-check)',
+        );
+        expect(
+          startPos,
+          isNot(-1),
+          reason: 'startSubmission() must still be present',
+        );
+        expect(
+          identityCheckPos,
+          lessThan(startPos),
+          reason: 'identity pre-check must precede startSubmission() — server enforces VERIFIED_HUMAN at intake START',
+        );
+      },
+    );
 
     test('PI-3: launchClaimantIdentityVerification is called when identity not verified', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
-      expect(screen, contains('launchClaimantIdentityVerification()'),
-          reason: 'submit_screen must route unverified users to identity verification, not only set error');
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      expect(
+        screen,
+        contains('launchClaimantIdentityVerification()'),
+        reason: 'submit_screen must route unverified users to identity verification, not only set error',
+      );
     });
 
     test('PI-4: 428 catch handler routes to identity verification, not generic error copy', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       final catch428Pos = screen.indexOf('e.statusCode == 428');
-      expect(catch428Pos, isNot(-1),
-          reason: '428 must be handled as a distinct case (not folded into generic error)');
-      final launchAfter428 = screen.indexOf('launchClaimantIdentityVerification', catch428Pos);
-      expect(launchAfter428, isNot(-1),
-          reason: 'launchClaimantIdentityVerification must be called in the 428 handler');
+      expect(
+        catch428Pos,
+        isNot(-1),
+        reason: '428 must be handled as a distinct case (not folded into generic error)',
+      );
+      final launchAfter428 = screen.indexOf(
+        'launchClaimantIdentityVerification',
+        catch428Pos,
+      );
+      expect(
+        launchAfter428,
+        isNot(-1),
+        reason: 'launchClaimantIdentityVerification must be called in the 428 handler',
+      );
     });
 
     test('PI-5: 428 user-visible copy never exposes internal status code or CLAIMANT_IDENTITY_REQUIRED token', () {
-      final screen = File('lib/submit/screens/submit_screen.dart').readAsStringSync();
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
       // Strip line comments so the check targets runtime-reachable strings, not inline documentation.
       final nonComment = _stripLineComments(screen);
-      expect(nonComment, isNot(contains('Server error (428)')),
-          reason: 'CLAIMANT_IDENTITY_REQUIRED must not surface as "Server error (428)" to the user');
-      expect(nonComment, isNot(contains('CLAIMANT_IDENTITY_REQUIRED')),
-          reason: 'internal server error code must not appear in user-visible copy');
+      expect(
+        nonComment,
+        isNot(contains('Server error (428)')),
+        reason: 'CLAIMANT_IDENTITY_REQUIRED must not surface as "Server error (428)" to the user',
+      );
+      expect(
+        nonComment,
+        isNot(contains('CLAIMANT_IDENTITY_REQUIRED')),
+        reason:
+            'internal server error code must not appear in user-visible copy',
+      );
     });
 
     test('PI-6: payment_coordinator exposes ensureClaimantIdentity and launchClaimantIdentityVerification', () {
-      final coord = File('lib/submit/providers/payment_coordinator.dart').readAsStringSync();
-      expect(coord, contains('ensureClaimantIdentity()'),
-          reason: 'ensureClaimantIdentity must remain in coordinator');
-      expect(coord, contains('launchClaimantIdentityVerification()'),
-          reason: 'launchClaimantIdentityVerification must be present in coordinator for UI to call');
+      final coord = File('lib/submit/providers/payment_coordinator.dart')
+          .readAsStringSync();
+      expect(
+        coord,
+        contains('ensureClaimantIdentity()'),
+        reason: 'ensureClaimantIdentity must remain in coordinator',
+      );
+      expect(
+        coord,
+        contains('launchClaimantIdentityVerification()'),
+        reason: 'launchClaimantIdentityVerification must be present in coordinator for UI to call',
+      );
+    });
+
+    test('PI-7: ClaimantIdentityStatus parser only treats status==VERIFIED as verified (PENDING/FAILED blocked)', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart')
+          .readAsStringSync();
+      // Scope check to ClaimantIdentityStatus class only — coordinator also holds payment-status
+      // strings ('PENDING') unrelated to identity, so narrowing avoids false matches.
+      final classStart = coord.indexOf('class ClaimantIdentityStatus');
+      final classEnd = coord.indexOf('class CanonicalOrderResult');
+      expect(
+        classStart,
+        isNot(-1),
+        reason: 'ClaimantIdentityStatus must be present',
+      );
+      expect(
+        classEnd,
+        isNot(-1),
+        reason: 'CanonicalOrderResult must follow it',
+      );
+      final identityClass = coord.substring(classStart, classEnd);
+      expect(
+        identityClass,
+        contains("data['status'] == 'VERIFIED'"),
+        reason: 'VERIFIED must be the sole status-string that gates verified=true in parser',
+      );
+      expect(
+        identityClass,
+        isNot(contains("'PENDING'")),
+        reason: 'PENDING must not be aliased as a verified state in ClaimantIdentityStatus',
+      );
+      expect(
+        identityClass,
+        isNot(contains("'FAILED'")),
+        reason: 'FAILED must not be aliased as a verified state in ClaimantIdentityStatus',
+      );
+    });
+
+    test('PI-8: REQUIRES_INPUT and EXPIRED not aliased as verified in ClaimantIdentityStatus', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart')
+          .readAsStringSync();
+      final classStart = coord.indexOf('class ClaimantIdentityStatus');
+      final classEnd = coord.indexOf('class CanonicalOrderResult');
+      final identityClass = coord.substring(classStart, classEnd);
+      expect(
+        identityClass,
+        isNot(contains("'REQUIRES_INPUT'")),
+        reason: 'REQUIRES_INPUT must not appear as a verified-state alias in ClaimantIdentityStatus',
+      );
+      expect(
+        identityClass,
+        isNot(contains("'EXPIRED'")),
+        reason: 'EXPIRED must not appear as a verified-state alias in ClaimantIdentityStatus',
+      );
+    });
+
+    test('PI-9: step 0 gate uses idStatus.verified (bool) — all non-VERIFIED statuses blocked', () {
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      // The gate must use the boolean .verified property produced by the parser,
+      // not a raw string comparison, so PENDING/FAILED/REQUIRES_INPUT/EXPIRED are all blocked.
+      expect(
+        screen,
+        contains('idStatus.verified'),
+        reason: 'step 0 gate must check idStatus.verified (bool), blocking all non-VERIFIED statuses',
+      );
+      expect(
+        screen,
+        isNot(contains("idStatus.status == 'VERIFIED'")),
+        reason: 'gate must not bypass the parser with a direct status-string comparison',
+      );
+    });
+
+    test('PI-10: ensureClaimantIdentity throws 428 for verified=false (defence-in-depth for all negative states)', () {
+      final coord = File('lib/submit/providers/payment_coordinator.dart')
+          .readAsStringSync();
+      // ensureClaimantIdentity: if (status.verified) return status;
+      //                          throw const SubmitApiException(428, ...);
+      // Any non-verified status (PENDING, FAILED, REQUIRES_INPUT, EXPIRED) hits the throw.
+      expect(
+        coord,
+        contains('if (status.verified) return status'),
+        reason:
+            'ensureClaimantIdentity must short-circuit only on verified=true',
+      );
+      // Format-agnostic: dart format may split `SubmitApiException(428, ...)` across lines.
+      final throw428Match = RegExp(r'throw const SubmitApiException\(\s*428')
+          .firstMatch(coord);
+      final throwPos = throw428Match?.start ?? -1;
+      expect(
+        throwPos,
+        isNot(-1),
+        reason:
+            'ensureClaimantIdentity must throw 428 for non-verified claimant',
+      );
+      final verifiedCheckPos = coord.indexOf('if (status.verified)');
+      expect(
+        verifiedCheckPos,
+        lessThan(throwPos),
+        reason: '428 throw must follow the verified check, not precede it',
+      );
+    });
+
+    test('PI-11: no bypass path or wrong-principal shortcut in submit_screen or submit_provider', () {
+      final screen = File('lib/submit/screens/submit_screen.dart')
+          .readAsStringSync();
+      final provider = File('lib/submit/providers/submit_provider.dart')
+          .readAsStringSync();
+      // Coordinator must be obtained via Riverpod (auth-bound bearer token).
+      // A wrong-principal would supply their own token and get their own (unverified) status.
+      expect(
+        screen,
+        contains('ref.read(paymentCoordinatorProvider)'),
+        reason: 'coordinator must be injected via Riverpod (auth-bound), not constructed ad-hoc',
+      );
+      // No bypass flags must be present.
+      expect(
+        screen,
+        isNot(contains('bypassIdentityCheck')),
+        reason: 'no identity-check bypass flag must exist in submit_screen',
+      );
+      expect(
+        provider,
+        isNot(contains('bypassIdentityCheck')),
+        reason: 'no identity-check bypass flag must exist in submit_provider',
+      );
+      final providerStartPos = provider.indexOf(
+        'Future<void> startSubmission()',
+      );
+      expect(
+        providerStartPos,
+        isNot(-1),
+        reason: 'startSubmission() must remain in provider as the server-call wrapper',
+      );
     });
   });
 }

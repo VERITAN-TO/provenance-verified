@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Agent",
+      "Bash(vercel *)",
+      "Bash(curl *)",
+      "mcp__Vercel__*"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)"
+    ]
+  }
+}

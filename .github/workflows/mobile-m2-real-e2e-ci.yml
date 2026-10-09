@@ -115,7 +115,30 @@ env:
   #   evidence: "+360: All tests passed!"; the sole prior failure on this commit's predecessor
   #   run was flutter analyze's unnecessary_cast, fixed in 147e5f316 — not a test failure).
   # M2-50-06 (C64-1..C64-5) adds 5 tests. Confirmed 375 from CI run 35542197695 on b0f4ade4.
-  EXPECTED_M2_UNIT_COUNT: '375'
+  # R17/R18 (PI-1..PI-6) adds 6 tests (pre-intake identity parity). Count: 375 + 6 = 381.
+  # R29 (19bd9c1) dart-format compliance + format-agnostic static assertions adds 5 tests. Count: 381 + 5 = 386.
+  # Dependency-ready QR handler coverage (ec244e4): +2 valid paths (/registry, /reliance) +2 dangerous schemes
+  #   (vbscript, file) +2 pv:// edge cases (empty path, non-PV-ID path). Count: 386 + 6 = 392.
+  # API client error-path coverage (M2-20..M2-25): +8 tests (hasError 200, 5xx, and 401/non-200
+  #   for evaluateActionability + createRelianceReceipt). Count: 392 + 8 = 400.
+  # SubmissionQuote/SubmissionDraft model tests: +12 tests (payment_required inference, _descriptionFor
+  #   fallback, data envelope, tier key fallback, why_not_higher, declarationsComplete). Count: 400 + 12 = 412.
+  # ClaimantIdentityStatus.fromJson runtime tests: +11 tests (verified flag for VERIFIED/PENDING/FAILED/
+  #   REQUIRES_INPUT/absent, explicit verified=true, data envelope, assuranceLevel, verifiedAt). Count: 412 + 11 = 423.
+  # Actionability/receipt model tests: +19 tests (ActionabilityDecision fail-closed, ActionabilityPurpose,
+  #   ActionabilityResult.fromJson, RelianceReceipt validity_state parsing). Count: 423 + 19 = 442.
+  # Activity model behavioral tests: +28 tests (CredentialLifecycleStatus fail-closed, SettlementPaymentStatus
+  #   fail-closed, Settlement.isSettled MONEY_CONTROLS_TRUST=FALSE, TrustCurrentness.hasAuthorityUnavailable,
+  #   DeterminationResult.fromJson whyThisTier/whyNotNextTier, SubmissionDetail settlement seam). Count: 442 + 28 = 470.
+  # Home/auth/my-pv model behavioral tests: +22 tests (CustomerSession.isExpired/expiresWithin/fromJson/copyWith,
+  #   AlertType.fromJson fail-closed, RecentScan/SubmissionSummary/TrustAlert field defaults,
+  #   CustomerAsset trust_tier null-safety CUSTOMER_SELECTS_TIER=FALSE). Count: 470 + 22 = 492.
+  # Constants/offline behavioral tests: +13 tests (M1 Security Law actionabilityCacheForReliance=false locked
+  #   at runtime, publicIdPattern valid/invalid inputs, digestPattern sha256 format, CachedRecord defaults).
+  #   Count: 492 + 13 = 505.
+  # Exception format behavioral tests: +8 tests (AuthException/ApiException toString contract; errorCode
+  #   conditional format; statusCode/message preservation; both implement Exception). Count: 505 + 8 = 513.
+  EXPECTED_M2_UNIT_COUNT: '513'
 
 jobs:
   linux-android:
