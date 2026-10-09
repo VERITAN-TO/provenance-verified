@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/activity_models.dart';
 import '../providers/activity_provider.dart';
-import 'submission_detail_screen.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
 
@@ -44,15 +43,8 @@ class ActivityScreen extends ConsumerWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, i) => _SubmissionRow(
                     item: items[i],
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => SubmissionDetailScreen(
-                            submissionId: items[i].submissionId,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => context.push(
+                        '/activity/${items[i].submissionId}'),
                   ),
                 ),
         ),
@@ -94,10 +86,16 @@ class _SubmissionRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: PvColors.surface,
             border: Border.all(
-              color: item.hasEvidenceRequest
-                  ? PvColors.warning
-                  : PvColors.border,
-              width: item.hasEvidenceRequest ? 1.5 : 1,
+              // R28/R33: AUTHORITY_UNAVAILABLE → error border (R28-SD-04).
+              color: item.determinationState == 'AUTHORITY_UNAVAILABLE'
+                  ? PvColors.error
+                  : item.hasEvidenceRequest
+                      ? PvColors.warning
+                      : PvColors.border,
+              width: (item.determinationState == 'AUTHORITY_UNAVAILABLE' ||
+                      item.hasEvidenceRequest)
+                  ? 1.5
+                  : 1,
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -136,10 +134,51 @@ class _SubmissionRow extends StatelessWidget {
                       _relativeTime(item.updatedAt),
                       style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                     ),
-                    if (item.requestedServiceTier.isNotEmpty) ...[
+                    // R28/R33: branch on determination_state per flutter_consumer_contract.
+                    // AUTHORITY_UNAVAILABLE: suppress tier, show badge + notice (R28-SD-04).
+                    // DETERMINED: show tier (R28-SD-03). No credential badge — list credential_state
+                    //   is PR47 placeholder; canonical authority is credential_lifecycle (detail).
+                    //   Core PR48: lifecycle_sourced_from_pv_credentials_only=TRUE.
+                    // NOT_DETERMINED / null: no lifecycle badge (R28 display_rules).
+                    // MTA-1: SERVER DETERMINES TRUST.
+                    if (item.determinationState == 'AUTHORITY_UNAVAILABLE') ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: PvColors.error.withAlpha(30),
+                          border: Border.all(color: PvColors.error),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'AUTHORITY UNAVAILABLE',
+                          style: PvTypography.label.copyWith(
+                              color: PvColors.error, fontSize: 9),
+                        ),
+                      ),
                       const SizedBox(height: 2),
                       Text(
-                        'Requested: ${item.requestedServiceTier}',
+                        'Canonical determination temporarily unavailable. View details or refresh to retry.',
+                        style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                      ),
+                    ] else if (item.determinedTier != null &&
+                        item.determinedTier!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      // Server-authored determination result — never client-claimed.
+                      // credential_state from list endpoint is PR47 placeholder (NOT_ISSUED default).
+                      // Canonical credential authority is credential_lifecycle from detail endpoint.
+                      // Per Core PR48: lifecycle_sourced_from_pv_credentials_only=TRUE.
+                      // List card shows no credential badge — R33/Core authority ruling.
+                      Text(
+                        'Determined: ${item.determinedTier}',
+                        style: PvTypography.bodySmall.copyWith(
+                            color: PvColors.onBackground,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Awaiting determination',
                         style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
                       ),
                     ],
@@ -166,8 +205,9 @@ class _SubmissionRow extends StatelessWidget {
   static Color _statusColor(SubmissionStatus status) {
     switch (status) {
       case SubmissionStatus.issued:                  return PvColors.success;
-      case SubmissionStatus.moreInformationRequired: return PvColors.warning;
-      case SubmissionStatus.closed:                  return PvColors.muted;
+      case SubmissionStatus.moreInformationRequired:
+      case SubmissionStatus.additionalInfoRequested:  return PvColors.warning;
+      case SubmissionStatus.closed:                   return PvColors.muted;
       case SubmissionStatus.submitted:
       case SubmissionStatus.paymentConfirmed:        return PvColors.silver;
       case SubmissionStatus.awaitingShipment:
@@ -242,7 +282,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Submit a gemstone for certification to start tracking it here.',
+              'Submit a gemstone for PROVENANCE VERIFIED™ evaluation to start tracking it here.',
               style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
               textAlign: TextAlign.center,
             ),

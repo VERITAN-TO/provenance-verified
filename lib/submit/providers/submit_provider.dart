@@ -25,8 +25,8 @@ class SubmissionApiClient {
   SubmissionApiClient({http.Client? client, String? baseUrl, required String? Function() getToken, required Future<String?> Function() refreshToken})
       : _client = client ?? http.Client(),
         _baseUrl = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _getToken = getToken,
-        _refreshToken = refreshToken;
+        _getToken = getToken, // ignore: prefer_initializing_formals
+        _refreshToken = refreshToken; // ignore: prefer_initializing_formals
 
   Future<Map<String, String>> _authHeaders() async {
     final token = _getToken();
@@ -78,6 +78,12 @@ class SubmissionApiClient {
       final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/api/v1/customer/submissions/$submissionId/evidence'))
         ..headers['Authorization'] = 'Bearer $token'
         ..fields['document_type'] = docType
+        // CUSTOMER_UPLOAD_AUTO_INDEPENDENT=FALSE; CUSTOMER_UPLOAD_AUTO_QUALIFIED=FALSE;
+        // CUSTOMER_UPLOAD_AUTO_CLAIM_CREDIT=FALSE — explicit trust-law classification;
+        // server determination engine must not infer independence from missing fields.
+        ..fields['independent'] = 'false'
+        ..fields['related_party'] = 'true'
+        ..fields['qualified_review_eligible'] = 'false'
         ..files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
       return http.Response.fromStream(await request.send().timeout(const Duration(seconds: 60)));
     }
@@ -102,10 +108,10 @@ class SubmissionApiClient {
   }
 
   Future<Map<String, dynamic>> submitForEvaluation(String submissionId) async {
-    final res = await _postJson('/api/v1/customer/submissions/$submissionId/submit', const {});
-    if (res.statusCode == 200 || res.statusCode == 201) return jsonDecode(res.body) as Map<String, dynamic>;
+    final res = await _postJson('/api/v1/customer/submissions/$submissionId/evaluate', const {});
+    if (res.statusCode == 200 || res.statusCode == 202) return jsonDecode(res.body) as Map<String, dynamic>;
     final err = _parseError(res);
-    throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'PV evaluation submission failed');
+    throw SubmitApiException(res.statusCode, err['message'] as String? ?? 'PV evaluation failed');
   }
 
   Future<Map<String, dynamic>> getQuote(String submissionId) async {
@@ -139,9 +145,6 @@ class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
 
   void reset() => state = null;
   void beginNew() => state = const SubmissionDraft(step: 0);
-
-  @Deprecated('Tiers are educational/result states; customers do not select them.')
-  void selectTier(ServiceTier tier) {}
 
   void updateAssetName(String name) { final c = state ?? const SubmissionDraft(step: 0); state = c.copyWith(assetName: name); }
   void updateAssetType(String type) { final c = state ?? const SubmissionDraft(step: 0); state = c.copyWith(assetType: type); }
@@ -228,15 +231,12 @@ class SubmitNotifier extends StateNotifier<SubmissionDraft?> {
     if (quote.paymentRequired) {
       final paymentStatus = await _payment.paymentStatus(orderId);
       if (paymentStatus != 'PAID') throw SubmitApiException(202, 'Payment status is $paymentStatus. Complete payment, then try again.');
-      return _payment.bindSettlement(submissionId: current.submissionId!, orderId: orderId);
     }
 
-    // T1 free order is bound server-side when it is created.
-    return {'order_id': orderId, 'determined_tier': quote.tier, 'payment_status': 'FREE', 'settlement_bound': true};
+    // Both FREE and PAID orders must be explicitly bound after determination.
+    return _payment.bindSettlement(submissionId: current.submissionId!, orderId: orderId);
   }
 
-  @Deprecated('Use settleDeterminedResult after submitForEvaluation and canonical determination.')
-  Future<Map<String, dynamic>> checkout({bool testMode = false}) => settleDeterminedResult();
 }
 
 final submitProvider = StateNotifierProvider<SubmitNotifier, SubmissionDraft?>((ref) {

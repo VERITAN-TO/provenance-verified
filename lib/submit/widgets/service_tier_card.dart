@@ -10,16 +10,10 @@ import '../../design/pv_typography.dart';
 
 class ServiceTierCard extends StatelessWidget {
   final ServiceTier tier;
-  // Kept for source compatibility with the existing screen while selection
-  // authority is being removed. These values do not affect rendering/actions.
-  final bool isSelected;
-  final VoidCallback onSelect;
 
   const ServiceTierCard({
     super.key,
     required this.tier,
-    required this.isSelected,
-    required this.onSelect,
   });
 
   Color get _tierAccent {

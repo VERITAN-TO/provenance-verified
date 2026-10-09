@@ -4,12 +4,14 @@
 // Trust display follows the same conservative pattern as trust_result_screen.dart.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/my_pv_models.dart';
 import '../providers/my_pv_provider.dart';
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
+import '../../trust/providers/trust_provider.dart';
 
 class AssetDetailScreen extends ConsumerWidget {
   final String assetId;
@@ -22,18 +24,6 @@ class AssetDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asset Detail'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Share',
-            onPressed: () {
-              // Share the public ID — no private data surfaced via share.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share coming soon')),
-              );
-            },
-          ),
-        ],
       ),
       body: detailAsync.when(
         loading: () => const Center(
@@ -60,6 +50,14 @@ class _DetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Parse top-level asset fields
     final asset = CustomerAsset.fromJson(detail);
+
+    // Fetch public_record_url from machine trust response for Share seam.
+    // Bound to server-authored URL only — Native must not construct this locally.
+    // Only watch when publicId is non-empty (guard against unconfigured assets).
+    final trustAsync = asset.publicId.isNotEmpty
+        ? ref.watch(trustRecordProvider(asset.publicId))
+        : null;
+    final publicRecordUrl = trustAsync?.valueOrNull?.publicRecordUrl;
 
     // Parse custody events
     final custodyRaw = detail['custody_history'] as List? ?? [];
@@ -109,8 +107,9 @@ class _DetailView extends StatelessWidget {
           _SectionHeader('EVIDENCE SCOPE'),
           const SizedBox(height: 4),
           const Text(
-            'Evidence items listed as provided by the verification authority. '
-            'No inferences beyond what is explicitly stated.',
+            'Evidence items returned by the PV server as recorded on submission. '
+            'Presence does not make an item independent, qualified, corroborated, '
+            'or claim-credit evidence. No inferences beyond what is explicitly stated.',
             style: TextStyle(color: PvColors.muted, fontSize: 12),
           ),
           const SizedBox(height: 8),
@@ -139,7 +138,7 @@ class _DetailView extends StatelessWidget {
           const Divider(height: 32),
 
           // ── Action buttons ────────────────────────────────────────────────
-          _ActionButtons(asset: asset),
+          _ActionButtons(asset: asset, publicRecordUrl: publicRecordUrl),
           const SizedBox(height: 32),
         ],
       ),
@@ -175,7 +174,7 @@ class _StaledReceiptsBanner extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'STALE RECEIPTS — One or more reliance receipts for this asset are stale and should be requerierd.',
+                'STALE RECEIPTS — One or more reliance receipts for this asset are stale and should be requeried.',
                 style: PvTypography.bodySmall.copyWith(color: PvColors.warning),
               ),
             ),
@@ -209,10 +208,10 @@ class _TierBadge extends StatelessWidget {
     if (!asset.eligible) return 'NOT QUALIFIED';
     if (tier == null) return 'NOT QUALIFIED';
     switch (tier) {
-      case 1: return 'T1 ASSET FINGERPRINT';
-      case 2: return 'T2 DECLARED PROVENANCE';
-      case 3: return 'T3 EVIDENCE-VERIFIED';
-      case 4: return 'T4 GOLD STANDARD';
+      case 1: return 'T1 — ACCOUNTABLE EXISTENCE';
+      case 2: return 'T2 — ACCOUNTABLE DECLARATION';
+      case 3: return 'T3 — EVIDENCE-ESTABLISHED TRUST';
+      case 4: return 'T4 — GOVERNED AUTHORITY';
       default: return 'TIER $tier';
     }
   }
@@ -326,7 +325,7 @@ class _EvidenceItem extends StatelessWidget {
                       const Icon(Icons.verified, size: 14, color: PvColors.success),
                       const SizedBox(width: 4),
                       Text(
-                        'Integrity verified',
+                        'File integrity verified',
                         style: PvTypography.bodySmall
                             .copyWith(color: PvColors.success),
                       ),
@@ -547,7 +546,7 @@ class _ReceiptRow extends StatelessWidget {
       child: ListTile(
         dense: true,
         onTap: receiptId.isNotEmpty
-            ? () => context.push('/receipts/$receiptId')
+            ? () => context.push('/my-pv/receipts/$receiptId')
             : null,
         title: Text(
           purpose.isNotEmpty ? purpose : 'Receipt',
@@ -588,10 +587,13 @@ class _ReceiptRow extends StatelessWidget {
 
 class _ActionButtons extends StatelessWidget {
   final CustomerAsset asset;
-  const _ActionButtons({required this.asset});
+  final String? publicRecordUrl;
+  const _ActionButtons({required this.asset, this.publicRecordUrl});
 
   @override
   Widget build(BuildContext context) {
+    // Promote nullable field to local for Dart null-safety flow analysis.
+    final url = publicRecordUrl;
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -614,19 +616,27 @@ class _ActionButtons extends StatelessWidget {
             side: const BorderSide(color: PvColors.border),
           ),
         ),
-        OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Share coming soon')),
-            );
-          },
-          icon: const Icon(Icons.share_outlined, size: 18),
-          label: const Text('Share'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: PvColors.onBackground,
-            side: const BorderSide(color: PvColors.border),
+        // Share: server-authored public_record_url seam (R50 LEAD-A PR #48).
+        // Rendered only when server explicitly returns publicRecordUrl.
+        // Native must not construct a public verification URL from publicId.
+        // Fail-closed: button hidden when publicRecordUrl is null or empty.
+        if (url != null && url.isNotEmpty)
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: url));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Verification link copied to clipboard.')),
+                );
+              }
+            },
+            icon: const Icon(Icons.share_outlined, size: 18),
+            label: const Text('Share Verification'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: PvColors.onBackground,
+              side: const BorderSide(color: PvColors.border),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -681,56 +691,78 @@ class _ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final msg = error.toString();
-    final isNotFound = msg.contains('not_found');
-    final isAuth = msg.contains('not_authenticated');
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isAuth ? Icons.lock_outline : Icons.error_outline,
-              color: isAuth ? PvColors.silver : PvColors.error,
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isNotFound
-                  ? 'Asset not found'
-                  : isAuth
-                      ? 'Session expired'
-                      : 'Could not load asset',
-              style: PvTypography.title,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isAuth
-                  ? 'Please sign in again.'
-                  : 'Pull down to retry.',
-              style:
-                  PvTypography.bodySmall.copyWith(color: PvColors.muted),
-              textAlign: TextAlign.center,
-            ),
-            if (isAuth) ...[
+    final isNotFound = msg.contains('not_found') || msg.contains('404') ||
+        msg.contains('not found') || assetId.trim().isEmpty;
+    final isAuth = msg.contains('not_authenticated') || msg.contains('401');
+    return Semantics(
+      label: isNotFound
+          ? 'Asset not found'
+          : isAuth
+              ? 'Session expired'
+              : 'Could not load asset',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isNotFound
+                    ? Icons.search_off
+                    : isAuth
+                        ? Icons.lock_outline
+                        : Icons.error_outline,
+                color: isNotFound
+                    ? PvColors.muted
+                    : isAuth
+                        ? PvColors.silver
+                        : PvColors.error,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isNotFound
+                    ? 'Asset not found'
+                    : isAuth
+                        ? 'Session expired'
+                        : 'Could not load asset',
+                style: PvTypography.title,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isNotFound
+                    ? 'This asset was not found or you do not have access.'
+                    : isAuth
+                        ? 'Please sign in again.'
+                        : 'Pull down to retry.',
+                style: PvTypography.bodySmall.copyWith(color: PvColors.muted),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 20),
-              FilledButton(
-                onPressed: () => context.push('/sign-in'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: PvColors.cyan,
-                  foregroundColor: Colors.black,
+              if (isNotFound) ...[
+                OutlinedButton.icon(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Return to My PV'),
                 ),
-                child: const Text('Sign In'),
-              ),
-            ] else ...[
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () => ref.invalidate(assetDetailProvider(assetId)),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
+              ] else if (isAuth) ...[
+                FilledButton(
+                  onPressed: () => context.push('/sign-in'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: PvColors.cyan,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text('Sign In'),
+                ),
+              ] else ...[
+                OutlinedButton.icon(
+                  onPressed: () => ref.invalidate(assetDetailProvider(assetId)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

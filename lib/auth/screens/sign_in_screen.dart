@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../design/pv_colors.dart';
 import '../../design/pv_typography.dart';
@@ -60,11 +61,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   void _navigateAfterSuccess() {
     final redirect = widget.redirectPath;
     if (redirect != null && redirect.isNotEmpty) {
-      Navigator.of(context).pushReplacementNamed(redirect);
-    } else if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+      context.go(redirect);
     } else {
-      Navigator.of(context).pushReplacementNamed('/my-pv');
+      context.go('/my-pv');
     }
   }
 
@@ -167,8 +166,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         TextButton(
                           onPressed: _loading
                               ? null
-                              : () => Navigator.of(context)
-                                  .pushReplacementNamed('/sign-up'),
+                              : () => context.go('/sign-up'),
                           child: Text(
                             'Sign Up',
                             style: PvTypography.bodySmall.copyWith(

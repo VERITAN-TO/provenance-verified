@@ -24,6 +24,9 @@ class MobileTokenService {
   final http.Client _client;
   final String _baseUrl;
   final String _tenantId;
+  // CI/qual device UUID override. When non-null, used as device_id for bootstrap,
+  // bypassing secure-storage lookup. Distinct from subject/public_id (PV_QUAL_SUBJECT_ID).
+  final String? _deviceIdOverride;
 
   String?   _cachedToken;
   DateTime? _cachedExpiresAt;
@@ -34,10 +37,14 @@ class MobileTokenService {
     http.Client? client,
     String? baseUrl,
     String? tenantId,
+    String? deviceIdOverride,
   })  : _storage   = storage ?? const FlutterSecureStorage(),
         _client    = client ?? http.Client(),
         _baseUrl   = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), ''),
-        _tenantId  = tenantId ?? Env.pvTenantId;
+        _tenantId  = tenantId ?? Env.pvTenantId,
+        _deviceIdOverride = (deviceIdOverride != null && deviceIdOverride.isNotEmpty)
+            ? deviceIdOverride
+            : null;
 
   Future<String> getToken() async {
     if (_cachedToken != null && _cachedExpiresAt != null) {
@@ -83,8 +90,15 @@ class MobileTokenService {
       throw const ApiException(0, 'PV_TENANT_ID not configured.', errorCode: 'TENANT_NOT_CONFIGURED');
     }
 
-    final deviceId   = await _getOrCreateDeviceId();
-    final platform   = Platform.isIOS ? 'ios' : 'android';
+    // Use CI/qual device UUID override when provided; otherwise use persisted/generated device ID.
+    final deviceId = (_deviceIdOverride != null)
+        ? _deviceIdOverride
+        : await _getOrCreateDeviceId();
+    // Use PV_MOBILE_PLATFORM dart-define when set (CI/test bootstrap with non-UUID tenant IDs).
+    // Server guards against test platform in production runtime (TEST_PLATFORM_IN_PRODUCTION).
+    final platform = Env.mobilePlatform.isNotEmpty
+        ? Env.mobilePlatform
+        : (Platform.isIOS ? 'ios' : 'android');
     final appVersion = Env.appVersion;
 
     final response = await _client
