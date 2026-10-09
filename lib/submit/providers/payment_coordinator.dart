@@ -67,8 +67,9 @@ class PaymentCoordinator {
       _baseUrl = (baseUrl ?? Env.pvApiBaseUrl).replaceAll(RegExp(r'/$'), '');
 
   Future<String> _token({bool forceRefresh = false}) async {
-    if (forceRefresh || _ref.read(authProvider)?.isExpired == true)
+    if (forceRefresh || _ref.read(authProvider)?.isExpired == true) {
       await _ref.read(authProvider.notifier).refresh();
+    }
     final token = _ref.read(authProvider)?.accessToken;
     if (token == null || token.isEmpty) throw Exception('Not authenticated');
     return token;
@@ -86,8 +87,9 @@ class PaymentCoordinator {
         )
         .timeout(const Duration(seconds: 60));
     var res = await send(await _token());
-    if (res.statusCode == 401)
+    if (res.statusCode == 401) {
       res = await send(await _token(forceRefresh: true));
+    }
     return res;
   }
 
@@ -99,8 +101,9 @@ class PaymentCoordinator {
         )
         .timeout(const Duration(seconds: 30));
     var res = await send(await _token());
-    if (res.statusCode == 401)
+    if (res.statusCode == 401) {
       res = await send(await _token(forceRefresh: true));
+    }
     return res;
   }
 
@@ -114,19 +117,21 @@ class PaymentCoordinator {
     try {
       final j = _json(res);
       final error = j['error'];
-      if (error is Map<String, dynamic>)
+      if (error is Map<String, dynamic>) {
         message =
             error['message']?.toString() ??
             error['code']?.toString() ??
             fallback;
+      }
     } catch (_) {}
     throw SubmitApiException(res.statusCode, message);
   }
 
   Future<ClaimantIdentityStatus> claimantIdentityStatus() async {
     final res = await _get('/api/v1/customer/identity/status');
-    if (res.statusCode != 200)
+    if (res.statusCode != 200) {
       _throw(res, 'Could not read claimant identity status');
+    }
     return ClaimantIdentityStatus.fromJson(_json(res));
   }
 
@@ -135,16 +140,18 @@ class PaymentCoordinator {
       '/api/v1/customer/identity/verification-session',
       const {},
     );
-    if (res.statusCode != 200 && res.statusCode != 201)
+    if (res.statusCode != 200 && res.statusCode != 201) {
       _throw(res, 'Could not start identity verification');
+    }
     final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
     if (data['status'] == 'VERIFIED') return null;
     final value = data['verification_url']?.toString() ?? '';
-    if (value.isEmpty)
+    if (value.isEmpty) {
       throw const SubmitApiException(
         502,
         'Identity verification response did not include a verification URL',
       );
+    }
     return Uri.tryParse(value);
   }
 
@@ -173,37 +180,42 @@ class PaymentCoordinator {
       final res = await _post('/api/v1/payments/orders', {
         'submissionId': submissionId,
       });
-      if (res.statusCode != 200 && res.statusCode != 201)
+      if (res.statusCode != 200 && res.statusCode != 201) {
         _throw(res, 'Could not create free settlement');
+      }
       final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
       final orderId = data['orderId']?.toString() ?? '';
-      if (orderId.isEmpty)
+      if (orderId.isEmpty) {
         throw const SubmitApiException(
           502,
           'Free settlement response did not include orderId',
         );
+      }
       return CanonicalOrderResult(
         orderId: orderId,
         paymentStatus: data['paymentStatus']?.toString() ?? 'FREE',
       );
     }
 
-    if (quote.csaVersion.isEmpty)
+    if (quote.csaVersion.isEmpty) {
       throw const SubmitApiException(
         422,
         'Canonical quote is missing CSA authority',
       );
+    }
     final res = await _post('/api/v1/payments/checkout', {
       'submissionId': submissionId,
       'csaVersion': quote.csaVersion,
     });
-    if (res.statusCode != 200 && res.statusCode != 201)
+    if (res.statusCode != 200 && res.statusCode != 201) {
       _throw(res, 'Could not create checkout');
+    }
     final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
     final orderId = data['orderId']?.toString() ?? '';
     final url = data['checkoutUrl']?.toString() ?? '';
-    if (orderId.isEmpty || url.isEmpty)
+    if (orderId.isEmpty || url.isEmpty) {
       throw const SubmitApiException(502, 'Checkout response is incomplete');
+    }
     return CanonicalOrderResult(
       orderId: orderId,
       checkoutSessionId: data['checkoutSessionId']?.toString(),
@@ -223,11 +235,13 @@ class PaymentCoordinator {
     if (res.statusCode != 200) _throw(res, 'Could not read order status');
     final data = (_json(res)['data'] as Map<String, dynamic>?) ?? const {};
     final orders = data['orders'];
-    if (orders is! List)
+    if (orders is! List) {
       throw const SubmitApiException(502, 'Order list response is invalid');
+    }
     for (final item in orders.whereType<Map<String, dynamic>>()) {
-      if (item['orderId']?.toString() == orderId)
+      if (item['orderId']?.toString() == orderId) {
         return item['paymentStatus']?.toString() ?? 'UNKNOWN';
+      }
     }
     throw const SubmitApiException(404, 'Order not found');
   }
@@ -241,8 +255,9 @@ class PaymentCoordinator {
       '/api/v1/customer/submissions/${Uri.encodeComponent(submissionId)}/checkout',
       {'order_id': orderId},
     );
-    if (res.statusCode != 200)
+    if (res.statusCode != 200) {
       _throw(res, 'Could not bind settlement to PV result');
+    }
     final json = _json(res);
     return (json['data'] as Map<String, dynamic>?) ?? json;
   }

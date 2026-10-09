@@ -134,8 +134,9 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       if (e.statusCode == 401) {
         // Terminal auth failure — refresh path exhausted in the API client.
         // Redirect to sign-in with /submit as the return destination.
-        if (mounted)
+        if (mounted) {
           context.push('/sign-in?from=${Uri.encodeComponent('/submit')}');
+        }
       } else if (e.statusCode == 428) {
         // CLAIMANT_IDENTITY_REQUIRED — server rejected because identity is not verified.
         // Route to identity verification rather than showing a generic error string.
@@ -176,13 +177,15 @@ class _SubmitScreenState extends ConsumerState<SubmitScreen> {
       final q = await ref.read(submitProvider.notifier).fetchQuote();
       if (mounted) setState(() => _quote = q);
     } on SubmitApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         _setError(
           'Could not reload determination (${e.statusCode}): ${e.message}',
         );
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         _setError('Could not reload determination result. Please retry.');
+      }
     } finally {
       if (mounted) _setLoading(false);
     }
