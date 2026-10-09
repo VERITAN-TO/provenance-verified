@@ -130,7 +130,10 @@ env:
   # Activity model behavioral tests: +28 tests (CredentialLifecycleStatus fail-closed, SettlementPaymentStatus
   #   fail-closed, Settlement.isSettled MONEY_CONTROLS_TRUST=FALSE, TrustCurrentness.hasAuthorityUnavailable,
   #   DeterminationResult.fromJson whyThisTier/whyNotNextTier, SubmissionDetail settlement seam). Count: 442 + 28 = 470.
-  EXPECTED_M2_UNIT_COUNT: '470'
+  # Home/auth/my-pv model behavioral tests: +22 tests (CustomerSession.isExpired/expiresWithin/fromJson/copyWith,
+  #   AlertType.fromJson fail-closed, RecentScan/SubmissionSummary/TrustAlert field defaults,
+  #   CustomerAsset trust_tier null-safety CUSTOMER_SELECTS_TIER=FALSE). Count: 470 + 22 = 492.
+  EXPECTED_M2_UNIT_COUNT: '492'
 
 jobs:
   linux-android:
