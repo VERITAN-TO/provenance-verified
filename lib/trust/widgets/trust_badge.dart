@@ -26,9 +26,9 @@ class TrustBadge extends StatelessWidget {
     final tier = r.safeTier;
     if (tier == null) return 'NOT QUALIFIED';
     switch (tier) {
-      case 1: return 'T1 — ACCOUNTABLE EXISTENCE';
-      case 2: return 'T2 — ACCOUNTABLE DECLARATION';
-      case 3: return 'T3 — EVIDENCE-ESTABLISHED TRUST';
+      case 1: return 'T1 ASSET FINGERPRINT';
+      case 2: return 'T2 ACCOUNTABLE DECLARATION';
+      case 3: return 'T3 EVIDENCE-ESTABLISHED TRUST';
       case 4: return 'T4 — GOVERNED AUTHORITY';
       default: return 'TIER $tier';
     }
